@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "electron",
+    "src/types",
+    "src/tests",
+    "src/vite-env.d.ts",
+    "vite.config.ts",
+    "vite.electron.config.ts",
+    "vite.preload.config.ts",
+    "vitest.config.ts"
+  ]
+}

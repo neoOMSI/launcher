@@ -1,0 +1,42 @@
+{
+  "name": "neoomsi-launcher",
+  "version": "0.3.0",
+  "description": "neoOMSI desktop launcher (Electron + React)",
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=24.18.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:app": "pnpm run build:electron && concurrently -k \"vite\" \"wait-on tcp:5173 && electron dist-electron/main.js --dev --mock\"",
+    "build": "tsc -b && vite build && pnpm run build:electron",
+    "build:electron": "vite build --config vite.electron.config.ts && vite build --config vite.preload.config.ts",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "start": "electron dist-electron/main.js"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "24.19.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.5",
+    "electron": "^44.5.1",
+    "jsdom": "^30.1.2",
+    "prettier": "^3.9.9",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3",
+    "wait-on": "^9.5.1"
+  }
+}

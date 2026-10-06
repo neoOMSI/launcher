@@ -1,0 +1,78 @@
+{
+  "app": {
+    "title": "neoOMSI Launcher",
+    "brandingAlt": "neoOMSI"
+  },
+  "navigation": {
+    "launch": "Start",
+    "content": "Inhalte",
+    "settings": "Einstellungen",
+    "diagnostics": "Diagnose"
+  },
+  "connection": {
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "starting": "Startet",
+    "handshaking": "Handshake",
+    "error": "Fehler",
+    "connect": "Verbinden",
+    "disconnect": "Trennen",
+    "reconnect": "Neu verbinden"
+  },
+  "launch": {
+    "title": "Start",
+    "mapId": "Karten-ID",
+    "vehicleId": "Fahrzeug-ID",
+    "launchButton": "Sitzung starten",
+    "stopButton": "Sitzung beenden",
+    "starting": "Sitzung startet...",
+    "activeSession": "Aktive Sitzung: {sessionId}",
+    "terminated": "Sitzung beendet",
+    "failed": "Start fehlgeschlagen: {message}",
+    "error": "Fehler: {message}"
+  },
+  "content": {
+    "title": "Inhalte",
+    "refresh": "Aktualisieren",
+    "refreshing": "Aktualisiere...",
+    "loadFailed": "Laden der Inhalte fehlgeschlagen: {message}",
+    "maps": "Karten ({count})",
+    "vehicles": "Fahrzeuge ({count})",
+    "noMaps": "Keine Karten gefunden",
+    "noVehicles": "Keine Fahrzeuge gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "tiles": "Kacheln",
+      "chronology": "Chronologie",
+      "manufacturer": "Hersteller",
+      "repaints": "Repaints",
+      "yes": "Ja",
+      "no": "Nein"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "reload": "Neu laden",
+    "save": "Speichern",
+    "saved": "Einstellungen gespeichert",
+    "loadFailed": "Laden der Einstellungen fehlgeschlagen: {message}",
+    "saveFailed": "Speicherfehler: {message}",
+    "placeholder": "{}"
+  },
+  "diagnostics": {
+    "title": "Diagnose",
+    "clearLogs": "Protokoll leeren",
+    "noLogs": "Keine Diagnoseprotokolle vorhanden.",
+    "state": "Verbindungsstatus",
+    "pid": "Prozess-ID",
+    "protocolVersion": "Protokollversion",
+    "engineVersion": "Engine-Version",
+    "capabilities": "Funktionen",
+    "noneNegotiated": "Keine ausgehandelt",
+    "none": "Keine",
+    "unknown": "Unbekannt",
+    "notNegotiated": "Nicht ausgehandelt",
+    "logCount": "({count})"
+  }
+}

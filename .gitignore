@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+dist-electron/
+release/
+out/
+
+# Logs & temp
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+
+# Test reports
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

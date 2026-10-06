@@ -1,0 +1,79 @@
+{
+  "app": {
+    "title": "neoOMSI Launcher",
+    "brandingAlt": "neoOMSI",
+    "vendor": "neoOMSI Project"
+  },
+  "navigation": {
+    "launch": "Launch",
+    "content": "Content",
+    "settings": "Settings",
+    "diagnostics": "Diagnostics"
+  },
+  "connection": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "starting": "Starting",
+    "handshaking": "Handshaking",
+    "error": "Error",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "reconnect": "Reconnect"
+  },
+  "launch": {
+    "title": "Launch",
+    "mapId": "Map ID",
+    "vehicleId": "Vehicle ID",
+    "launchButton": "Launch Session",
+    "stopButton": "Stop Session",
+    "starting": "Starting session...",
+    "activeSession": "Active Session: {sessionId}",
+    "terminated": "Session terminated",
+    "failed": "Launch failed: {message}",
+    "error": "Error: {message}"
+  },
+  "content": {
+    "title": "Content",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "loadFailed": "Failed to load content: {message}",
+    "maps": "Maps ({count})",
+    "vehicles": "Vehicles ({count})",
+    "noMaps": "No maps found",
+    "noVehicles": "No vehicles found",
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "tiles": "Tiles",
+      "chronology": "Chronology",
+      "manufacturer": "Manufacturer",
+      "repaints": "Repaints",
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "reload": "Reload",
+    "save": "Save",
+    "saved": "Settings saved",
+    "loadFailed": "Failed to load settings: {message}",
+    "saveFailed": "Save error: {message}",
+    "placeholder": "{}"
+  },
+  "diagnostics": {
+    "title": "Diagnostics",
+    "clearLogs": "Clear Logs",
+    "noLogs": "No diagnostic logs recorded.",
+    "state": "Connection State",
+    "pid": "Process ID",
+    "protocolVersion": "Protocol Version",
+    "engineVersion": "Engine Version",
+    "capabilities": "Capabilities",
+    "noneNegotiated": "None negotiated",
+    "none": "None",
+    "unknown": "Unknown",
+    "notNegotiated": "Not negotiated",
+    "logCount": "({count})"
+  }
+}
