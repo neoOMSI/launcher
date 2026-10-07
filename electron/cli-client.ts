@@ -4,7 +4,12 @@ import type { EngineClient } from './client';
 import type { EngineStatus } from '../src/types/scaffold';
 import type { Config } from '../src/types/launcher';
 
-const SLOW: Record<string, number> = { vehicles: 300_000, preview: 300_000, mods: 300_000 };
+const SLOW: Record<string, number> = {
+  vehicles: 300_000,
+  preview: 300_000,
+  mods: 300_000,
+  minimap: 300_000,
+};
 
 const CACHED = new Set(['config', 'maps', 'vehicles', 'weather']);
 const CACHE_MS = 30_000;

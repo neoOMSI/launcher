@@ -18,6 +18,12 @@ export interface CustomWeather {
   snowOnRoad: boolean;
 }
 
+export interface StopSpawn {
+  id: number;
+  name: string;
+  spawn: string;
+}
+
 export interface Choice {
   bus: string;
   paint: string;
@@ -27,6 +33,7 @@ export interface Choice {
   map: string;
   free: boolean;
   entry: number;
+  stop: StopSpawn | null;
   line: string;
   tour: string;
   trip: string;
@@ -67,6 +74,7 @@ const DEFAULT_CHOICE: Choice = {
   map: '',
   free: false,
   entry: -1,
+  stop: null,
   line: '',
   tour: '',
   trip: '',
@@ -182,6 +190,7 @@ export function toDuty(choice: Choice, profile: string, server: ServerInfo | nul
     number: choice.number || undefined,
     plate: choice.plate || undefined,
     entry: choice.entry,
+    spawn: choice.stop?.spawn,
     time: choice.time,
     date: choice.date,
     traffic: choice.traffic,

@@ -242,6 +242,7 @@ export interface Duty {
   number?: string;
   hof?: string;
   entry?: number;
+  spawn?: string;
   line?: string;
   tour?: string;
   trip?: string;
@@ -260,6 +261,26 @@ export interface Duty {
   season?: string;
   tutorial?: number;
   situation?: string;
+}
+
+export interface MinimapRoad {
+  main: boolean;
+  width: number;
+  points: [number, number][];
+}
+
+export interface MinimapPlace {
+  name: string;
+  x: number;
+  y: number;
+  spawn: string;
+}
+
+export interface Minimap {
+  map: string;
+  roads: MinimapRoad[];
+  stops: (MinimapPlace & { id: number })[];
+  entries: (MinimapPlace & { index: number })[];
 }
 
 export interface Launched {
@@ -347,6 +368,7 @@ export interface Commands {
   keybindings: { args: void; result: KeyBindings };
   launch: { args: Duty; result: Launched };
   preview: { args: { bus: string; paint: string }; result: string };
+  minimap: { args: { map: string }; result: Minimap };
   tutorials: { args: void; result: Tutorial[] };
   servers: { args: void; result: ServerInfo[] };
   controllers: { args: void; result: Controller[] };
@@ -377,6 +399,7 @@ export const COMMANDS: readonly Command[] = [
   'keybindings',
   'launch',
   'preview',
+  'minimap',
   'tutorials',
   'servers',
   'controllers',

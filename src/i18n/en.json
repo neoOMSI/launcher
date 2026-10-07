@@ -83,29 +83,14 @@
   "drive": {
     "loadFailed": "Could not read the content",
     "reading": "Reading the OMSI folder…",
-    "stage": {
-      "route": "Route",
-      "bus": "Bus",
-      "onServer": "Joined {server}",
-      "firstTrip": "First trip",
-      "stops": "{count} stops"
-    },
-    "pickers": {
-      "bus": "Choose a bus",
-      "route": "Map and duty",
-      "time": "Time and weather",
-      "done": "Done"
-    },
     "summary": {
-      "duty": "Duty",
-      "start": "Start",
-      "weather": "Weather",
       "freeDrive": "Free drive",
       "lineTour": "{line}, tour {tour}",
       "lineOnly": "{line}, choose a tour",
       "serverClock": "The server's clock",
       "noBus": "No bus chosen",
-      "leave": "Leave server"
+      "leave": "Leave server",
+      "noLine": "No line chosen"
     },
     "start": {
       "drive": "Drive",
@@ -124,7 +109,6 @@
       "search": "Search buses…",
       "none": "No buses found. Try another search.",
       "unknownMaker": "Unknown manufacturer",
-      "liveries": "{count} liveries",
       "mod": "MOD",
       "missingBadge": "PARTS MISSING",
       "favourite": "Add to the favourites",
@@ -136,7 +120,7 @@
       "prevLivery": "Previous livery",
       "nextLivery": "Next livery",
       "partsMissing": "Parts missing",
-      "partsMissingShort": "Needs {packs}"
+      "details": "Vehicle details"
     },
     "route": {
       "map": "Map",
@@ -149,21 +133,12 @@
       "readingTimetable": "Reading the timetable…",
       "line": "Line",
       "noLines": "No lines on this date.",
-      "tours": "{count} tours",
       "tour": "Tour",
       "tourN": "Tour {n}",
-      "tripsDays": "{count} trips · {days}",
       "runs": "runs {date}",
-      "startTrip": "Start at trip",
-      "startTripHint": "The start time moves to three minutes before the trip leaves.",
-      "firstTrip": "Your first trip",
-      "ibis": "IBIS",
-      "ibisLine": "Line",
-      "ibisRoute": "Route",
-      "ibisHint": "Shift+U in the game types these in for you."
+      "stopStart": "At the stop {name}"
     },
     "time": {
-      "when": "When",
       "time": "Time",
       "date": "Date",
       "season": "Season",
@@ -174,7 +149,6 @@
         "autumn": "Autumn",
         "winter": "Winter"
       },
-      "world": "World",
       "traffic": "Cars around",
       "passengers": "Passengers",
       "schedule": "Timetable buses",
@@ -225,6 +199,41 @@
     },
     "preview": {
       "loading": "Exporting the bus from the game…"
+    },
+    "flow": {
+      "bus": "Bus",
+      "route": "Map & route",
+      "time": "Time & weather",
+      "roadbook": "Roadbook",
+      "titles": {
+        "bus": "Choose your bus",
+        "route": "Where do you drive?",
+        "time": "When do you drive?",
+        "roadbook": "Your roadbook"
+      },
+      "next": {
+        "route": "Map & route",
+        "time": "Time & weather",
+        "roadbook": "Roadbook"
+      },
+      "back": "Back",
+      "toOverview": "Overview",
+      "done": "Done",
+      "overviewTitle": "Your drive"
+    },
+    "roadbook": {
+      "none": "No duty chosen",
+      "noneHint": "Pick a line and a tour under Map & route to get a roadbook.",
+      "startTrip": "Start at trip",
+      "ibis": "IBIS",
+      "ibisLine": "Line",
+      "ibisRoute": "Route"
+    },
+    "minimap": {
+      "stop": "Bus stop",
+      "entry": "Entry point",
+      "fit": "Fit",
+      "loading": "Drawing the map from above…"
     }
   }
 }

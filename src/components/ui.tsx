@@ -1,6 +1,8 @@
 import React, { type CSSProperties, type ReactNode } from 'react';
 import { Icon } from './Icon';
 
+export { Select } from './Select';
+
 export const Page: React.FC<{
   title: string;
   subtitle?: string;
@@ -96,41 +98,6 @@ export const Switch: React.FC<{
   />
 );
 
-export function Select<T extends string | number>({
-  value,
-  options,
-  onChange,
-  className = '',
-  disabled,
-  label,
-}: {
-  value: T;
-  options: readonly (readonly [T, string])[];
-  onChange: (value: T) => void;
-  className?: string;
-  disabled?: boolean;
-  label?: string;
-}) {
-  return (
-    <select
-      className={`select ${className}`}
-      value={String(value)}
-      disabled={disabled}
-      aria-label={label}
-      onChange={(e) => {
-        const hit = options.find(([v]) => String(v) === e.target.value);
-        if (hit) onChange(hit[0]);
-      }}
-    >
-      {options.map(([v, text]) => (
-        <option key={String(v)} value={String(v)}>
-          {text}
-        </option>
-      ))}
-    </select>
-  );
-}
-
 export const Slider: React.FC<{
   value: number;
   min: number;
@@ -163,14 +130,20 @@ export function Segmented<T extends string>({
   value,
   onChange,
   label,
+  fill,
 }: {
   options: readonly (readonly [T, string])[];
   value: T;
   onChange: (value: T) => void;
   label?: string;
+  fill?: boolean;
 }) {
   return (
-    <div className="segmented" role="group" aria-label={label}>
+    <div
+      className={fill ? 'segmented flex w-full [&>.seg]:flex-1 [&>.seg]:px-2' : 'segmented'}
+      role="group"
+      aria-label={label}
+    >
       {options.map(([v, text]) => (
         <button
           key={v}

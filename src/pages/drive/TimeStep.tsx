@@ -24,6 +24,18 @@ export function weatherLabel(choice: Choice, presets: WeatherInfo[]): string {
   return presets.find((w) => w.file === choice.weather)?.name ?? choice.weather;
 }
 
+const presetIcon = (w: WeatherInfo) =>
+  w.snow ? 'weather_snowy' : w.precip === 'rain' ? 'rainy' : w.fog_m < 1000 ? 'foggy' : 'wb_sunny';
+
+export function weatherIcon(choice: Choice, presets: WeatherInfo[]): string {
+  if (choice.weather === '') return 'partly_cloudy_day';
+  if (choice.weather === 'cycle') return 'autorenew';
+  if (choice.weather === 'metar') return 'public';
+  if (choice.weather === 'custom') return 'tune';
+  const preset = presets.find((w) => w.file === choice.weather);
+  return preset ? presetIcon(preset) : 'partly_cloudy_day';
+}
+
 const fits = (w: WeatherInfo, season: Exclude<Season, 'auto'>) =>
   season === 'winter' ? w.temp < 12 : season === 'summer' ? !w.snow && w.temp > 5 : !w.snow;
 
@@ -56,7 +68,7 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
       (w) =>
         [
           w.file,
-          w.snow ? 'weather_snowy' : w.precip === 'rain' ? 'rainy' : w.fog_m < 1000 ? 'foggy' : 'wb_sunny',
+          presetIcon(w),
           w.name,
           `${Math.round(w.temp)} °C · ${w.fog_m >= 10000 ? `${w.fog_m / 1000} km` : `${w.fog_m} m`}`,
         ] as [string, string, string, string],
@@ -64,9 +76,8 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
   ];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <section>
-        <h3 className="eyebrow mb-3">{t('drive.time.when')}</h3>
         <div className="grid grid-cols-2 gap-x-6 gap-y-5">
           <Field label={t('drive.time.time')}>
             <input
@@ -87,6 +98,7 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
         </div>
         <div className="mt-5">
           <Segmented
+            fill
             label={t('drive.time.season')}
             options={SEASONS.map((s) => [s, t(`drive.time.seasons.${s}`)] as const)}
             value={choice.season}
@@ -96,9 +108,8 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
       </section>
 
       <section>
-        <h3 className="eyebrow mb-1">{t('drive.time.world')}</h3>
         <div className="divide-y divide-line">
-          <div className="flex items-center gap-8 py-3.5">
+          <div className="flex items-center gap-6 py-2.5 text-[15px]">
             <span className="w-48 shrink-0">{t('drive.time.traffic')}</span>
             <Slider
               value={choice.traffic}
@@ -115,7 +126,7 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
               ['onFoot', 'drive.time.onFoot'],
             ] as const
           ).map(([key, label]) => (
-            <label key={key} className="flex items-center justify-between gap-8 py-3.5">
+            <label key={key} className="flex items-center justify-between gap-6 py-2.5 text-[15px]">
               <span>{t(label)}</span>
               <Switch checked={choice[key]} onChange={(v) => update({ [key]: v })} />
             </label>
@@ -124,23 +135,18 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
       </section>
 
       <section>
-        <h3 className="eyebrow mb-3">{t('drive.weather.title')}</h3>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2.5">
-          {options.map(([value, icon, name, hint]) => (
+        <h3 className="mb-3 text-[16px] font-semibold text-heading">{t('drive.weather.title')}</h3>
+        <div className="flex flex-col gap-0.5">
+          {options.map(([value, icon, name]) => (
             <button
               key={value}
               type="button"
-              className="option items-start"
+              className="option"
               aria-pressed={choice.weather === value}
               onClick={() => update({ weather: value })}
             >
-              <span className={`mt-0.5 ${choice.weather === value ? 'text-accent' : 'text-muted'}`}>
-                <Icon name={icon} size={20} />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-medium text-heading">{name}</span>
-                <span className="block text-[14px] leading-snug text-muted">{hint}</span>
-              </span>
+              <Icon name={icon} size={18} />
+              <span className="min-w-0 flex-1 truncate text-[15px]">{name}</span>
             </button>
           ))}
         </div>
@@ -168,7 +174,13 @@ function CustomEditor() {
   const c = choice.custom ?? DEFAULT_CUSTOM;
   const set = (patch: Partial<CustomWeather>) => update({ custom: { ...c, ...patch } });
   const sliders: [keyof CustomWeather, number, number, number, (v: number) => string][] = [
-    ['visibility', 50, 50000, 50, (v) => (v >= 50000 ? '∞' : v >= 1000 ? `${(v / 1000).toFixed(1)} km` : `${v} m`)],
+    [
+      'visibility',
+      50,
+      50000,
+      50,
+      (v) => (v >= 50000 ? '∞' : v >= 1000 ? `${(v / 1000).toFixed(1)} km` : `${v} m`),
+    ],
     ['brightness', 0, 150, 1, (v) => `${v} %`],
     ['windDirection', 0, 355, 5, (v) => `${v}°`],
     ['windSpeed', 0, 40, 1, (v) => `${v} m/s`],
@@ -206,7 +218,9 @@ function CustomEditor() {
         <div className="flex items-center gap-8 py-3">
           <span className="w-44 shrink-0">{t('drive.weather.fields.precipitation')}</span>
           <Segmented
-            options={(['0', '1', '2'] as const).map((v) => [v, t(`drive.weather.precip.${v}`)] as const)}
+            options={(['0', '1', '2'] as const).map(
+              (v) => [v, t(`drive.weather.precip.${v}`)] as const,
+            )}
             value={String(c.precipitation) as '0' | '1' | '2'}
             onChange={(v) => set({ precipitation: Number(v) })}
           />
