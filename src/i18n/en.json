@@ -4,13 +4,6 @@
     "brandingAlt": "neoOMSI",
     "vendor": "neoOMSI Project"
   },
-  "navigation": {
-    "launch": "Launch",
-    "content": "Content",
-    "settings": "Settings",
-    "diagnostics": "Diagnostics",
-    "label": "Launcher"
-  },
   "connection": {
     "connected": "Connected",
     "disconnected": "Disconnected",
@@ -20,47 +13,6 @@
     "connect": "Connect",
     "disconnect": "Disconnect",
     "reconnect": "Reconnect"
-  },
-  "launch": {
-    "title": "Launch",
-    "mapId": "Map ID",
-    "vehicleId": "Vehicle ID",
-    "launchButton": "Launch Session",
-    "stopButton": "Stop Session",
-    "starting": "Starting session...",
-    "activeSession": "Active Session: {sessionId}",
-    "terminated": "Session terminated",
-    "failed": "Launch failed: {message}",
-    "error": "Error: {message}"
-  },
-  "content": {
-    "title": "Content",
-    "refresh": "Refresh",
-    "refreshing": "Refreshing...",
-    "loadFailed": "Failed to load content: {message}",
-    "maps": "Maps ({count})",
-    "vehicles": "Vehicles ({count})",
-    "noMaps": "No maps found",
-    "noVehicles": "No vehicles found",
-    "table": {
-      "id": "ID",
-      "name": "Name",
-      "tiles": "Tiles",
-      "chronology": "Chronology",
-      "manufacturer": "Manufacturer",
-      "repaints": "Repaints",
-      "yes": "Yes",
-      "no": "No"
-    }
-  },
-  "settings": {
-    "title": "Settings",
-    "reload": "Reload",
-    "save": "Save",
-    "saved": "Settings saved",
-    "loadFailed": "Failed to load settings: {message}",
-    "saveFailed": "Save error: {message}",
-    "placeholder": "{}"
   },
   "diagnostics": {
     "title": "Diagnostics",
@@ -81,5 +33,198 @@
   "theme": {
     "toLight": "Switch to light mode",
     "toDark": "Switch to dark mode"
+  },
+  "nav": {
+    "drive": "Drive",
+    "multiplayer": "Multiplayer",
+    "tutorials": "Tutorials",
+    "mods": "Mods",
+    "timetables": "Timetables",
+    "profile": "Profile",
+    "sessions": "Sessions",
+    "settings": "Settings",
+    "controls": "Controls"
+  },
+  "rail": {
+    "label": "Launcher",
+    "play": "Play",
+    "content": "Content",
+    "you": "You",
+    "noDriver": "No driver",
+    "level": "Level {level}",
+    "running": "{count} running"
+  },
+  "common": {
+    "dismiss": "Dismiss",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "filter": "Filter…",
+    "on": "On",
+    "off": "Off",
+    "automatic": "Automatic",
+    "browse": "Browse",
+    "copy": "Copy",
+    "copied": "Copied",
+    "remove": "Remove",
+    "refresh": "Refresh"
+  },
+  "format": {
+    "minutes": "{m} min",
+    "hours": "{h} h",
+    "hoursMinutes": "{h} h {m} min",
+    "justNow": "just now",
+    "minutesAgo": "{n} min ago",
+    "hoursAgo": "{n} h ago",
+    "daysAgo": "{n} days ago",
+    "line": "Line {name}"
+  },
+  "drive": {
+    "loadFailed": "Could not read the content",
+    "reading": "Reading the OMSI folder…",
+    "stage": {
+      "route": "Route",
+      "bus": "Bus",
+      "onServer": "Joined {server}",
+      "firstTrip": "First trip",
+      "stops": "{count} stops"
+    },
+    "pickers": {
+      "bus": "Choose a bus",
+      "route": "Map and duty",
+      "time": "Time and weather",
+      "done": "Done"
+    },
+    "summary": {
+      "duty": "Duty",
+      "start": "Start",
+      "weather": "Weather",
+      "freeDrive": "Free drive",
+      "lineTour": "{line}, tour {tour}",
+      "lineOnly": "{line}, choose a tour",
+      "serverClock": "The server's clock",
+      "noBus": "No bus chosen",
+      "leave": "Leave server"
+    },
+    "start": {
+      "drive": "Drive",
+      "duty": "Start the duty",
+      "another": "Start another game",
+      "continue": "Continue where you left off",
+      "running": "{count} running · Sessions",
+      "chooseFirst": "Choose a bus and a map first.",
+      "alreadyRunning": "A game is running already. Click again to start another one.",
+      "started": "Game started (process {pid})"
+    },
+    "bus": {
+      "chosen": "Your bus",
+      "catalogue": "All buses",
+      "favouritesOnly": "Favourites only",
+      "search": "Search buses…",
+      "none": "No buses found. Try another search.",
+      "unknownMaker": "Unknown manufacturer",
+      "liveries": "{count} liveries",
+      "mod": "MOD",
+      "missingBadge": "PARTS MISSING",
+      "favourite": "Add to the favourites",
+      "unfavourite": "Remove from the favourites",
+      "livery": "Livery",
+      "depot": "Depot file",
+      "fleetNumber": "Fleet number",
+      "plate": "Number plate",
+      "prevLivery": "Previous livery",
+      "nextLivery": "Next livery",
+      "partsMissing": "Parts missing",
+      "partsMissingShort": "Needs {packs}"
+    },
+    "route": {
+      "map": "Map",
+      "mapLocked": "{map}, set by {server}",
+      "startAt": "Start at",
+      "autoFirst": "Automatic (the map's first)",
+      "autoNearest": "Automatic (nearest to the first stop)",
+      "free": "Free drive",
+      "freeHint": "Free drive puts you on the map without a timetable duty: drive wherever you like.",
+      "readingTimetable": "Reading the timetable…",
+      "line": "Line",
+      "noLines": "No lines on this date.",
+      "tours": "{count} tours",
+      "tour": "Tour",
+      "tourN": "Tour {n}",
+      "tripsDays": "{count} trips · {days}",
+      "runs": "runs {date}",
+      "startTrip": "Start at trip",
+      "startTripHint": "The start time moves to three minutes before the trip leaves.",
+      "firstTrip": "Your first trip",
+      "ibis": "IBIS",
+      "ibisLine": "Line",
+      "ibisRoute": "Route",
+      "ibisHint": "Shift+U in the game types these in for you."
+    },
+    "time": {
+      "when": "When",
+      "time": "Time",
+      "date": "Date",
+      "season": "Season",
+      "seasons": {
+        "auto": "By date",
+        "spring": "Spring",
+        "summer": "Summer",
+        "autumn": "Autumn",
+        "winter": "Winter"
+      },
+      "world": "World",
+      "traffic": "Cars around",
+      "passengers": "Passengers",
+      "schedule": "Timetable buses",
+      "autostart": "Put the bus into service on start (Shift+U)",
+      "onFoot": "Start on foot (place a bus from the game menu)",
+      "setBy": "Set by {server}",
+      "serverHint": "The server decides the time and weather for everyone on it."
+    },
+    "weather": {
+      "title": "Weather",
+      "mapDefault": "Map default",
+      "mapDefaultHint": "Whatever the map starts with",
+      "cycle": "Weather cycle",
+      "cycleHint": "Changes every 25–60 minutes, as the month allows",
+      "metar": "Current weather",
+      "metarHint": "Real METAR, fetched at the start",
+      "metarAt": "Current weather at {station}",
+      "custom": "Custom weather",
+      "customHint": "Visibility, wind, clouds, rain and road",
+      "airport": "Airport",
+      "fields": {
+        "visibility": "Visibility",
+        "brightness": "Brightness",
+        "windDirection": "Wind direction",
+        "windSpeed": "Wind speed",
+        "temperature": "Temperature",
+        "humidity": "Humidity",
+        "clouds": "Clouds",
+        "precipitation": "Precipitation",
+        "intensity": "Intensity",
+        "wetness": "Road wetness",
+        "snowCover": "Snow cover",
+        "snowOnRoad": "Snow on the road"
+      },
+      "clouds": {
+        "none": "Clear",
+        "few": "Few",
+        "scattered": "Scattered",
+        "broken": "Broken",
+        "overcast": "Overcast",
+        "stratus": "Low stratus"
+      },
+      "precip": {
+        "0": "Dry",
+        "1": "Rain",
+        "2": "Snow"
+      }
+    },
+    "preview": {
+      "loading": "Exporting the bus from the game…"
+    }
   }
 }

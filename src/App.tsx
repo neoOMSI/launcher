@@ -1,109 +1,56 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import './styles/app.css';
-import { Sidebar, type PrimaryTab } from './components/Sidebar';
-import { SessionPage } from './pages/SessionPage';
-import { ContentPage } from './pages/ContentPage';
-import { SettingsPage } from './pages/SettingsPage';
+import { Sidebar } from './components/Sidebar';
+import { EmptyState, Page } from './components/ui';
+import { t } from './i18n';
+import { EngineProvider, useEngine } from './lib/engine';
+import { NavProvider, ToastProvider, useNav, type PageId } from './lib/nav';
 import { DiagnosticsPage } from './pages/DiagnosticsPage';
-import type { EngineStatus, SessionEvent } from './types/scaffold';
+import { DrivePage } from './pages/drive/DrivePage';
+import { DutyProvider } from './lib/duty';
 
-export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<PrimaryTab>('launch');
-  const [status, setStatus] = useState<EngineStatus>({
-    connectionState: 'disconnected',
-    capabilities: [],
-  });
-  const [currentSession, setCurrentSession] = useState<SessionEvent | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!window.neoomsi) {
-      return;
-    }
-
-    const unsubStatus = window.neoomsi.onEngineStatus((newStatus) => {
-      setStatus(newStatus);
-    });
-
-    const unsubSession = window.neoomsi.onSessionEvent((event) => {
-      setCurrentSession(event);
-      setLogs((prev) => [...prev, `[Session] ${event.message}`]);
-    });
-
-    const unsubLogs = window.neoomsi.onDiagnosticLog((log) => {
-      setLogs((prev) => [...prev, log]);
-    });
-
-    window.neoomsi
-      .getEngineStatus()
-      .then((s) => {
-        setStatus(s);
-        if (s.connectionState === 'disconnected') {
-          window.neoomsi.startEngine().catch((err: unknown) => {
-            const message = err instanceof Error ? err.message : String(err);
-            setLogs((prev) => [...prev, `[Launcher] Auto-start failed: ${message}`]);
-          });
-        }
-      })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err);
-        setLogs((prev) => [...prev, `[Launcher] Failed to query engine status: ${message}`]);
-      });
-
-    return () => {
-      unsubStatus();
-      unsubSession();
-      unsubLogs();
-    };
-  }, []);
-
-  const handleConnect = async () => {
-    if (window.neoomsi) {
-      try {
-        await window.neoomsi.startEngine();
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        setLogs((prev) => [...prev, `[Launcher] Connection attempt failed: ${message}`]);
-      }
-    }
-  };
-
-  const handleDisconnect = async () => {
-    if (window.neoomsi) {
-      try {
-        await window.neoomsi.stopEngine();
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        setLogs((prev) => [...prev, `[Launcher] Disconnect failed: ${message}`]);
-      }
-    }
-  };
-
-  return (
-    <div className="flex h-screen">
-      <Sidebar
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        status={status}
-        logCount={logs.length}
-      />
-
-      <main className="flex min-w-0 flex-1 flex-col">
-        {activeTab === 'launch' && (
-          <SessionPage currentSession={currentSession} onSessionEvent={setCurrentSession} />
-        )}
-        {activeTab === 'content' && <ContentPage />}
-        {activeTab === 'settings' && <SettingsPage />}
-        {activeTab === 'diagnostics' && (
-          <DiagnosticsPage
-            status={status}
-            logs={logs}
-            onConnect={handleConnect}
-            onDisconnect={handleDisconnect}
-            onClearLogs={() => setLogs([])}
-          />
-        )}
-      </main>
-    </div>
-  );
+const PAGES: Partial<Record<PageId, React.FC>> = {
+  drive: DrivePage,
 };
+
+function Diagnostics() {
+  const { status, logs, connect, disconnect, clearLogs } = useEngine();
+  return (
+    <DiagnosticsPage
+      status={status}
+      logs={logs}
+      onConnect={connect}
+      onDisconnect={disconnect}
+      onClearLogs={clearLogs}
+    />
+  );
+}
+
+function Current() {
+  const { route } = useNav();
+  if (route.page === 'settings') return <Diagnostics />;
+  const Screen = PAGES[route.page];
+  if (Screen) return <Screen />;
+  return (
+    <Page title={t(`nav.${route.page}`)}>
+      <EmptyState icon="construction" title={t(`nav.${route.page}`)} />
+    </Page>
+  );
+}
+
+export const App: React.FC = () => (
+  <EngineProvider>
+    <NavProvider>
+      <ToastProvider>
+        <DutyProvider>
+          <div className="flex h-screen">
+            <Sidebar />
+            <main className="flex min-w-0 flex-1 flex-col">
+              <Current />
+            </main>
+          </div>
+        </DutyProvider>
+      </ToastProvider>
+    </NavProvider>
+  </EngineProvider>
+);

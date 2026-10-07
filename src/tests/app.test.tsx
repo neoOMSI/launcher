@@ -5,17 +5,25 @@ import React from 'react';
 import { App } from '../App';
 import { setLanguage } from '../i18n';
 
-describe('neoOMSI Launcher UI Shell', () => {
+describe('neoOMSI Launcher shell', () => {
   beforeEach(() => {
     setLanguage('en');
   });
 
-  it('renders sidebar navigation with Launch, Content, Settings, and Diagnostics', () => {
+  it('renders the grouped rail', () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: 'Launch' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Content' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Settings' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Diagnostics' })).toBeDefined();
-    expect(screen.queryByRole('button', { name: 'Status' })).toBeNull();
+    for (const name of [
+      'Drive',
+      'Multiplayer',
+      'Tutorials',
+      'Mods',
+      'Timetables',
+      'Profile',
+      'Settings',
+      'Controls',
+    ]) {
+      expect(screen.getByRole('button', { name })).toBeDefined();
+    }
+    expect(screen.queryByRole('button', { name: 'Diagnostics' })).toBeNull();
   });
 });

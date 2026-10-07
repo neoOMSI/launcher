@@ -8,18 +8,18 @@ describe('i18n', () => {
 
   it('translates nested keys in English', () => {
     setLanguage('en');
-    expect(t('navigation.launch')).toBe('Launch');
-    expect(t('navigation.content')).toBe('Content');
-    expect(t('navigation.settings')).toBe('Settings');
-    expect(t('navigation.diagnostics')).toBe('Diagnostics');
+    expect(t('nav.drive')).toBe('Drive');
+    expect(t('nav.mods')).toBe('Mods');
+    expect(t('nav.settings')).toBe('Settings');
+    expect(t('nav.controls')).toBe('Controls');
   });
 
   it('translates nested keys in German', () => {
     setLanguage('de');
-    expect(t('navigation.launch')).toBe('Start');
-    expect(t('navigation.content')).toBe('Inhalte');
-    expect(t('navigation.settings')).toBe('Einstellungen');
-    expect(t('navigation.diagnostics')).toBe('Diagnose');
+    expect(t('nav.drive')).toBe('Fahren');
+    expect(t('nav.timetables')).toBe('Fahrpläne');
+    expect(t('nav.settings')).toBe('Einstellungen');
+    expect(t('nav.controls')).toBe('Steuerung');
   });
 
   it('falls back to English when a key is missing in the chosen language', () => {
@@ -47,24 +47,24 @@ describe('i18n', () => {
   it('normalizes language codes when passed to setLanguage()', () => {
     setLanguage('de-DE');
     expect(getLanguage()).toBe('de');
-    expect(t('navigation.launch')).toBe('Start');
+    expect(t('nav.drive')).toBe('Fahren');
 
     setLanguage('de-AT');
     expect(getLanguage()).toBe('de');
 
     setLanguage('fr');
     expect(getLanguage()).toBe('en');
-    expect(t('navigation.launch')).toBe('Launch');
+    expect(t('nav.drive')).toBe('Drive');
   });
 
   it('interpolates {name} style parameters correctly', () => {
     setLanguage('en');
-    const result = t('launch.activeSession', { sessionId: 'sim_123' });
-    expect(result).toBe('Active Session: sim_123');
+    const result = t('rail.level', { level: 5 });
+    expect(result).toBe('Level 5');
 
     setLanguage('de');
-    const deResult = t('launch.activeSession', { sessionId: 'sim_456' });
-    expect(deResult).toBe('Aktive Sitzung: sim_456');
+    const deResult = t('rail.level', { level: 7 });
+    expect(deResult).toBe('Stufe 7');
   });
 
   it('interpolates stand-alone strings directly with interpolate helper', () => {

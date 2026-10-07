@@ -13,6 +13,8 @@ const PATHS: Record<string, string> = Object.fromEntries(
   ]),
 );
 
+export const iconPath = (name: string) => PATHS[name];
+
 interface Props {
   name: string;
   size?: number;

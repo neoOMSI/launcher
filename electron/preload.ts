@@ -10,8 +10,11 @@ import type {
   Status,
 } from '../src/types/scaffold';
 import type { NeoomsiBridge } from '../src/types/neoomsi';
+import type { Command, CommandArgs, CommandResult } from '../src/types/launcher';
 
 const api: NeoomsiBridge = {
+  call: <C extends Command>(command: C, args?: CommandArgs<C>): Promise<CommandResult<C>> =>
+    ipcRenderer.invoke('engine:call', command, args),
   getMaps: (filter?: string): Promise<GetMapsResponse> =>
     ipcRenderer.invoke('engine:get-maps', filter),
   getVehicles: (filter?: string): Promise<GetVehiclesResponse> =>
@@ -23,6 +26,10 @@ const api: NeoomsiBridge = {
     ipcRenderer.invoke('engine:start-session', req),
   stopSession: (sessionId: string): Promise<Status> =>
     ipcRenderer.invoke('engine:stop-session', sessionId),
+  previewModel: (bus: string, paint: string): Promise<Uint8Array> =>
+    ipcRenderer.invoke('engine:preview-model', bus, paint),
+  mapPicture: (mapFile: string): Promise<Uint8Array | null> =>
+    ipcRenderer.invoke('engine:map-picture', mapFile),
   getEngineStatus: (): Promise<EngineStatus> => ipcRenderer.invoke('engine:get-status'),
   startEngine: (): Promise<EngineStatus> => ipcRenderer.invoke('engine:start'),
   stopEngine: (): Promise<void> => ipcRenderer.invoke('engine:stop'),

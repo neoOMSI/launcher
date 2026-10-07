@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { MockEngineClient } from '../../electron/mock-client';
 import { StatusCode } from '../types/scaffold';
+import type { Instance, LineInfo, MapInfo, Settings } from '../types/launcher';
 import type {
   GetMapsResponse,
   GetSettingsResponse,
@@ -82,5 +83,34 @@ describe('MockEngineClient', () => {
     await expect(client.sendRequest('get_maps', {})).rejects.toThrow(
       'Mock engine is not connected',
     );
+  });
+  it('answers the neoOMSI launcher commands', async () => {
+    const client = new MockEngineClient();
+    await client.start();
+
+    const maps = await client.sendRequest<MapInfo[]>('maps', {});
+    expect(maps.map((m) => m.name)).toContain('Grundorf');
+
+    const lines = await client.sendRequest<LineInfo[]>('lines', {
+      map: 'maps/Grundorf/global.cfg',
+      date: '1989-05-30',
+    });
+    const line24 = lines.find((l) => l.name === '24')!;
+    expect(line24.tours[0].runs).toBe(true);
+    expect(line24.tours[0].trips[0].departure).toBeLessThan(line24.tours[0].trips[0].arrival);
+
+    const settings = await client.sendRequest<Settings>('save_settings', { vsync: false });
+    expect(settings.vsync).toBe(false);
+    expect(settings.msaa).toBe(4);
+
+    const { pid } = await client.sendRequest<{ pid: number }>('launch', {
+      map: 'maps/Grundorf/global.cfg',
+      bus: 'Vehicles/MAN/MAN SL200.bus',
+      time: '09:00',
+    });
+    await client.sendRequest('stop', { pid });
+    const [instance] = await client.sendRequest<Instance[]>('instances', {});
+    expect(instance.running).toBe(false);
+    expect(instance.exit_code).toBe(0);
   });
 });
