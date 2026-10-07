@@ -1,10 +1,13 @@
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
-import { join } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { EngineClient } from './client';
 import { MockEngineClient } from './mock-client';
 import { ProcessEngineClient } from './process-client';
+import { CliEngineClient } from './cli-client';
 import type { EngineStatus, SessionEvent } from '../src/types/scaffold';
+import { COMMANDS, type Config, type MapInfo } from '../src/types/launcher';
 import packageJson from '../package.json' with { type: 'json' };
 
 let mainWindow: BrowserWindow | null = null;
@@ -16,6 +19,13 @@ function initializeEngineClient(): EngineClient {
 
   if (useMock) {
     return new MockEngineClient();
+  }
+
+  const cli =
+    process.argv.find((a) => a.startsWith('--cli='))?.slice('--cli='.length) ||
+    process.env.NEOOMSI_LAUNCHER_CLI;
+  if (cli) {
+    return new CliEngineClient(resolve(cli));
   }
 
   const enginePath = process.env.NEOOMSI_ENGINE_PATH;
@@ -53,10 +63,10 @@ function setupEngineClient(): void {
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 960,
-    height: 680,
-    minWidth: 800,
-    minHeight: 600,
+    width: 1320,
+    height: 840,
+    minWidth: 1080,
+    minHeight: 680,
     title: 'neoOMSI Launcher',
     backgroundColor: '#0f0f0f',
     webPreferences: {
@@ -175,6 +185,46 @@ registerIpcHandler('engine:start-session', (_, req: unknown) => {
 registerIpcHandler('engine:stop-session', (_, sessionId: string) => {
   if (!engine) throw new Error('Engine client not initialized');
   return engine.sendRequest('stop_session', { sessionId });
+});
+
+registerIpcHandler('engine:call', (_, command: string, args: unknown) => {
+  if (!engine) throw new Error('Engine client not initialized');
+  if (!(COMMANDS as readonly string[]).includes(command)) {
+    throw new Error(`Unknown launcher command '${command}'`);
+  }
+  return engine.sendRequest(command, args ?? {});
+});
+
+const inside = (root: string, path: string) => {
+  const rel = relative(root, path);
+  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel);
+};
+
+registerIpcHandler('engine:preview-model', async (_, bus: string, paint: string) => {
+  if (!engine) throw new Error('Engine client not initialized');
+  const path = await engine.sendRequest<string>('preview', { bus, paint });
+  if (typeof path !== 'string' || !path.toLowerCase().endsWith('.glb')) {
+    throw new Error('The engine did not export a model');
+  }
+  return new Uint8Array(await readFile(path));
+});
+
+registerIpcHandler('engine:map-picture', async (_, mapFile: string) => {
+  if (!engine) throw new Error('Engine client not initialized');
+  const [config, maps] = await Promise.all([
+    engine.sendRequest<Config>('config', {}),
+    engine.sendRequest<MapInfo[]>('maps', {}),
+  ]);
+  const map = maps.find((m) => m.file === mapFile);
+  if (!map || !config.root) return null;
+  const root = resolve(config.root);
+  const picture = resolve(root, dirname(map.file), 'picture.jpg');
+  if (!inside(root, picture)) return null;
+  try {
+    return new Uint8Array(await readFile(picture));
+  } catch {
+    return null;
+  }
 });
 
 app.whenReady().then(() => {

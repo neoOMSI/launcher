@@ -12,8 +12,11 @@ import type {
   Status,
 } from '../src/types/scaffold';
 import { StatusCode } from '../src/types/scaffold';
+import { COMMANDS, type Command } from '../src/types/launcher';
+import { MockLauncher } from './mock/launcher';
 
 export class MockEngineClient extends EventEmitter implements EngineClient {
+  private readonly launcher = new MockLauncher();
   private status: EngineStatus = {
     connectionState: 'disconnected',
     capabilities: [],
@@ -148,6 +151,9 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
         } as Status;
 
       default:
+        if ((COMMANDS as readonly string[]).includes(type)) {
+          return this.launcher.handle(type as Command, payload);
+        }
         throw new Error(`Unsupported mock request type: ${type}`);
     }
   }

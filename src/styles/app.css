@@ -84,6 +84,18 @@
   code {
     @apply rounded bg-sunken px-1 py-0.5 font-mono text-[0.85em];
   }
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: 4px solid transparent;
+    border-radius: 999px;
+    background: var(--line-strong) padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted);
+  }
 }
 
 @layer components {
@@ -146,7 +158,7 @@
   }
 
   .seg {
-    @apply rounded-md px-4 py-1.5 font-medium text-muted transition-colors hover:text-ink;
+    @apply rounded-md px-4 py-1.5 font-medium whitespace-nowrap text-muted transition-colors hover:text-ink;
   }
   .seg[aria-pressed='true'] {
     @apply bg-sunken text-heading;
@@ -190,6 +202,129 @@
   }
   .table th {
     @apply bg-sunken text-[14px] font-semibold text-muted;
+  }
+
+  .nav-link {
+    @apply flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-muted transition-colors hover:bg-sunken hover:text-ink;
+  }
+  .nav-link svg {
+    @apply shrink-0;
+  }
+  .nav-link.on {
+    @apply bg-line font-medium text-heading;
+  }
+  .nav-link.on svg {
+    @apply text-accent;
+  }
+  .nav-avatar {
+    @apply -ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-sunken font-display text-[14px] font-semibold text-heading;
+  }
+  .nav-link.on .nav-avatar {
+    @apply bg-brand text-night;
+  }
+
+  .select {
+    @apply w-full cursor-pointer appearance-none rounded-lg border border-line bg-page bg-no-repeat py-2.5 pr-10 pl-4 outline-none transition-colors focus:border-brand disabled:cursor-default disabled:opacity-60;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960' fill='%23a1a1aa'%3E%3Cpath d='M480-361q-8 0-15-2.5t-13-8.5L268-556q-11-11-11-28t11-28q11-11 28-11t28 11l156 156 156-156q11-11 28-11t28 11q11 11 11 28t-11 28L508-372q-6 6-13 8.5t-15 2.5Z'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+  }
+  .select option {
+    @apply bg-raised text-ink;
+  }
+
+  .switch {
+    @apply relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-line-strong transition-colors disabled:opacity-50;
+  }
+  .switch::after {
+    content: '';
+    @apply absolute left-1 size-4 rounded-full bg-heading transition-transform;
+  }
+  .switch[aria-checked='true'] {
+    @apply bg-brand;
+  }
+  .switch[aria-checked='true']::after {
+    @apply translate-x-5 bg-white;
+  }
+
+  .range {
+    @apply h-1.5 w-full cursor-pointer appearance-none rounded-full bg-line-strong;
+    background-image: linear-gradient(var(--color-brand), var(--color-brand));
+    background-size: var(--fill, 0%) 100%;
+    background-repeat: no-repeat;
+  }
+  .range::-webkit-slider-thumb {
+    @apply size-4 appearance-none rounded-full border-0 bg-heading shadow transition-transform;
+  }
+  .range:hover::-webkit-slider-thumb {
+    @apply scale-110;
+  }
+
+  .segmented {
+    @apply inline-flex rounded-lg border border-line p-1;
+  }
+
+  .option {
+    @apply relative flex w-full items-center gap-4 rounded-lg border border-line px-4 py-3 text-left transition-colors hover:border-line-strong hover:bg-sunken;
+  }
+  .option[aria-pressed='true'],
+  .option[aria-selected='true'] {
+    @apply border-brand bg-sunken;
+  }
+
+  .eyebrow {
+    @apply text-[13px] font-semibold tracking-[0.06em] text-muted uppercase;
+  }
+
+  .stage {
+    background: linear-gradient(
+      333deg,
+      color-mix(in srgb, var(--color-brand) 34%, var(--page)) 0%,
+      color-mix(in srgb, var(--color-brand) 13%, var(--page)) 30%,
+      color-mix(in srgb, var(--color-brand) 3%, var(--page)) 58%,
+      var(--raised) 100%
+    );
+  }
+  .map-backdrop {
+    opacity: 0.32;
+    filter: saturate(0.8) blur(1px);
+    mask-image:
+      linear-gradient(to right, #000 35%, transparent 100%),
+      linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+    mask-composite: intersect;
+  }
+  :root[data-theme='light'] .map-backdrop {
+    opacity: 0.22;
+  }
+
+  .route {
+    @apply m-0 list-none p-0;
+  }
+  .route li {
+    @apply relative pb-6 pl-10 last:pb-0;
+  }
+  .route li::before {
+    content: '';
+    @apply absolute top-1.5 left-0 z-10 size-5 rounded-full border-[5px] border-heading bg-page;
+  }
+  .route li::after {
+    content: '';
+    @apply absolute top-5 -bottom-1.5 left-[7px] w-1.5 bg-brand;
+  }
+  .route li:last-child::after {
+    display: none;
+  }
+  .route li:last-child::before {
+    @apply border-brand bg-brand;
+  }
+  .route.stops li {
+    @apply pb-3 pl-8;
+  }
+  .route.stops li::before {
+    @apply top-[5px] size-4 border-4;
+  }
+  .route.stops li::after {
+    @apply top-4 -bottom-[5px] left-1.5 w-1;
   }
 
   .callout {

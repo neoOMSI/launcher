@@ -8,8 +8,8 @@ function cspPlugin(): Plugin {
     transformIndexHtml(html, ctx) {
       const isDev = Boolean(ctx.server);
       const connectSrc = isDev
-        ? "connect-src 'self' ws://localhost:* http://localhost:* ws://127.0.0.1:* http://127.0.0.1:*;"
-        : "connect-src 'self';";
+        ? "connect-src 'self' blob: ws://localhost:* http://localhost:* ws://127.0.0.1:* http://127.0.0.1:*;"
+        : "connect-src 'self' blob:;";
 
       return html.replace(/__CSP_CONNECT_SRC__/g, connectSrc);
     },

@@ -3,13 +3,6 @@
     "title": "neoOMSI Launcher",
     "brandingAlt": "neoOMSI"
   },
-  "navigation": {
-    "launch": "Start",
-    "content": "Inhalte",
-    "settings": "Einstellungen",
-    "diagnostics": "Diagnose",
-    "label": "Launcher"
-  },
   "connection": {
     "connected": "Verbunden",
     "disconnected": "Getrennt",
@@ -19,47 +12,6 @@
     "connect": "Verbinden",
     "disconnect": "Trennen",
     "reconnect": "Neu verbinden"
-  },
-  "launch": {
-    "title": "Start",
-    "mapId": "Karten-ID",
-    "vehicleId": "Fahrzeug-ID",
-    "launchButton": "Sitzung starten",
-    "stopButton": "Sitzung beenden",
-    "starting": "Sitzung startet...",
-    "activeSession": "Aktive Sitzung: {sessionId}",
-    "terminated": "Sitzung beendet",
-    "failed": "Start fehlgeschlagen: {message}",
-    "error": "Fehler: {message}"
-  },
-  "content": {
-    "title": "Inhalte",
-    "refresh": "Aktualisieren",
-    "refreshing": "Aktualisiere...",
-    "loadFailed": "Laden der Inhalte fehlgeschlagen: {message}",
-    "maps": "Karten ({count})",
-    "vehicles": "Fahrzeuge ({count})",
-    "noMaps": "Keine Karten gefunden",
-    "noVehicles": "Keine Fahrzeuge gefunden",
-    "table": {
-      "id": "ID",
-      "name": "Name",
-      "tiles": "Kacheln",
-      "chronology": "Chronologie",
-      "manufacturer": "Hersteller",
-      "repaints": "Repaints",
-      "yes": "Ja",
-      "no": "Nein"
-    }
-  },
-  "settings": {
-    "title": "Einstellungen",
-    "reload": "Neu laden",
-    "save": "Speichern",
-    "saved": "Einstellungen gespeichert",
-    "loadFailed": "Laden der Einstellungen fehlgeschlagen: {message}",
-    "saveFailed": "Speicherfehler: {message}",
-    "placeholder": "{}"
   },
   "diagnostics": {
     "title": "Diagnose",
@@ -80,5 +32,198 @@
   "theme": {
     "toLight": "Zum hellen Modus wechseln",
     "toDark": "Zum dunklen Modus wechseln"
+  },
+  "nav": {
+    "drive": "Fahren",
+    "multiplayer": "Mehrspieler",
+    "tutorials": "Tutorials",
+    "mods": "Mods",
+    "timetables": "Fahrpläne",
+    "profile": "Profil",
+    "sessions": "Sitzungen",
+    "settings": "Einstellungen",
+    "controls": "Steuerung"
+  },
+  "rail": {
+    "label": "Launcher",
+    "play": "Spielen",
+    "content": "Inhalte",
+    "you": "Du",
+    "noDriver": "Kein Fahrer",
+    "level": "Stufe {level}",
+    "running": "{count} läuft"
+  },
+  "common": {
+    "dismiss": "Schließen",
+    "loading": "Wird geladen…",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "search": "Suchen",
+    "filter": "Filtern…",
+    "on": "An",
+    "off": "Aus",
+    "automatic": "Automatisch",
+    "browse": "Durchsuchen",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "remove": "Entfernen",
+    "refresh": "Aktualisieren"
+  },
+  "format": {
+    "minutes": "{m} Min.",
+    "hours": "{h} Std.",
+    "hoursMinutes": "{h} Std. {m} Min.",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {n} Min.",
+    "hoursAgo": "vor {n} Std.",
+    "daysAgo": "vor {n} Tagen",
+    "line": "Linie {name}"
+  },
+  "drive": {
+    "loadFailed": "Die Inhalte konnten nicht gelesen werden",
+    "reading": "Der OMSI-Ordner wird gelesen…",
+    "stage": {
+      "route": "Strecke",
+      "bus": "Bus",
+      "onServer": "Verbunden mit {server}",
+      "firstTrip": "Erste Fahrt",
+      "stops": "{count} Haltestellen"
+    },
+    "pickers": {
+      "bus": "Bus wählen",
+      "route": "Karte und Dienst",
+      "time": "Zeit und Wetter",
+      "done": "Fertig"
+    },
+    "summary": {
+      "duty": "Dienst",
+      "start": "Beginn",
+      "weather": "Wetter",
+      "freeDrive": "Freie Fahrt",
+      "lineTour": "{line}, Umlauf {tour}",
+      "lineOnly": "{line}, Umlauf wählen",
+      "serverClock": "Uhr des Servers",
+      "noBus": "Kein Bus gewählt",
+      "leave": "Server verlassen"
+    },
+    "start": {
+      "drive": "Losfahren",
+      "duty": "Dienst beginnen",
+      "another": "Weiteres Spiel starten",
+      "continue": "Dort weitermachen, wo du warst",
+      "running": "{count} läuft · Sitzungen",
+      "chooseFirst": "Wähle zuerst einen Bus und eine Karte.",
+      "alreadyRunning": "Es läuft schon ein Spiel. Klicke nochmal, um ein weiteres zu starten.",
+      "started": "Spiel gestartet (Prozess {pid})"
+    },
+    "bus": {
+      "chosen": "Dein Bus",
+      "catalogue": "Alle Busse",
+      "favouritesOnly": "Nur Favoriten",
+      "search": "Busse suchen…",
+      "none": "Keine Busse gefunden. Versuch eine andere Suche.",
+      "unknownMaker": "Unbekannter Hersteller",
+      "liveries": "{count} Lackierungen",
+      "mod": "MOD",
+      "missingBadge": "TEILE FEHLEN",
+      "favourite": "Zu den Favoriten",
+      "unfavourite": "Aus den Favoriten entfernen",
+      "livery": "Lackierung",
+      "depot": "Hof-Datei",
+      "fleetNumber": "Wagennummer",
+      "plate": "Kennzeichen",
+      "prevLivery": "Vorherige Lackierung",
+      "nextLivery": "Nächste Lackierung",
+      "partsMissing": "Teile fehlen",
+      "partsMissingShort": "Braucht {packs}"
+    },
+    "route": {
+      "map": "Karte",
+      "mapLocked": "{map}, festgelegt von {server}",
+      "startAt": "Startpunkt",
+      "autoFirst": "Automatisch (erster der Karte)",
+      "autoNearest": "Automatisch (nächster zur ersten Haltestelle)",
+      "free": "Freie Fahrt",
+      "freeHint": "Bei freier Fahrt bist du ohne Fahrplandienst auf der Karte unterwegs: fahr, wohin du willst.",
+      "readingTimetable": "Fahrplan wird gelesen…",
+      "line": "Linie",
+      "noLines": "An diesem Tag fahren keine Linien.",
+      "tours": "{count} Umläufe",
+      "tour": "Umlauf",
+      "tourN": "Umlauf {n}",
+      "tripsDays": "{count} Fahrten · {days}",
+      "runs": "fährt am {date}",
+      "startTrip": "Bei Fahrt beginnen",
+      "startTripHint": "Die Startzeit rückt auf drei Minuten vor Abfahrt der Fahrt.",
+      "firstTrip": "Deine erste Fahrt",
+      "ibis": "IBIS",
+      "ibisLine": "Linie",
+      "ibisRoute": "Route",
+      "ibisHint": "Umschalt+U im Spiel tippt das für dich ein."
+    },
+    "time": {
+      "when": "Wann",
+      "time": "Uhrzeit",
+      "date": "Datum",
+      "season": "Jahreszeit",
+      "seasons": {
+        "auto": "Nach Datum",
+        "spring": "Frühling",
+        "summer": "Sommer",
+        "autumn": "Herbst",
+        "winter": "Winter"
+      },
+      "world": "Welt",
+      "traffic": "Autos unterwegs",
+      "passengers": "Fahrgäste",
+      "schedule": "Fahrplanbusse",
+      "autostart": "Bus beim Start einsatzbereit machen (Umschalt+U)",
+      "onFoot": "Zu Fuß starten (Bus im Spielmenü platzieren)",
+      "setBy": "Festgelegt von {server}",
+      "serverHint": "Der Server legt Zeit und Wetter für alle Spieler fest."
+    },
+    "weather": {
+      "title": "Wetter",
+      "mapDefault": "Standard der Karte",
+      "mapDefaultHint": "So, wie die Karte beginnt",
+      "cycle": "Wetterwechsel",
+      "cycleHint": "Wechselt alle 25–60 Minuten, passend zum Monat",
+      "metar": "Aktuelles Wetter",
+      "metarHint": "Echtes METAR, beim Start abgerufen",
+      "metarAt": "Aktuelles Wetter in {station}",
+      "custom": "Eigenes Wetter",
+      "customHint": "Sicht, Wind, Wolken, Regen und Straße",
+      "airport": "Flughafen",
+      "fields": {
+        "visibility": "Sichtweite",
+        "brightness": "Helligkeit",
+        "windDirection": "Windrichtung",
+        "windSpeed": "Windgeschwindigkeit",
+        "temperature": "Temperatur",
+        "humidity": "Luftfeuchtigkeit",
+        "clouds": "Wolken",
+        "precipitation": "Niederschlag",
+        "intensity": "Stärke",
+        "wetness": "Nässe der Straße",
+        "snowCover": "Schneedecke",
+        "snowOnRoad": "Schnee auf der Straße"
+      },
+      "clouds": {
+        "none": "Klar",
+        "few": "Gering",
+        "scattered": "Aufgelockert",
+        "broken": "Durchbrochen",
+        "overcast": "Bedeckt",
+        "stratus": "Hochnebel"
+      },
+      "precip": {
+        "0": "Trocken",
+        "1": "Regen",
+        "2": "Schnee"
+      }
+    },
+    "preview": {
+      "loading": "Der Bus wird aus dem Spiel exportiert…"
+    }
   }
 }
