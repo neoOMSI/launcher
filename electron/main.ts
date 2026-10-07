@@ -58,7 +58,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     title: 'neoOMSI Launcher',
-    backgroundColor: '#0f1217',
+    backgroundColor: '#0f0f0f',
     webPreferences: {
       preload: join(import.meta.dirname, 'preload.cjs'),
       nodeIntegration: false,

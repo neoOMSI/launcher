@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { PageHeader } from '../components/PageHeader';
+import { Notice, PageBody, PageHeader } from '../components/PageHeader';
+import { Icon } from '../components/Icon';
 import { t } from '../i18n';
 import { StatusCode } from '../types/scaffold';
 
@@ -53,36 +54,44 @@ export const SettingsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="page-content">
+    <>
       <PageHeader
         title={t('settings.title')}
         actions={
-          <div className="action-row">
-            <button className="btn btn-secondary" onClick={fetchSettings} disabled={loading}>
+          <>
+            <button
+              type="button"
+              className="btn-quiet gap-2"
+              onClick={fetchSettings}
+              disabled={loading}
+            >
+              <Icon name="refresh" size={18} />
               {t('settings.reload')}
             </button>
-            <button className="btn btn-primary" onClick={saveSettings} disabled={loading}>
+            <button type="button" className="btn gap-2" onClick={saveSettings} disabled={loading}>
+              <Icon name="save" size={18} />
               {t('settings.save')}
             </button>
-          </div>
+          </>
         }
       />
 
-      <div className="page-body">
-        {status && (
-          <div className={`notice-bar ${statusType === 'error' ? 'error' : ''}`}>{status}</div>
-        )}
+      <PageBody className="flex flex-col gap-4">
+        {status && <Notice tone={statusType === 'error' ? 'caution' : 'tip'}>{status}</Notice>}
 
-        <div className="editor-container">
+        <div className="code min-h-80 flex-1">
+          <div className="code-bar">
+            <span>settings.json</span>
+          </div>
           <textarea
-            className="code-editor"
+            className="code-body resize-none bg-transparent outline-none"
             value={settingsJson}
             onChange={(e) => setSettingsJson(e.target.value)}
             placeholder={t('settings.placeholder')}
             spellCheck={false}
           />
         </div>
-      </div>
-    </div>
+      </PageBody>
+    </>
   );
 };

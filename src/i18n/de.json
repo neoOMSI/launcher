@@ -7,7 +7,8 @@
     "launch": "Start",
     "content": "Inhalte",
     "settings": "Einstellungen",
-    "diagnostics": "Diagnose"
+    "diagnostics": "Diagnose",
+    "label": "Launcher"
   },
   "connection": {
     "connected": "Verbunden",
@@ -73,6 +74,11 @@
     "none": "Keine",
     "unknown": "Unbekannt",
     "notNegotiated": "Nicht ausgehandelt",
-    "logCount": "({count})"
+    "logCount": "({count})",
+    "log": "engine.log"
+  },
+  "theme": {
+    "toLight": "Zum hellen Modus wechseln",
+    "toDark": "Zum dunklen Modus wechseln"
   }
 }
