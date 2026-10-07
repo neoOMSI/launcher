@@ -281,6 +281,8 @@ export interface Minimap {
   roads: MinimapRoad[];
   stops: (MinimapPlace & { id: number })[];
   entries: (MinimapPlace & { index: number })[];
+  lanes?: [number, number][][];
+  trips?: Record<string, number[]>;
 }
 
 export interface Launched {
