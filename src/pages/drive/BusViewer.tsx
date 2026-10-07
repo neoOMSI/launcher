@@ -5,12 +5,10 @@ import {
   DirectionalLight,
   HemisphereLight,
   Mesh,
-  PCFSoftShadowMap,
+  MeshStandardMaterial,
   PerspectiveCamera,
-  PlaneGeometry,
   PMREMGenerator,
   Scene,
-  ShadowMaterial,
   SRGBColorSpace,
   Vector3,
   WebGLRenderer,
@@ -51,7 +49,52 @@ function dispose(root: Object3D) {
   });
 }
 
-export const BusViewer: React.FC<{ bus: string; paint: string }> = ({ bus, paint }) => {
+const SHADOW = /shadow|schatten/i;
+
+const TEXTURE_FILE = /\.(bmp|jpe?g|tga|png|dds)\b/i;
+
+function darkenScriptTextures(root: Object3D) {
+  root.traverse((o) => {
+    const mesh = o as Mesh;
+    if (!mesh.isMesh) return;
+    for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+      const std = m as MeshStandardMaterial;
+      if (std?.isMeshStandardMaterial && !std.map && TEXTURE_FILE.test(std.name)) {
+        std.color.set(0x0c0c0e);
+        std.roughness = 0.35;
+        std.metalness = 0;
+      }
+    }
+  });
+}
+
+function dropShadowBlobs(root: Object3D) {
+  const blobs: Object3D[] = [];
+  root.traverse((o) => {
+    const mesh = o as Mesh;
+    if (!mesh.isMesh) return;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    if (
+      SHADOW.test(mesh.name) ||
+      SHADOW.test(mesh.parent?.name ?? '') ||
+      materials.some((m) => SHADOW.test(m?.name ?? ''))
+    ) {
+      blobs.push(mesh);
+    }
+  });
+  for (const blob of blobs) {
+    blob.removeFromParent();
+    dispose(blob);
+  }
+}
+
+export const BusViewer: React.FC<{ bus: string; paint: string; centreX?: number }> = ({
+  bus,
+  paint,
+  centreX,
+}) => {
+  const centre = useRef(centreX);
+  centre.current = centreX;
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<{ scene: Scene; place: (o: Object3D) => void } | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | string>('loading');
@@ -63,8 +106,6 @@ export const BusViewer: React.FC<{ bus: string; paint: string }> = ({ bus, paint
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = PCFSoftShadowMap;
     el.appendChild(renderer.domElement);
 
     const scene = new Scene();
@@ -72,14 +113,7 @@ export const BusViewer: React.FC<{ bus: string; paint: string }> = ({ bus, paint
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.add(new HemisphereLight(0xffffff, 0x3a2414, 1.1));
     const sun = new DirectionalLight(0xfff2e0, 2.2);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.radius = 6;
     scene.add(sun);
-    const floor = new Mesh(new PlaneGeometry(1, 1), new ShadowMaterial({ opacity: 0.35 }));
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    scene.add(floor);
 
     const camera = new PerspectiveCamera(30, 1, 0.1, 500);
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -94,9 +128,8 @@ export const BusViewer: React.FC<{ bus: string; paint: string }> = ({ bus, paint
         dispose(current);
       }
       current = object;
-      object.traverse((o) => {
-        if ((o as Mesh).isMesh) o.castShadow = true;
-      });
+      dropShadowBlobs(object);
+      darkenScriptTextures(object);
       const box = new Box3().setFromObject(object);
       const size = box.getSize(new Vector3());
       const centre = box.getCenter(new Vector3());
@@ -104,20 +137,14 @@ export const BusViewer: React.FC<{ bus: string; paint: string }> = ({ bus, paint
       scene.add(object);
 
       const radius = size.length() / 2;
-      floor.scale.setScalar(radius * 6);
       sun.position.set(radius * 1.2, radius * 2.4, radius * 1.6);
-      const cam = sun.shadow.camera;
-      cam.left = cam.bottom = -radius * 1.5;
-      cam.right = cam.top = radius * 1.5;
-      cam.far = radius * 8;
-      cam.updateProjectionMatrix();
 
       const long = size.x >= size.z ? new Vector3(1, 0, 0) : new Vector3(0, 0, 1);
       const side = long.x ? new Vector3(0, 0, 1) : new Vector3(1, 0, 0);
       const distance = (radius / Math.sin((camera.fov * Math.PI) / 360)) * 0.8;
       camera.position
         .copy(side.multiplyScalar(distance * 0.7))
-        .add(long.multiplyScalar(distance * 0.78))
+        .add(long.multiplyScalar(-distance * 0.78))
         .setY(size.y * 1.15);
       controls.target.set(0, size.y * 0.38, 0);
       controls.minDistance = radius * 1.2;
@@ -137,7 +164,16 @@ export const BusViewer: React.FC<{ bus: string; paint: string }> = ({ bus, paint
     observer.observe(el);
     resize();
 
+    let shift = 0;
     renderer.setAnimationLoop(() => {
+      const { width, height } = renderer.domElement;
+      const ratio = renderer.getPixelRatio();
+      const w = width / ratio;
+      const h = height / ratio;
+      const target = centre.current === undefined ? 0 : w / 2 - centre.current;
+      shift += (target - shift) * 0.12;
+      if (Math.abs(shift) > 0.5) camera.setViewOffset(w, h, shift, 0, w, h);
+      else camera.clearViewOffset();
       controls.update();
       renderer.render(scene, camera);
     });

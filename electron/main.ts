@@ -195,11 +195,6 @@ registerIpcHandler('engine:call', (_, command: string, args: unknown) => {
   return engine.sendRequest(command, args ?? {});
 });
 
-const inside = (root: string, path: string) => {
-  const rel = relative(root, path);
-  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel);
-};
-
 registerIpcHandler('engine:preview-model', async (_, bus: string, paint: string) => {
   if (!engine) throw new Error('Engine client not initialized');
   const path = await engine.sendRequest<string>('preview', { bus, paint });
@@ -219,7 +214,8 @@ registerIpcHandler('engine:map-picture', async (_, mapFile: string) => {
   if (!map || !config.root) return null;
   const root = resolve(config.root);
   const picture = resolve(root, dirname(map.file), 'picture.jpg');
-  if (!inside(root, picture)) return null;
+  const rel = relative(root, picture);
+  if (rel.startsWith('..') || isAbsolute(rel)) return null;
   try {
     return new Uint8Array(await readFile(picture));
   } catch {

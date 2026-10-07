@@ -229,9 +229,6 @@
     background-position: right 0.75rem center;
     background-size: 1.25rem;
   }
-  .select option {
-    @apply bg-raised text-ink;
-  }
 
   .switch {
     @apply relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-line-strong transition-colors disabled:opacity-50;
@@ -265,11 +262,25 @@
   }
 
   .option {
-    @apply relative flex w-full items-center gap-4 rounded-lg border border-line px-4 py-3 text-left transition-colors hover:border-line-strong hover:bg-sunken;
+    @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-ink transition-colors hover:bg-sunken;
+  }
+  .option > svg,
+  .option > .option-icon {
+    @apply shrink-0 text-muted;
   }
   .option[aria-pressed='true'],
   .option[aria-selected='true'] {
-    @apply border-brand bg-sunken;
+    @apply bg-line text-heading;
+  }
+  .option[aria-pressed='true'] > svg,
+  .option[aria-pressed='true'] > .option-icon {
+    @apply text-accent;
+  }
+
+  .legible {
+    text-shadow:
+      0 1px 2px color-mix(in srgb, var(--page) 70%, transparent),
+      0 0 18px color-mix(in srgb, var(--page) 85%, transparent);
   }
 
   .eyebrow {
@@ -285,18 +296,6 @@
       var(--raised) 100%
     );
   }
-  .map-backdrop {
-    opacity: 0.32;
-    filter: saturate(0.8) blur(1px);
-    mask-image:
-      linear-gradient(to right, #000 35%, transparent 100%),
-      linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
-    mask-composite: intersect;
-  }
-  :root[data-theme='light'] .map-backdrop {
-    opacity: 0.22;
-  }
-
   .route {
     @apply m-0 list-none p-0;
   }

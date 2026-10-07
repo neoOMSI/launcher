@@ -21,6 +21,7 @@ import {
   defaultSettings,
   ibis,
   lines,
+  minimap,
   profile,
 } from './content';
 
@@ -75,6 +76,8 @@ export class MockLauncher {
         return KEYBINDINGS;
       case 'launch':
         return this.launch(args as unknown as Duty);
+      case 'minimap':
+        return minimap(String(args.map));
       case 'preview':
         throw new Error(
           'The mock engine has no 3D models. Start the launcher with --cli to see the real bus.',

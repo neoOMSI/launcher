@@ -82,29 +82,14 @@
   "drive": {
     "loadFailed": "Die Inhalte konnten nicht gelesen werden",
     "reading": "Der OMSI-Ordner wird gelesen…",
-    "stage": {
-      "route": "Strecke",
-      "bus": "Bus",
-      "onServer": "Verbunden mit {server}",
-      "firstTrip": "Erste Fahrt",
-      "stops": "{count} Haltestellen"
-    },
-    "pickers": {
-      "bus": "Bus wählen",
-      "route": "Karte und Dienst",
-      "time": "Zeit und Wetter",
-      "done": "Fertig"
-    },
     "summary": {
-      "duty": "Dienst",
-      "start": "Beginn",
-      "weather": "Wetter",
       "freeDrive": "Freie Fahrt",
       "lineTour": "{line}, Umlauf {tour}",
       "lineOnly": "{line}, Umlauf wählen",
       "serverClock": "Uhr des Servers",
       "noBus": "Kein Bus gewählt",
-      "leave": "Server verlassen"
+      "leave": "Server verlassen",
+      "noLine": "Keine Linie gewählt"
     },
     "start": {
       "drive": "Losfahren",
@@ -123,7 +108,6 @@
       "search": "Busse suchen…",
       "none": "Keine Busse gefunden. Versuch eine andere Suche.",
       "unknownMaker": "Unbekannter Hersteller",
-      "liveries": "{count} Lackierungen",
       "mod": "MOD",
       "missingBadge": "TEILE FEHLEN",
       "favourite": "Zu den Favoriten",
@@ -135,7 +119,7 @@
       "prevLivery": "Vorherige Lackierung",
       "nextLivery": "Nächste Lackierung",
       "partsMissing": "Teile fehlen",
-      "partsMissingShort": "Braucht {packs}"
+      "details": "Fahrzeugdetails"
     },
     "route": {
       "map": "Karte",
@@ -148,21 +132,12 @@
       "readingTimetable": "Fahrplan wird gelesen…",
       "line": "Linie",
       "noLines": "An diesem Tag fahren keine Linien.",
-      "tours": "{count} Umläufe",
       "tour": "Umlauf",
       "tourN": "Umlauf {n}",
-      "tripsDays": "{count} Fahrten · {days}",
       "runs": "fährt am {date}",
-      "startTrip": "Bei Fahrt beginnen",
-      "startTripHint": "Die Startzeit rückt auf drei Minuten vor Abfahrt der Fahrt.",
-      "firstTrip": "Deine erste Fahrt",
-      "ibis": "IBIS",
-      "ibisLine": "Linie",
-      "ibisRoute": "Route",
-      "ibisHint": "Umschalt+U im Spiel tippt das für dich ein."
+      "stopStart": "An der Haltestelle {name}"
     },
     "time": {
-      "when": "Wann",
       "time": "Uhrzeit",
       "date": "Datum",
       "season": "Jahreszeit",
@@ -173,7 +148,6 @@
         "autumn": "Herbst",
         "winter": "Winter"
       },
-      "world": "Welt",
       "traffic": "Autos unterwegs",
       "passengers": "Fahrgäste",
       "schedule": "Fahrplanbusse",
@@ -224,6 +198,41 @@
     },
     "preview": {
       "loading": "Der Bus wird aus dem Spiel exportiert…"
+    },
+    "flow": {
+      "bus": "Bus",
+      "route": "Karte & Strecke",
+      "time": "Zeit & Wetter",
+      "roadbook": "Fahrtenbuch",
+      "titles": {
+        "bus": "Wähle deinen Bus",
+        "route": "Wo fährst du?",
+        "time": "Wann fährst du?",
+        "roadbook": "Dein Fahrtenbuch"
+      },
+      "next": {
+        "route": "Karte & Strecke",
+        "time": "Zeit & Wetter",
+        "roadbook": "Fahrtenbuch"
+      },
+      "back": "Zurück",
+      "toOverview": "Übersicht",
+      "done": "Fertig",
+      "overviewTitle": "Deine Fahrt"
+    },
+    "roadbook": {
+      "none": "Kein Dienst gewählt",
+      "noneHint": "Wähle unter Karte & Strecke eine Linie und einen Umlauf, um ein Fahrtenbuch zu bekommen.",
+      "startTrip": "Bei Fahrt beginnen",
+      "ibis": "IBIS",
+      "ibisLine": "Linie",
+      "ibisRoute": "Route"
+    },
+    "minimap": {
+      "stop": "Haltestelle",
+      "entry": "Einsetzpunkt",
+      "fit": "Einpassen",
+      "loading": "Die Karte wird von oben gezeichnet…"
     }
   }
 }

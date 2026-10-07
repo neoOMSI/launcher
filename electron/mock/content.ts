@@ -4,6 +4,7 @@ import type {
   KeyBindings,
   LineInfo,
   MapInfo,
+  Minimap,
   ModsStatus,
   Profile,
   ServerInfo,
@@ -375,6 +376,47 @@ export function lines(map: string, date: string): LineInfo[] {
       tours,
     };
   });
+}
+
+export function minimap(mapFile: string): Minimap {
+  const map = MAPS.find((m) => m.file === mapFile);
+  const defs = LINE_DEFS[map?.name ?? ''] ?? [];
+  const roads: Minimap['roads'] = [];
+  for (let i = -3; i <= 3; i++) {
+    roads.push({
+      main: i === 0,
+      width: 6,
+      points: [
+        [-900, i * 260],
+        [900, i * 260 + 40],
+      ],
+    });
+    roads.push({
+      main: false,
+      width: 5,
+      points: [
+        [i * 280, -900],
+        [i * 280 + 30, 900],
+      ],
+    });
+  }
+  const stops: Minimap['stops'] = [];
+  defs.forEach((def, l) => {
+    def.stops.forEach((name, k) => {
+      if (stops.some((s) => s.name === name)) return;
+      const x = -780 + k * 280 + l * 30;
+      const y = (l - 1) * 260 + k * 7;
+      stops.push({ id: stops.length + 1, name, x, y, spawn: `${x - 14},${y},90,0` });
+    });
+  });
+  const entries = (map?.entry_points ?? []).map((e, k) => ({
+    index: e.index,
+    name: e.name,
+    x: -860 + k * 140,
+    y: -700,
+    spawn: `${-860 + k * 140},-700,0,0`,
+  }));
+  return { map: mapFile, roads, stops, entries };
 }
 
 export function ibis(line: string, hof: string): IbisInfo {
