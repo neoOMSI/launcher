@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 function cspPlugin(): Plugin {
   return {
@@ -16,7 +17,7 @@ function cspPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), cspPlugin()],
+  plugins: [react(), tailwindcss(), cspPlugin()],
   base: './',
   server: {
     port: 5173,

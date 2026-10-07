@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { PageHeader } from '../components/PageHeader';
+import { Notice, PageBody, PageHeader } from '../components/PageHeader';
 import { Field } from '../components/Field';
+import { Icon } from '../components/Icon';
 import { t } from '../i18n';
 import type { SessionEvent } from '../types/scaffold';
 import { StatusCode } from '../types/scaffold';
@@ -58,32 +59,40 @@ export const SessionPage: React.FC<SessionPageProps> = ({ currentSession, onSess
   };
 
   return (
-    <div className="page-content">
+    <>
       <PageHeader
         title={t('launch.title')}
         actions={
-          <div className="action-row">
-            <button
-              className="btn btn-primary"
-              onClick={startSession}
-              disabled={loading || !!currentSession}
-            >
-              {t('launch.launchButton')}
-            </button>
+          <>
             {currentSession && (
-              <button className="btn btn-danger" onClick={stopSession} disabled={loading}>
+              <button
+                type="button"
+                className="btn-quiet gap-2"
+                onClick={stopSession}
+                disabled={loading}
+              >
+                <Icon name="stop_circle" size={18} />
                 {t('launch.stopButton')}
               </button>
             )}
-          </div>
+            <button
+              type="button"
+              className="btn gap-2"
+              onClick={startSession}
+              disabled={loading || !!currentSession}
+            >
+              <Icon name="play_arrow" size={18} />
+              {t('launch.launchButton')}
+            </button>
+          </>
         }
       />
 
-      <div className="page-body">
-        <div className="form-container">
+      <PageBody>
+        <div className="max-w-[28rem] space-y-5">
           <Field label={t('launch.mapId')}>
             <input
-              className="input-text"
+              className="input"
               value={mapId}
               onChange={(e) => setMapId(e.target.value)}
               disabled={loading || !!currentSession}
@@ -92,25 +101,26 @@ export const SessionPage: React.FC<SessionPageProps> = ({ currentSession, onSess
 
           <Field label={t('launch.vehicleId')}>
             <input
-              className="input-text"
+              className="input"
               value={vehicleId}
               onChange={(e) => setVehicleId(e.target.value)}
               disabled={loading || !!currentSession}
             />
           </Field>
 
-          {statusText && <div className="notice-bar">{statusText}</div>}
+          {statusText && <Notice>{statusText}</Notice>}
 
           {currentSession && (
-            <div className="active-session-banner">
-              <div className="banner-title">
+            <Notice tone="tip">
+              <p className="callout-title">
+                <Icon name="check_circle" size={18} />
                 {t('launch.activeSession', { sessionId: currentSession.sessionId })}
-              </div>
-              <div className="banner-detail">{currentSession.message}</div>
-            </div>
+              </p>
+              <p className="text-muted">{currentSession.message}</p>
+            </Notice>
           )}
         </div>
-      </div>
-    </div>
+      </PageBody>
+    </>
   );
 };

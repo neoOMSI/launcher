@@ -80,7 +80,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="desktop-layout">
+    <div className="flex h-screen">
       <Sidebar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -88,7 +88,7 @@ export const App: React.FC = () => {
         logCount={logs.length}
       />
 
-      <main className="main-viewport">
+      <main className="flex min-w-0 flex-1 flex-col">
         {activeTab === 'launch' && (
           <SessionPage currentSession={currentSession} onSessionEvent={setCurrentSession} />
         )}

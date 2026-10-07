@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { PageHeader } from '../components/PageHeader';
+import { EmptyState, Notice, PageBody, PageHeader } from '../components/PageHeader';
+import { Icon } from '../components/Icon';
 import { t } from '../i18n';
 import type { MapSummary, VehicleSummary } from '../types/scaffold';
 import { StatusCode } from '../types/scaffold';
@@ -40,28 +41,32 @@ export const ContentPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="page-content">
+    <>
       <PageHeader
         title={t('content.title')}
         actions={
-          <button className="btn btn-secondary" onClick={refreshContent} disabled={loading}>
+          <button
+            type="button"
+            className="btn-quiet gap-2"
+            onClick={refreshContent}
+            disabled={loading}
+          >
+            <Icon name="refresh" size={18} />
             {loading ? t('content.refreshing') : t('content.refresh')}
           </button>
         }
       />
 
-      <div className="page-body">
-        {error && <div className="notice-bar error">{error}</div>}
+      <PageBody className="space-y-10">
+        {error && <Notice tone="caution">{error}</Notice>}
 
-        <section className="content-section">
-          <div className="section-header">
-            <h2 className="section-title">{t('content.maps', { count: maps.length })}</h2>
-          </div>
+        <section>
+          <h2 className="mb-4 text-[1.2rem]">{t('content.maps', { count: maps.length })}</h2>
           {maps.length === 0 ? (
-            <div className="empty-state">{t('content.noMaps')}</div>
+            <EmptyState>{t('content.noMaps')}</EmptyState>
           ) : (
-            <div className="table-wrapper">
-              <table className="data-table">
+            <div className="table-frame">
+              <table className="table">
                 <thead>
                   <tr>
                     <th>{t('content.table.id')}</th>
@@ -74,9 +79,9 @@ export const ContentPage: React.FC = () => {
                   {maps.map((m) => (
                     <tr key={m.id}>
                       <td>
-                        <code className="code-text select-text">{m.id}</code>
+                        <code className="select-text">{m.id}</code>
                       </td>
-                      <td>{m.name}</td>
+                      <td className="font-medium text-heading">{m.name}</td>
                       <td>{m.tileCount}</td>
                       <td>{m.hasChronology ? t('content.table.yes') : t('content.table.no')}</td>
                     </tr>
@@ -87,17 +92,15 @@ export const ContentPage: React.FC = () => {
           )}
         </section>
 
-        <div className="separator" />
-
-        <section className="content-section">
-          <div className="section-header">
-            <h2 className="section-title">{t('content.vehicles', { count: vehicles.length })}</h2>
-          </div>
+        <section>
+          <h2 className="mb-4 text-[1.2rem]">
+            {t('content.vehicles', { count: vehicles.length })}
+          </h2>
           {vehicles.length === 0 ? (
-            <div className="empty-state">{t('content.noVehicles')}</div>
+            <EmptyState>{t('content.noVehicles')}</EmptyState>
           ) : (
-            <div className="table-wrapper">
-              <table className="data-table">
+            <div className="table-frame">
+              <table className="table">
                 <thead>
                   <tr>
                     <th>{t('content.table.id')}</th>
@@ -110,9 +113,9 @@ export const ContentPage: React.FC = () => {
                   {vehicles.map((v) => (
                     <tr key={v.id}>
                       <td>
-                        <code className="code-text select-text">{v.id}</code>
+                        <code className="select-text">{v.id}</code>
                       </td>
-                      <td>{v.name}</td>
+                      <td className="font-medium text-heading">{v.name}</td>
                       <td>{v.manufacturer}</td>
                       <td>{v.availablePaints?.length ?? 0}</td>
                     </tr>
@@ -122,7 +125,7 @@ export const ContentPage: React.FC = () => {
             </div>
           )}
         </section>
-      </div>
-    </div>
+      </PageBody>
+    </>
   );
 };

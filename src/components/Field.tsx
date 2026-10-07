@@ -9,11 +9,11 @@ interface FieldProps {
 
 export const Field: React.FC<FieldProps> = ({ label, children, hint, error }) => {
   return (
-    <div className="field-group">
-      <label className="field-label">{label}</label>
-      <div className="field-control">{children}</div>
-      {hint && !error && <span className="field-hint">{hint}</span>}
-      {error && <span className="field-error">{error}</span>}
-    </div>
+    <label className="block">
+      <span className="mb-2 block text-[14px] font-semibold text-muted">{label}</span>
+      {children}
+      {hint && !error && <span className="mt-1.5 block text-[14px] text-muted">{hint}</span>}
+      {error && <span className="mt-1.5 block text-[14px] text-danger">{error}</span>}
+    </label>
   );
 };
