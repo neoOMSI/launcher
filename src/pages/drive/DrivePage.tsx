@@ -130,7 +130,7 @@ function Stage({ data, view, onView }: { data: DriveData; view: View; onView: (v
       <Visual view={view} data={data} reserve={reserve} />
       <div
         ref={panel}
-        className="absolute top-2 right-2 bottom-2 flex w-[clamp(25rem,28vw,34rem)] flex-col overflow-hidden rounded-[1.75rem] bg-page shadow-2xl"
+        className="absolute top-2 right-2 bottom-2 flex w-[clamp(25rem,28vw,34rem)] flex-col overflow-hidden rounded-[1.25rem] bg-page shadow-2xl"
       >
         {view === 'overview' ? (
           <Overview data={data} onView={onView} />
@@ -311,6 +311,7 @@ function RouteVisual({ data, p, reserve }: { data: DriveData; p: Picked; reserve
           <Minimap
             data={minimap.data}
             route={(p.trip?.stops ?? []).map((s) => s.name)}
+            trip={p.trip?.name}
             pick={pick}
             inset={{ top: 150, right: reserve + 32, bottom: 64, left: 48 }}
             onPickStop={(s) =>
@@ -350,33 +351,24 @@ const STEP_ICON: Record<Step, string> = {
 function Stepper({ step, onView }: { step: Step; onView: (v: View) => void }) {
   const current = STEPS.indexOf(step);
   return (
-    <ol className="flex items-center gap-1">
-      {STEPS.map((s, i) => {
-        const on = i === current;
-        return (
-          <li key={s} className={on ? 'min-w-0 flex-1' : 'shrink-0'}>
-            <button
-              type="button"
-              onClick={() => onView(s)}
-              aria-current={on ? 'step' : undefined}
-              aria-label={t(`drive.flow.${s}`)}
-              title={t(`drive.flow.${s}`)}
-              className={`flex h-10 w-full items-center gap-2.5 rounded-full transition-colors ${
-                on
-                  ? 'bg-line px-4 font-medium text-heading'
-                  : `justify-center px-3 hover:bg-sunken ${i < current ? 'text-accent' : 'text-muted hover:text-ink'}`
-              }`}
-            >
-              <Icon
-                name={i < current ? 'check' : STEP_ICON[s]}
-                size={19}
-                style={on ? { color: 'var(--accent)' } : undefined}
-              />
-              {on && <span className="truncate text-[15px]">{t(`drive.flow.${s}`)}</span>}
-            </button>
-          </li>
-        );
-      })}
+    <ol className="grid grid-cols-2 gap-1">
+      {STEPS.map((s, i) => (
+        <li key={s} className="min-w-0">
+          <button
+            type="button"
+            onClick={() => onView(s)}
+            aria-current={i === current ? 'step' : undefined}
+            className={`nav-link ${i === current ? 'on' : ''}`}
+          >
+            <Icon
+              name={i < current ? 'check' : STEP_ICON[s]}
+              size={18}
+              color={i < current ? 'var(--accent)' : undefined}
+            />
+            <span className="truncate">{t(`drive.flow.${s}`)}</span>
+          </button>
+        </li>
+      ))}
     </ol>
   );
 }
@@ -387,8 +379,24 @@ function Flow({ step, data, onView }: { step: Step; data: DriveData; onView: (v:
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 px-6 pt-5">
-        <Stepper step={step} onView={onView} />
-        <h2 className="section-title mt-5 text-[1.4rem]">{t(`drive.flow.titles.${step}`)}</h2>
+        <div className="flex items-center gap-3.5">
+          <Icon name={STEP_ICON[step]} size={30} color="var(--accent)" />
+          <h2 className="min-w-0 flex-1 truncate font-display text-[1.45rem] leading-tight font-bold tracking-tight text-heading">
+            {t(`drive.flow.titles.${step}`)}
+          </h2>
+          <button
+            type="button"
+            className="theme-toggle -mr-2 size-11 shrink-0 rounded-full"
+            aria-label={t('drive.flow.toOverview')}
+            title={t('drive.flow.toOverview')}
+            onClick={() => onView('overview')}
+          >
+            <Icon name="close" size={26} />
+          </button>
+        </div>
+        <div className="mt-4">
+          <Stepper step={step} onView={onView} />
+        </div>
       </div>
       <div key={step} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6 pt-5 pb-6">
         {step === 'bus' ? (
@@ -401,10 +409,10 @@ function Flow({ step, data, onView }: { step: Step; data: DriveData; onView: (v:
           <RoadbookStep data={data} />
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-3 border-t border-line px-6 py-4">
+      <div className="flex shrink-0 items-center gap-3 px-6 pt-2 pb-6">
         <button
           type="button"
-          className="btn-quiet gap-1.5 px-4"
+          className="btn-quiet h-12 gap-1.5 rounded-full pr-5 pl-4"
           onClick={() => onView(index === 0 ? 'overview' : STEPS[index - 1])}
         >
           <Icon name="chevron_left" size={18} />
@@ -412,7 +420,7 @@ function Flow({ step, data, onView }: { step: Step; data: DriveData; onView: (v:
         </button>
         <button
           type="button"
-          className="btn ml-auto gap-1.5 px-5"
+          className="btn ml-auto h-12 gap-1.5 rounded-full pr-4 pl-6"
           onClick={() => onView(last ? 'overview' : STEPS[index + 1])}
         >
           {last ? t('drive.flow.done') : t(`drive.flow.next.${STEPS[index + 1]}`)}
@@ -538,7 +546,7 @@ function Overview({ data, onView }: { data: DriveData; onView: (v: View) => void
       <div className="shrink-0 space-y-2.5 px-6 pt-2 pb-6">
         <button
           type="button"
-          className="btn h-16 w-full justify-center rounded-[1.25rem] text-[19px]"
+          className="btn h-16 w-full justify-center rounded-full text-[19px]"
           disabled={starting}
           onClick={() => launch()}
         >
@@ -551,7 +559,7 @@ function Overview({ data, onView }: { data: DriveData; onView: (v: View) => void
         {situations.data && situations.data.length > 0 && (
           <button
             type="button"
-            className="btn-quiet w-full justify-center gap-2"
+            className="btn-quiet h-12 w-full justify-center gap-2 rounded-full"
             onClick={() => launch(situations.data![0].file)}
           >
             <Icon name="history" size={18} />

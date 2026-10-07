@@ -39,6 +39,21 @@ function pathOf(roads: MinimapData['roads'], main: boolean) {
     .join('');
 }
 
+function routePath(data: MinimapData, trip: string | undefined) {
+  const ids = trip ? (data.trips?.[trip] ?? []) : [];
+  const lanes = ids.map((i) => data.lanes?.[i] ?? []);
+  let d = '';
+  let end: [number, number] | null = null;
+  for (const lane of lanes) {
+    if (lane.length < 2) continue;
+    const [sx, sy] = lane[0];
+    const joined = end && Math.hypot(end[0] - sx, end[1] - sy) < 6;
+    d += lane.map(([x, y], i) => `${i === 0 && !joined ? 'M' : 'L'}${x} ${-y}`).join('');
+    end = lane[lane.length - 1];
+  }
+  return { d, points: lanes.flat() };
+}
+
 const spawnPoint = (place: MinimapPlace): [number, number] => {
   const [x, y] = place.spawn.split(',').map(Number);
   return [x, y];
@@ -47,11 +62,12 @@ const spawnPoint = (place: MinimapPlace): [number, number] => {
 export const Minimap: React.FC<{
   data: MinimapData;
   route: string[];
+  trip?: string;
   pick: MapPick;
   inset: { top: number; right: number; bottom: number; left: number };
   onPickStop: (stop: MinimapData['stops'][number]) => void;
   onPickEntry: (entry: MinimapData['entries'][number]) => void;
-}> = ({ data, route, pick, inset, onPickStop, onPickEntry }) => {
+}> = ({ data, route, trip, pick, inset, onPickStop, onPickEntry }) => {
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
   const [view, setView] = useState<Box | null>(null);
@@ -68,15 +84,17 @@ export const Minimap: React.FC<{
     [data, route],
   );
 
+  const path = useMemo(() => routePath(data, trip), [data, trip]);
+
   const home = useMemo<Box>(() => {
-    const focus = routeStops.map((s) => [s.x, s.y] as [number, number]);
+    const focus = [...routeStops.map((s) => [s.x, s.y] as [number, number]), ...path.points];
     const all = data.roads.flatMap((r) => r.points);
     return (
       bounds(focus.length > 1 ? focus : all, focus.length > 1 ? 260 : 60) ?? [
         -500, -500, 1000, 1000,
       ]
     );
-  }, [data, routeStops]);
+  }, [data, routeStops, path]);
 
   useEffect(() => {
     const el = host.current!;
@@ -170,15 +188,14 @@ export const Minimap: React.FC<{
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
           />
-          {routeStops.length > 1 && (
-            <polyline
-              points={routeStops.map((s) => `${s.x},${-s.y}`).join(' ')}
+          {(path.d || routeStops.length > 1) && (
+            <path
+              d={path.d || routeStops.map((s, i) => `${i ? 'L' : 'M'}${s.x} ${-s.y}`).join('')}
               fill="none"
               stroke="var(--color-brand)"
-              strokeOpacity={0.45}
-              strokeWidth={3}
-              strokeDasharray="2 8"
+              strokeWidth={5}
               strokeLinecap="round"
+              strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
             />
           )}
