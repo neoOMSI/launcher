@@ -128,7 +128,7 @@ export const ControlsPage: React.FC = () => {
                   <span className="truncate">{tr(`sections.${id}`)}</span>
                   {clashes > 0 && (
                     <span
-                      className="ml-auto rounded-full bg-danger/15 px-2 text-[13px] leading-6 font-semibold text-danger tabular-nums"
+                      className="ml-auto text-[13px] leading-6 font-semibold text-danger tabular-nums"
                       title={tr('conflicts', { n: clashes })}
                     >
                       {clashes}

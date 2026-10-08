@@ -15,12 +15,18 @@ import { pathToFileURL } from 'node:url';
 import type { EngineClient } from './client';
 import { MockEngineClient } from './mock-client';
 import { ProcessEngineClient } from './process-client';
-import { CliEngineClient } from './cli-client';
 import { loadPrefs, savePrefs } from './prefs';
 import { newerVersion } from './version';
-import type { EngineStatus, SessionEvent } from '../src/types/scaffold';
+import type { EngineStatus } from '../src/types/scaffold';
 import type { LauncherPrefs, PickKind, UpdateInfo } from '../src/types/neoomsi';
-import { COMMANDS, type Config, type Instance, type MapInfo } from '../src/types/launcher';
+import {
+  COMMANDS,
+  type Config,
+  type EngineEvent,
+  type Instance,
+  type Launched,
+  type MapInfo,
+} from '../src/types/launcher';
 import packageJson from '../package.json' with { type: 'json' };
 
 let mainWindow: BrowserWindow | null = null;
@@ -33,18 +39,18 @@ const useMock = () => process.env.NEOOMSI_USE_MOCK === '1' || process.argv.inclu
 function initializeEngineClient(): EngineClient {
   if (useMock()) return new MockEngineClient();
 
-  const cli =
-    process.argv.find((a) => a.startsWith('--cli='))?.slice('--cli='.length) ||
-    process.env.NEOOMSI_LAUNCHER_CLI;
-  if (cli) return new CliEngineClient(resolve(cli));
-
-  const enginePath = process.env.NEOOMSI_ENGINE_PATH;
+  const enginePath =
+    process.argv.find((a) => a.startsWith('--engine='))?.slice('--engine='.length) ||
+    process.env.NEOOMSI_ENGINE_PATH;
   if (!enginePath) {
     throw new Error(
-      'Engine path is not configured. Set NEOOMSI_ENGINE_PATH or run with NEOOMSI_USE_MOCK=1 (or --mock in development).',
+      'Engine path is not configured. Pass --engine=<neoomsi>, set NEOOMSI_ENGINE_PATH, or run with NEOOMSI_USE_MOCK=1 (or --mock in development).',
     );
   }
-  return new ProcessEngineClient({ enginePath, launcherVersion: packageJson.version });
+  return new ProcessEngineClient({
+    enginePath: resolve(enginePath),
+    launcherVersion: packageJson.version,
+  });
 }
 
 function setupEngineClient(): void {
@@ -55,8 +61,9 @@ function setupEngineClient(): void {
     engine.on('status', (status: EngineStatus) => {
       mainWindow?.webContents.send('engine:status-changed', status);
     });
-    engine.on('session_event', (event: SessionEvent) => {
-      mainWindow?.webContents.send('engine:session-event', event);
+    engine.on('event', (event: EngineEvent) => {
+      mainWindow?.webContents.send('engine:event', event);
+      if (event.type === 'instances_changed') watchGames(event.payload);
     });
     engine.on('diagnostic', (log: string) => {
       mainWindow?.webContents.send('engine:diagnostic-log', log);
@@ -69,36 +76,31 @@ function setupEngineClient(): void {
 }
 
 let hiddenForGame = false;
-let gameWatch: NodeJS.Timeout | null = null;
+// Games just launched: the launcher stays on screen until their window is up, and stays for
+// good when one never comes (it failed to start, and the launcher shows why).
+const awaitingWindow = new Set<number>();
 
-function watchGames(instances?: Instance[]) {
-  if (!hiddenForGame || !instances) return;
-  if (instances.some((i) => i.running)) return;
+function watchGames(instances: Instance[]) {
+  for (const pid of awaitingWindow) {
+    const game = instances.find((i) => i.pid === pid);
+    if (!game || (game.running && !game.link?.window)) continue;
+    awaitingWindow.delete(pid);
+    if (game.running) stepAside();
+  }
+  if (!hiddenForGame || instances.some((i) => i.running)) return;
   hiddenForGame = false;
-  if (gameWatch) clearInterval(gameWatch);
-  gameWatch = null;
   if (!loadPrefs().restoreOnExit || !mainWindow) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
 }
 
-function gameLaunched() {
+function stepAside() {
   const { onLaunch } = loadPrefs();
   if (!mainWindow || onLaunch === 'keep') return;
   hiddenForGame = true;
   if (onLaunch === 'hide') mainWindow.hide();
   else mainWindow.minimize();
-  if (gameWatch) clearInterval(gameWatch);
-  // The game takes a while to register itself; until then `instances` may still be empty.
-  const since = Date.now();
-  gameWatch = setInterval(() => {
-    if (Date.now() - since < 10_000) return;
-    engine
-      ?.sendRequest<Instance[]>('instances', {})
-      .then(watchGames)
-      .catch(() => {});
-  }, 3000);
 }
 
 function iconPath() {
@@ -222,35 +224,13 @@ registerIpcHandler('engine:stop', async () => {
   }
 });
 
-registerIpcHandler('engine:get-maps', (_, filter: string | undefined) =>
-  requireEngine().sendRequest('get_maps', { filter }),
-);
-
-registerIpcHandler('engine:get-vehicles', (_, filter: string | undefined) =>
-  requireEngine().sendRequest('get_vehicles', { filter }),
-);
-
-registerIpcHandler('engine:get-settings', () => requireEngine().sendRequest('get_settings', {}));
-
-registerIpcHandler('engine:update-settings', (_, settingsJson: string) =>
-  requireEngine().sendRequest('update_settings', { settingsJson }),
-);
-
-registerIpcHandler('engine:start-session', (_, req: unknown) =>
-  requireEngine().sendRequest('start_session', req),
-);
-
-registerIpcHandler('engine:stop-session', (_, sessionId: string) =>
-  requireEngine().sendRequest('stop_session', { sessionId }),
-);
-
 registerIpcHandler('engine:call', async (_, command: string, args: unknown) => {
   const client = requireEngine();
   if (!(COMMANDS as readonly string[]).includes(command)) {
     throw new Error(`Unknown launcher command '${command}'`);
   }
   const result = await client.sendRequest(command, args ?? {});
-  if (command === 'launch') gameLaunched();
+  if (command === 'launch') awaitingWindow.add((result as Launched).pid);
   return result;
 });
 

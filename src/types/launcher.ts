@@ -1,4 +1,6 @@
-// Shapes of neoOMSI's launcher commands (`neoomsi-launcher --cli <command>`), field names as serialized.
+import type { SessionEvent } from './scaffold';
+
+// Shapes of neoOMSI's launcher commands (`neoomsi --control-protocol`), field names as serialized.
 
 export interface Config {
   root: string;
@@ -218,6 +220,13 @@ export interface LanStatus {
   rejected: string;
 }
 
+export interface GameLink {
+  state: 'starting' | 'loading' | 'running' | 'stopping' | 'failed';
+  progress: number | null;
+  message: string;
+  window: boolean;
+}
+
 export interface Instance {
   id: string;
   pid: number;
@@ -240,6 +249,7 @@ export interface Instance {
   killed: boolean;
   lan_status: LanStatus | null;
   last_line: string;
+  link?: GameLink | null;
 }
 
 export interface Duty {
@@ -313,8 +323,6 @@ export interface KeyBindings {
 
 export type Settings = Record<string, string | number | boolean>;
 
-// Launcher-side data the game window reads without a `--cli` command yet.
-
 export interface Tutorial {
   number: number;
   title: string;
@@ -385,6 +393,13 @@ export interface OptionPreset {
   values: Settings;
 }
 
+export interface PaxPack {
+  state: 'missing' | 'outdated' | 'downloading' | 'installing' | 'installed' | 'failed';
+  done: number;
+  total: number;
+  message: string;
+}
+
 export interface Commands {
   config: { args: void; result: Config };
   maps: { args: void; result: MapInfo[] };
@@ -402,10 +417,12 @@ export interface Commands {
   join: { args: { text: string }; result: { ok: boolean; text: string; map?: string } };
   settings: { args: void; result: Settings };
   save_settings: { args: Settings; result: Settings };
+  pax_pack: { args: void; result: PaxPack };
+  install_pax_pack: { args: void; result: PaxPack };
   keybindings: { args: void; result: KeyBindings };
   launch: { args: Duty; result: Launched };
   preview: { args: { bus: string; paint: string }; result: string };
-  minimap: { args: { map: string }; result: Minimap };
+  minimap: { args: { map: string; date?: string }; result: Minimap };
   tutorials: { args: void; result: Tutorial[] };
   servers: { args: void; result: ServerInfo[] };
   save_servers: { args: { servers: { name: string; address: string }[] }; result: unknown };
@@ -425,6 +442,21 @@ export interface Commands {
   option_presets: { args: void; result: OptionPreset[] };
   open_game_launcher: { args: { page?: string }; result: { pid: number } };
 }
+
+export type EngineEvent =
+  | { type: 'instances_changed'; payload: Instance[] }
+  | { type: 'installs_changed'; payload: InstallProgress[] }
+  | { type: 'content_changed'; payload: { stamp: string } }
+  | { type: 'session_event'; payload: SessionEvent }
+  | { type: 'pax_pack_changed'; payload: PaxPack };
+
+export const ENGINE_EVENTS: readonly EngineEvent['type'][] = [
+  'instances_changed',
+  'installs_changed',
+  'content_changed',
+  'session_event',
+  'pax_pack_changed',
+];
 
 export type Command = keyof Commands;
 export type CommandArgs<C extends Command> = Commands[C]['args'];
@@ -447,6 +479,8 @@ export const COMMANDS: readonly Command[] = [
   'join',
   'settings',
   'save_settings',
+  'pax_pack',
+  'install_pax_pack',
   'keybindings',
   'launch',
   'preview',

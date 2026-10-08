@@ -10,6 +10,8 @@
   "freeDrive": "Free drive",
   "lineTour": "{line}, tour {tour}",
   "state": {
+    "starting": "Starting…",
+    "loading": "Loading {percent} %",
     "stopping": "Stopping, saving the run…",
     "clean": "Ended normally",
     "killed": "Forced to close, run not saved",

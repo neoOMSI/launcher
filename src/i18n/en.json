@@ -95,7 +95,9 @@
       "continue": "Continue where you left off",
       "chooseFirst": "Choose a bus and a map first.",
       "alreadyRunning": "A game is running already. Click again to start another one.",
-      "started": "Game started (process {pid})"
+      "started": "Game started (process {pid})",
+      "starting": "Starting…",
+      "loading": "Loading the map {percent} %"
     },
     "bus": {
       "chosen": "Your bus",

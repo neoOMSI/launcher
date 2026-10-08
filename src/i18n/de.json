@@ -94,7 +94,9 @@
       "continue": "Dort weitermachen, wo du warst",
       "chooseFirst": "Wähle zuerst einen Bus und eine Karte.",
       "alreadyRunning": "Es läuft schon ein Spiel. Klicke nochmal, um ein weiteres zu starten.",
-      "started": "Spiel gestartet (Prozess {pid})"
+      "started": "Spiel gestartet (Prozess {pid})",
+      "starting": "Startet…",
+      "loading": "Karte lädt {percent} %"
     },
     "bus": {
       "chosen": "Dein Bus",

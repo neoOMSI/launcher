@@ -1,16 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron';
-import type {
-  EngineStatus,
-  GetMapsResponse,
-  GetSettingsResponse,
-  GetVehiclesResponse,
-  SessionEvent,
-  StartSessionRequest,
-  StartSessionResponse,
-  Status,
-} from '../src/types/scaffold';
+import type { EngineStatus } from '../src/types/scaffold';
 import type { NeoomsiBridge } from '../src/types/neoomsi';
-import type { Command, CommandArgs, CommandResult } from '../src/types/launcher';
+import type { Command, CommandArgs, CommandResult, EngineEvent } from '../src/types/launcher';
 
 function listen<T>(channel: string, callback: (value: T) => void) {
   const handler = (_: IpcRendererEvent, value: T) => callback(value);
@@ -24,17 +15,6 @@ const api: NeoomsiBridge = {
   platform: process.platform,
   call: <C extends Command>(command: C, args?: CommandArgs<C>): Promise<CommandResult<C>> =>
     ipcRenderer.invoke('engine:call', command, args),
-  getMaps: (filter?: string): Promise<GetMapsResponse> =>
-    ipcRenderer.invoke('engine:get-maps', filter),
-  getVehicles: (filter?: string): Promise<GetVehiclesResponse> =>
-    ipcRenderer.invoke('engine:get-vehicles', filter),
-  getSettings: (): Promise<GetSettingsResponse> => ipcRenderer.invoke('engine:get-settings'),
-  updateSettings: (settingsJson: string): Promise<Status> =>
-    ipcRenderer.invoke('engine:update-settings', settingsJson),
-  startSession: (req: StartSessionRequest): Promise<StartSessionResponse> =>
-    ipcRenderer.invoke('engine:start-session', req),
-  stopSession: (sessionId: string): Promise<Status> =>
-    ipcRenderer.invoke('engine:stop-session', sessionId),
   previewModel: (bus: string, paint: string): Promise<Uint8Array> =>
     ipcRenderer.invoke('engine:preview-model', bus, paint),
   mapPicture: (mapFile: string): Promise<Uint8Array | null> =>
@@ -44,7 +24,7 @@ const api: NeoomsiBridge = {
   stopEngine: (): Promise<void> => ipcRenderer.invoke('engine:stop'),
 
   onEngineStatus: (callback) => listen<EngineStatus>('engine:status-changed', callback),
-  onSessionEvent: (callback) => listen<SessionEvent>('engine:session-event', callback),
+  onEngineEvent: (callback) => listen<EngineEvent>('engine:event', callback),
   onDiagnosticLog: (callback) => listen<string>('engine:diagnostic-log', callback),
 
   window: {

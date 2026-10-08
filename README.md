@@ -2,7 +2,7 @@
 
 Desktop launcher for the neoOMSI simulator built with Electron and React.
 
-The launcher runs as an external client process and communicates with the neoOMSI engine over standard input and output (`stdin` / `stdout`) using length-prefixed protocol frames.
+The launcher starts the neoOMSI engine as `neoomsi --control-protocol` and talks to it over standard input and output (`stdin` / `stdout`) using length-prefixed JSON frames. The engine answers requests and pushes events: the running games, install progress, content changes, and each game's session state, which games report to the engine over a loopback link. The protocol is specified in `docs/LAUNCHER_PROTOCOL.md` in the neoOMSI repository.
 
 ## Technology Stack
 
@@ -41,7 +41,13 @@ pnpm dev:app
 
 > Note: Vite hot reload applies to the React renderer. Changes to Electron main or preload require restarting `pnpm dev:app`.
 
-Run production build against a real engine:
+Start development application against a locally built engine (`cargo build --release -p core` in `../neoOMSI`):
+
+```bash
+pnpm dev:real
+```
+
+Run production build against a real engine (or pass `--engine=/path/to/neoomsi`):
 
 ```bash
 NEOOMSI_ENGINE_PATH=/path/to/neoomsi pnpm start

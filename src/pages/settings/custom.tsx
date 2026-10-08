@@ -1,7 +1,9 @@
 import React from 'react';
 import { Icon } from '../../components/Icon';
 import { Segmented } from '../../components/ui';
-import { useNav } from '../../lib/nav';
+import { call, errorText, useCommand } from '../../lib/engine';
+import { bytes } from '../../lib/format';
+import { useNav, useToast } from '../../lib/nav';
 import { useSettings } from '../../lib/settings';
 import type { CustomProps } from './rows';
 import { PRESET_IDS, PRESETS, presetOf, tr, type CustomId, type PresetId } from './schema';
@@ -75,6 +77,55 @@ const Wheel: React.FC<CustomProps> = () => {
   );
 };
 
+const PaxPackRow: React.FC<CustomProps> = () => {
+  const pack = useCommand('pax_pack');
+  const toast = useToast();
+  const get = () => call('install_pax_pack').catch((err) => toast(errorText(err), 'caution'));
+  const p = pack.data;
+  if (!p) return null;
+  if (p.state === 'downloading' || p.state === 'installing') {
+    return (
+      <span className="flex items-center gap-2.5 text-[14.5px] text-muted tabular-nums">
+        <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
+        {p.state === 'installing'
+          ? tr('paxPack.installing')
+          : p.total > 0
+            ? tr('paxPack.downloading', {
+                percent: Math.round((p.done / p.total) * 100),
+                size: bytes(p.total),
+              })
+            : tr('paxPack.starting')}
+      </span>
+    );
+  }
+  if (p.state === 'installed') {
+    return (
+      <span className="flex items-center gap-2 text-[14.5px] text-muted">
+        <Icon name="check_circle" size={18} style={{ color: 'var(--color-ok)' }} />
+        {tr('paxPack.installed')}
+      </span>
+    );
+  }
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      <GoButton
+        icon="download"
+        label={
+          p.state === 'outdated'
+            ? tr('paxPack.update')
+            : p.state === 'failed'
+              ? tr('paxPack.retry')
+              : tr('paxPack.download')
+        }
+        onClick={get}
+      />
+      {p.state === 'failed' && (
+        <span className="max-w-[26rem] text-right text-[13.5px] text-danger">{p.message}</span>
+      )}
+    </div>
+  );
+};
+
 const Seat: React.FC<CustomProps> = ({ ctx }) => {
   const { update } = useSettings();
   const centred = !ctx || ['seat_x', 'seat_y', 'seat_z'].every((k) => !Number(ctx.s[k]));
@@ -140,8 +191,9 @@ const Corner: React.FC<CustomProps> = ({ ctx }) => {
 
 export const CUSTOM: Pick<
   Record<CustomId, React.FC<CustomProps>>,
-  'preset' | 'keys' | 'vrKeys' | 'wheel' | 'seat' | 'corner'
+  'preset' | 'keys' | 'vrKeys' | 'wheel' | 'seat' | 'corner' | 'paxPack'
 > = {
+  paxPack: PaxPackRow,
   preset: Preset,
   keys: Keys,
   vrKeys: VrKeys,

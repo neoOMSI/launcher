@@ -84,9 +84,14 @@ function Showroom({
   const frame = useFrame([header, ...above], below);
   return (
     <>
-      {frame && p.bus && !hidden && (
-        <div className="absolute inset-0">
-          <BusViewer bus={p.bus.file} paint={choice.paint || p.bus.default_paint} {...frame} />
+      {frame && p.bus && (
+        <div className={`absolute inset-0 ${hidden ? 'invisible' : ''}`}>
+          <BusViewer
+            bus={p.bus.file}
+            paint={choice.paint || p.bus.default_paint}
+            paused={hidden}
+            {...frame}
+          />
         </div>
       )}
       <BusHeader p={p} ref={header} />
@@ -501,7 +506,7 @@ function RoadbookVisual({ data, p }: { data: DriveData; p: Picked }) {
 
 function RouteVisual({ data, p }: { data: DriveData; p: Picked }) {
   const { choice, update } = useDuty();
-  const minimap = useCommand('minimap', choice.map ? { map: choice.map } : null);
+  const minimap = useCommand('minimap', choice.map ? { map: choice.map, date: choice.date } : null);
   const pick: MapPick = choice.stop
     ? { kind: 'stop', id: choice.stop.id }
     : choice.entry >= 0
@@ -554,7 +559,7 @@ function RouteVisual({ data, p }: { data: DriveData; p: Picked }) {
 
 function Launch({ data }: { data: DriveData }) {
   const { choice, server } = useDuty();
-  const { instances, refreshInstances } = useEngine();
+  const { instances, refreshInstances, launching: loading, noteLaunch } = useEngine();
   const { go } = useNav();
   const toast = useToast();
   const config = useCommand('config');
@@ -564,8 +569,10 @@ function Launch({ data }: { data: DriveData }) {
   const disarm = useRef<ReturnType<typeof setTimeout>>(undefined);
   const p = picked(data, choice);
   const running = instances.filter((i) => i.running).length;
+  const busy = starting || loading !== null;
 
   const launch = async (situation?: string) => {
+    if (busy) return;
     if (!choice.bus || !choice.map) {
       toast(t('drive.start.chooseFirst'), 'caution');
       return;
@@ -584,6 +591,7 @@ function Launch({ data }: { data: DriveData }) {
       if (situation) Object.assign(args, { situation, lan: 'off' });
       const res = await call('launch', args);
       toast(t('drive.start.started', { pid: res.pid }), 'tip');
+      noteLaunch(res.pid);
       refreshInstances();
       if (server) go('sessions');
     } catch (err) {
@@ -607,11 +615,34 @@ function Launch({ data }: { data: DriveData }) {
       )}
       <button
         type="button"
-        className="btn h-16 justify-center rounded-full text-[19px]"
-        disabled={starting}
+        className="btn relative h-16 justify-center overflow-hidden rounded-full text-[19px]"
+        aria-disabled={busy}
+        aria-busy={busy}
         onClick={() => launch()}
       >
-        {armed ? t('drive.start.another') : p.line ? t('drive.start.duty') : t('drive.start.drive')}
+        {busy ? (
+          <>
+            {loading?.progress != null && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 left-0 bg-white/25 transition-[width] duration-300"
+                style={{ width: `${Math.round(loading.progress * 100)}%` }}
+              />
+            )}
+            <span className="relative flex items-center gap-3">
+              <span className="size-5 animate-spin rounded-full border-2 border-night/30 border-t-night" />
+              {loading?.progress != null
+                ? t('drive.start.loading', { percent: Math.round(loading.progress * 100) })
+                : t('drive.start.starting')}
+            </span>
+          </>
+        ) : armed ? (
+          t('drive.start.another')
+        ) : p.line ? (
+          t('drive.start.duty')
+        ) : (
+          t('drive.start.drive')
+        )}
       </button>
     </>
   );

@@ -2,8 +2,22 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { encodeFrame, FrameDecoder, type ProtocolMessage } from './protocol';
 import type { EngineClient } from './client';
-import type { EngineStatus, HandshakeResponse, SessionEvent } from '../src/types/scaffold';
-import { StatusCode } from '../src/types/scaffold';
+import type { EngineStatus, HandshakeResponse } from '../src/types/scaffold';
+import { PROTOCOL_VERSION, StatusCode } from '../src/types/scaffold';
+import { ENGINE_EVENTS, type EngineEvent } from '../src/types/launcher';
+
+// A big installation's bus list takes minutes the first time the engine reads it.
+const SLOW: Record<string, number> = {
+  maps: 300_000,
+  vehicles: 300_000,
+  weather: 300_000,
+  preview: 300_000,
+  lines: 60_000,
+  minimap: 120_000,
+  launch: 60_000,
+  stop: 30_000,
+  servers: 30_000,
+};
 
 export interface ProcessEngineClientOptions {
   enginePath: string;
@@ -52,6 +66,7 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
     return {
       ...this.status,
       capabilities: [...this.status.capabilities],
+      commands: this.status.commands && [...this.status.commands],
     };
   }
 
@@ -87,6 +102,7 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
       protocolVersion: undefined,
       engineVersion: undefined,
       capabilities: [],
+      commands: undefined,
       lastError: undefined,
     });
 
@@ -149,7 +165,7 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
 
     try {
       const handshake = await this.sendRequest<HandshakeResponse>('handshake', {
-        protocolVersion: '1.0',
+        protocolVersion: PROTOCOL_VERSION,
         launcherVersion: this.options.launcherVersion ?? '0.3.0',
         clientPlatform: process.platform,
       });
@@ -160,6 +176,7 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
           protocolVersion: handshake.protocolVersion,
           engineVersion: handshake.engineVersion,
           capabilities: [...handshake.supportedCapabilities],
+          commands: handshake.commands ? [...handshake.commands] : undefined,
           lastError: undefined,
         });
       } else {
@@ -182,6 +199,7 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
           protocolVersion: undefined,
           engineVersion: undefined,
           capabilities: [],
+          commands: undefined,
           lastError: errorMsg,
         });
       }
@@ -237,10 +255,12 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
       protocolVersion: undefined,
       engineVersion: undefined,
       capabilities: [],
+      commands: undefined,
       lastError: undefined,
     });
 
     if (child) {
+      child.stdin.end();
       await this.terminateChild(child);
     }
   }
@@ -295,8 +315,13 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
       throw new Error(`Cannot send request '${type}': engine is ${this.status.connectionState}`);
     }
 
+    const commands = this.status.commands;
+    if (type !== 'handshake' && commands && !commands.includes(type)) {
+      throw new Error(`This engine (${this.status.engineVersion}) has no command '${type}'`);
+    }
+
     const requestId = `req_${Date.now()}_${++this.requestCounter}`;
-    const timeoutMs = this.options.requestTimeoutMs ?? 15000;
+    const timeoutMs = SLOW[type] ?? this.options.requestTimeoutMs ?? 15000;
 
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -346,8 +371,8 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
       return;
     }
 
-    if (msg.type === 'session_event') {
-      this.emit('session_event', msg.payload as SessionEvent);
+    if (!msg.requestId && (ENGINE_EVENTS as readonly string[]).includes(msg.type)) {
+      this.emit('event', { type: msg.type, payload: msg.payload } as EngineEvent);
     }
   }
 
@@ -368,6 +393,7 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
         protocolVersion: undefined,
         engineVersion: undefined,
         capabilities: [],
+        commands: undefined,
         lastError,
       });
     }

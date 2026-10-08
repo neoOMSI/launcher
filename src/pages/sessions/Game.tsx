@@ -38,7 +38,8 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
   const { refreshInstances } = useEngine();
   const toast = useToast();
   const names = useNames();
-  const state = stopping && i.running ? 'stopping' : exitState(i);
+  const reported = i.running ? i.link?.state : undefined;
+  const state = (stopping || reported === 'stopping') && i.running ? 'stopping' : exitState(i);
   const lan = i.lan_status;
 
   const stop = async () => {
@@ -59,7 +60,15 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
   };
 
   const status =
-    state === 'running' ? (
+    state === 'running' && reported === 'starting' ? (
+      <span className="text-muted">{t('sessions.state.starting')}</span>
+    ) : state === 'running' && reported === 'loading' ? (
+      <span className="tabular-nums">
+        {t('sessions.state.loading', {
+          percent: Math.round((i.link?.progress ?? 0) * 100),
+        })}
+      </span>
+    ) : state === 'running' ? (
       <span className="inline-flex items-center gap-1.5 tabular-nums">
         <span className="size-2 rounded-full bg-ok" />
         {clock(now - i.started)}

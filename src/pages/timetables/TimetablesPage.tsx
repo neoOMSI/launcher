@@ -437,7 +437,7 @@ function DepartureRow({
         >
           {hhmm(d.time)}
         </span>
-        <span className="flex w-14 shrink-0">
+        <span className="flex min-w-14 shrink-0">
           <LineBadge line={d.line.name} />
         </span>
         <div className="min-w-0 flex-1">

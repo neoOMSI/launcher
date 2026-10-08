@@ -148,6 +148,7 @@
     "exact_fare": "Fahrgäste zahlen passend",
     "pax_prefer_seats": "Fahrgäste bevorzugen Sitzplätze",
     "pax_models": "Fahrgastmodelle",
+    "pax_pack": "Paket realistische Fahrgäste",
     "pax_motion": "Fahrgastbewegung",
     "pax_ik": "Prozedurale Animation",
     "pax_density": "Wie viele Fahrgäste",
@@ -333,6 +334,15 @@
     "keep": "Offen lassen",
     "minimize": "Minimieren",
     "hide": "Bis zum Ende ausblenden"
+  },
+  "paxPack": {
+    "download": "Herunterladen (einige hundert MB)",
+    "update": "Paket aktualisieren",
+    "retry": "Nochmal versuchen",
+    "starting": "Download startet…",
+    "downloading": "Lädt {percent} % von {size}",
+    "installing": "Wird installiert…",
+    "installed": "Installiert, ab dem nächsten Spielstart"
   },
   "actions": {
     "changeKeys": "Tasten ändern",

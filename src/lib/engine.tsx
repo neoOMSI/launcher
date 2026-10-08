@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { Command, CommandArgs, CommandResult, Instance } from '../types/launcher';
+import type { Command, CommandArgs, CommandResult, EngineEvent, Instance } from '../types/launcher';
 import type { EngineStatus } from '../types/scaffold';
+import { gameStart, type GameStart } from './launching';
 
 const stale = new EventTarget();
 
@@ -8,7 +9,8 @@ const AFFECTS: Partial<Record<Command, Command[]>> = {
   save_config: ['config', 'profile', 'profiles', 'maps', 'vehicles', 'weather', 'mods'],
   create_profile: ['config', 'profile', 'profiles'],
   delete_profile: ['config', 'profile', 'profiles'],
-  save_settings: ['settings'],
+  save_settings: ['settings', 'pax_pack'],
+  install_pax_pack: ['pax_pack'],
   save_keybindings: ['keybindings'],
   save_servers: ['servers'],
   install: ['mods', 'maps', 'vehicles', 'weather'],
@@ -51,6 +53,8 @@ interface EngineValue {
   disconnect: () => void;
   instances: Instance[];
   refreshInstances: () => void;
+  launching: GameStart | null;
+  noteLaunch: (pid: number) => void;
 }
 
 const EngineContext = createContext<EngineValue>({
@@ -63,9 +67,13 @@ const EngineContext = createContext<EngineValue>({
   disconnect() {},
   instances: [],
   refreshInstances() {},
+  launching: null,
+  noteLaunch() {},
 });
 
 export const useEngine = () => useContext(EngineContext);
+
+const CONTENT: Command[] = ['maps', 'vehicles', 'weather', 'lines', 'situations', 'mods'];
 
 export function EngineProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<EngineStatus>({
@@ -74,6 +82,8 @@ export function EngineProvider({ children }: { children: ReactNode }) {
   });
   const [logs, setLogs] = useState<string[]>([]);
   const [instances, setInstances] = useState<Instance[]>([]);
+  const [launch, setLaunch] = useState<{ pid: number; at: number } | null>(null);
+  const [now, setNow] = useState(() => Date.now() / 1000);
   const ready = status.connectionState === 'connected';
   const log = useCallback((line: string) => setLogs((prev) => [...prev, line]), []);
 
@@ -81,6 +91,12 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     if (!window.neoomsi) return;
     const unsubStatus = window.neoomsi.onEngineStatus(setStatus);
     const unsubLogs = window.neoomsi.onDiagnosticLog(log);
+    const unsubEvents = window.neoomsi.onEngineEvent((event: EngineEvent) => {
+      if (event.type === 'instances_changed') setInstances(event.payload);
+      else if (event.type === 'installs_changed') invalidate('mods');
+      else if (event.type === 'content_changed') invalidate(...CONTENT);
+      else if (event.type === 'pax_pack_changed') invalidate('pax_pack');
+    });
     window.neoomsi
       .getEngineStatus()
       .then((s) => {
@@ -93,6 +109,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     return () => {
       unsubStatus();
       unsubLogs();
+      unsubEvents();
     };
   }, [log]);
 
@@ -103,11 +120,32 @@ export function EngineProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
-    refreshInstances();
-    const timer = setInterval(refreshInstances, 2500);
-    return () => clearInterval(timer);
+    if (ready) refreshInstances();
   }, [ready, refreshInstances]);
+
+  const launching = launch
+    ? gameStart(
+        instances.find((i) => i.pid === launch.pid),
+        launch.at,
+        now,
+      )
+    : null;
+
+  useEffect(() => {
+    if (!launch) return;
+    if (!launching) {
+      setLaunch(null);
+      return;
+    }
+    const timer = setInterval(() => setNow(Date.now() / 1000), 1000);
+    return () => clearInterval(timer);
+  }, [launch, launching === null]);
+
+  const noteLaunch = useCallback((pid: number) => {
+    const at = Date.now() / 1000;
+    setNow(at);
+    setLaunch({ pid, at });
+  }, []);
 
   const connect = () =>
     window.neoomsi?.startEngine().catch((err) => log(`[Launcher] ${errorText(err)}`));
@@ -126,6 +164,8 @@ export function EngineProvider({ children }: { children: ReactNode }) {
         disconnect,
         instances,
         refreshInstances,
+        launching,
+        noteLaunch,
       }}
     >
       {children}
