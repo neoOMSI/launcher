@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { Icon } from './Icon';
 
 export function Screen({
@@ -91,10 +91,12 @@ export function PanelScreen({
   panel,
   children,
   width = 'w-[clamp(18rem,22vw,22rem)]',
+  bodyRef,
 }: {
   panel: ReactNode;
   children: ReactNode;
   width?: string;
+  bodyRef?: Ref<HTMLDivElement>;
 }) {
   return (
     <div className="stage-calm relative mr-3 mb-3 flex min-h-0 flex-1 overflow-hidden rounded-3xl">
@@ -103,7 +105,9 @@ export function PanelScreen({
           {panel}
         </aside>
       </div>
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto pt-9 pr-10 pb-12 pl-8">{children}</div>
+      <div ref={bodyRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto pt-9 pr-10 pb-12 pl-8">
+        {children}
+      </div>
     </div>
   );
 }

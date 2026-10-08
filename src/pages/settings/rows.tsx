@@ -1,5 +1,6 @@
 import React from 'react';
-import { ListGroup, ListRow } from '../../components/List';
+import { Icon } from '../../components/Icon';
+import { ListRow } from '../../components/List';
 import { Segmented, Select, Slider, Switch } from '../../components/ui';
 import { useSettings } from '../../lib/settings';
 import type { Settings } from '../../types/launcher';
@@ -43,22 +44,45 @@ export function shown(row: Row, ctx: Ctx | null): boolean {
 
 const decimals = (step: number) => (String(step).split('.')[1] ?? '').length;
 
-export const GroupList: React.FC<{ group: Group; rows?: readonly Row[]; ctx: Ctx | null }> = ({
-  group,
-  rows = group.rows,
-  ctx,
-}) => {
+export const visibleGroups = (groups: readonly Group[], ctx: Ctx | null) =>
+  groups.filter(
+    (g) => (!ctx || !g.visible || g.visible(ctx)) && g.rows.some((row) => shown(row, ctx)),
+  );
+
+export const GroupList: React.FC<{
+  group: Group;
+  rows?: readonly Row[];
+  ctx: Ctx | null;
+  onOpen?: () => void;
+}> = ({ group, rows = group.rows, ctx, onOpen }) => {
   const visible = rows.filter((row) => shown(row, ctx));
   if (!visible.length) return null;
+  const title = tr(`groups.${group.id}`);
   return (
-    <ListGroup
-      title={tr(`groups.${group.id}`)}
-      hint={group.description ? tr(`groupHints.${group.id}`) : undefined}
-    >
-      {visible.map((row) => (
-        <RowView key={row.key} row={row} ctx={ctx} />
-      ))}
-    </ListGroup>
+    <section data-group={group.id} className="mt-14 scroll-mt-6 first:mt-0">
+      <h3 className="mb-2 font-display text-[1.25rem] leading-tight font-bold tracking-tight text-heading">
+        {onOpen ? (
+          <button
+            type="button"
+            className="flex items-center gap-1 transition-colors hover:text-accent"
+            onClick={onOpen}
+          >
+            {title}
+            <Icon name="chevron_right" size={20} />
+          </button>
+        ) : (
+          title
+        )}
+      </h3>
+      {group.description && (
+        <p className="-mt-1 mb-2 text-[14.5px] text-muted">{tr(`groupHints.${group.id}`)}</p>
+      )}
+      <div className="list">
+        {visible.map((row) => (
+          <RowView key={row.key} row={row} ctx={ctx} />
+        ))}
+      </div>
+    </section>
   );
 };
 

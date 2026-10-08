@@ -284,6 +284,19 @@
   .nav-link.on svg {
     @apply text-accent;
   }
+  .subnav-link {
+    @apply relative flex h-7 w-full items-center rounded-lg pr-3 pl-11 text-left text-[14.5px] text-muted transition-colors hover:text-ink;
+  }
+  .subnav-link::before {
+    @apply absolute top-1/2 left-[1.3rem] size-1.5 -translate-y-1/2 rounded-full bg-accent opacity-0 transition-opacity;
+    content: '';
+  }
+  .subnav-link.on {
+    @apply font-medium text-heading;
+  }
+  .subnav-link.on::before {
+    @apply opacity-100;
+  }
   .nav-avatar {
     @apply -ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-sunken font-display text-[14px] font-semibold text-heading;
   }
