@@ -36,15 +36,33 @@ let isQuitting = false;
 
 const useMock = () => process.env.NEOOMSI_USE_MOCK === '1' || process.argv.includes('--mock');
 
+const ENGINE = process.platform === 'win32' ? 'neoomsi.exe' : 'neoomsi';
+
+function bundledEngine(): string | undefined {
+  let dir = dirname(process.execPath);
+  for (let up = 0; up < 8; up++) {
+    for (const candidate of [join(dir, ENGINE), join(dir, 'Contents', 'MacOS', ENGINE)]) {
+      if (existsSync(candidate)) return candidate;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return undefined;
+}
+
 function initializeEngineClient(): EngineClient {
   if (useMock()) return new MockEngineClient();
 
   const enginePath =
     process.argv.find((a) => a.startsWith('--engine='))?.slice('--engine='.length) ||
-    process.env.NEOOMSI_ENGINE_PATH;
+    process.env.NEOOMSI_ENGINE_PATH ||
+    (app.isPackaged ? bundledEngine() : undefined);
   if (!enginePath) {
     throw new Error(
-      'Engine path is not configured. Pass --engine=<neoomsi>, set NEOOMSI_ENGINE_PATH, or run with NEOOMSI_USE_MOCK=1 (or --mock in development).',
+      app.isPackaged
+        ? `The game (${ENGINE}) was not found beside the launcher. Start neoOMSI from its own folder.`
+        : 'Engine path is not configured. Pass --engine=<neoomsi>, set NEOOMSI_ENGINE_PATH, or run with NEOOMSI_USE_MOCK=1 (or --mock in development).',
     );
   }
   return new ProcessEngineClient({
