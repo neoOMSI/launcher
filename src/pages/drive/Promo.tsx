@@ -37,10 +37,9 @@ export function paxNotice(
   if (!pack) return null;
   if (pack.state === 'downloading' || pack.state === 'installing') return 'busy';
   if (pack.state === 'missing' || pack.state === 'failed') return 'missing';
-  if (pack.state === 'outdated' && String(pack.latest?.version ?? '') !== dismissedRelease) {
-    return 'update';
-  }
-  return null;
+  if (pack.state !== 'outdated') return null;
+  if (!pack.latest) return 'update';
+  return String(pack.latest.version) !== dismissedRelease ? 'update' : null;
 }
 
 function Card({
@@ -176,21 +175,29 @@ export const PassengerPromo: React.FC = () => {
     );
   }
 
-  if (notice === 'update' && p.latest) {
+  if (notice === 'update') {
     const latest = p.latest;
     return (
       <Card
         badge={t('drive.promo.badge')}
-        onDismiss={() => {
-          setDismissedRelease(String(latest.version));
-          write(SEEN_RELEASE, String(latest.version));
-        }}
+        onDismiss={
+          latest
+            ? () => {
+                setDismissedRelease(String(latest.version));
+                write(SEEN_RELEASE, String(latest.version));
+              }
+            : undefined
+        }
       >
-        <Title>{t('drive.pax.updateTitle', { version: latest.version })}</Title>
-        {changes && latest.notes.trim() ? (
+        <Title>
+          {latest
+            ? t('drive.pax.updateTitle', { version: latest.version })
+            : t('drive.pax.outdatedTitle')}
+        </Title>
+        {changes && latest?.notes.trim() ? (
           <Changelog notes={latest.notes} className="mt-2 max-h-48 overflow-y-auto pr-1" />
         ) : (
-          <Text>{t('drive.pax.updateText')}</Text>
+          <Text>{latest ? t('drive.pax.updateText') : t('drive.pax.outdatedText')}</Text>
         )}
         <div className="mt-3.5 flex flex-wrap items-center gap-2">
           <button
@@ -201,7 +208,7 @@ export const PassengerPromo: React.FC = () => {
             <Icon name="download" size={18} />
             {t('drive.pax.update')}
           </button>
-          {latest.notes.trim() && (
+          {latest?.notes.trim() && (
             <button
               type="button"
               className="btn-quiet h-9 rounded-full px-4 text-[14.5px]"
