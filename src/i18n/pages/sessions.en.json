@@ -1,0 +1,63 @@
+{
+  "goDrive": "Go driving",
+  "offline": "Not connected to the engine",
+  "offlineHint": "The launcher sees your games again once the engine is running.",
+  "running": "Running",
+  "none": "No game is running",
+  "noneHint": "Start a duty on the Drive page.",
+  "ended": "Recently ended",
+  "endedAgo": "ended {ago}, ran {ran}",
+  "freeDrive": "Free drive",
+  "lineTour": "{line}, tour {tour}",
+  "state": {
+    "stopping": "Stopping, saving the run…",
+    "clean": "Ended normally",
+    "killed": "Forced to close, run not saved",
+    "crashed": "Crashed (exit code {code})",
+    "ended": "Ended"
+  },
+  "showLog": "Show log",
+  "hideLog": "Hide log",
+  "openLog": "Open log file",
+  "readingLog": "Reading the log…",
+  "emptyLog": "The log is still empty.",
+  "stop": {
+    "button": "Stop",
+    "busy": "Stopping…",
+    "title": "Stop this game?",
+    "text": "neoOMSI saves your run, says goodbye to any LAN players and closes. If it hasn't ended after 8 seconds, it's forced to close and the run isn't saved.",
+    "confirm": "Stop the game",
+    "saved": "The game has ended, your run is saved.",
+    "forced": "The game didn't end in time and was forced to close."
+  },
+  "lan": {
+    "hosting": "Hosting",
+    "joined": "Joined",
+    "hosted": "Your LAN game",
+    "joinedGame": "LAN game",
+    "codeHint": "Friends paste it under Multiplayer → Connect by code.",
+    "tunnel": "Works over the internet.",
+    "local": "Only works on your local network.",
+    "connected": "Connected to {host}",
+    "connecting": "Connecting…",
+    "rejected": "Not let in: {reason}",
+    "players": "Players ({count})",
+    "passengers": "Passengers",
+    "host": "host",
+    "chat": "Chat",
+    "chatHint": "Press V in the game to write."
+  },
+  "history": {
+    "title": "History",
+    "driver": "Driver",
+    "allDrivers": "All drivers",
+    "loading": "Reading the runs…",
+    "failed": "Could not read the runs",
+    "none": "No runs yet",
+    "noneHint": "Every duty you drive shows up here once the game has ended."
+  },
+  "views": {
+    "running": "Running",
+    "history": "History"
+  }
+}

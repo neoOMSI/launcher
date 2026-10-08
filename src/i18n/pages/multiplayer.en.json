@@ -1,0 +1,70 @@
+{
+  "host": {
+    "switch": "Host my next drive",
+    "joins": "Next drive joins {name}",
+    "toDrive": "Go to Drive"
+  },
+  "join": {
+    "title": "Join a game",
+    "placeholder": "Session code or server address",
+    "hint": "Paste a code from a friend, or an IP / address with port.",
+    "checking": "Checking…",
+    "button": "Join",
+    "joined": "Joined {name}: choose your bus and duty, then start"
+  },
+  "sessions": {
+    "host": "Hosting",
+    "guest": "Joined",
+    "with": "with {host}",
+    "ready": "Friends can join from anywhere",
+    "preparing": "Getting ready for the internet…",
+    "players": "{count} players",
+    "onePlayer": "1 player",
+    "copy": "Copy the code",
+    "copied": "Session code copied",
+    "connecting": "Connecting to {host}…",
+    "rejected": "Not let in: {reason}"
+  },
+  "servers": {
+    "filter": "Filter servers",
+    "summary": "{servers} online · {players} players",
+    "official": "Official server",
+    "joinedBadge": "Joined",
+    "join": "Join",
+    "leave": "Leave",
+    "unreachable": "Not reachable: {error}",
+    "mapWeather": "map weather",
+    "notInstalled": "Map not installed",
+    "mapMissing": "The server plays {map}, which is not installed here: install that map first.",
+    "players": "{players} of {max} players",
+    "remove": "Remove from the list",
+    "confirmRemove": "Remove {name}?",
+    "confirmRemoveText": "You can add it again with its address.",
+    "none": "No servers yet",
+    "noneHint": "Add a server by the address its owner gives you.",
+    "noMatch": "No server matches “{query}”",
+    "loadFailed": "Could not ask the servers",
+    "reading": "Asking the servers…",
+    "add": "Add server",
+    "addTitle": "Add a server",
+    "address": "Address",
+    "name": "Name (optional)",
+    "addSubmit": "Add",
+    "added": "{name} was added to your list",
+    "removed": "{name} was removed from your list",
+    "errors": {
+      "empty": "Type the server's address (an IP, a name or a link)",
+      "duplicate": "That server is in the list already"
+    },
+    "title": "Servers"
+  },
+  "yours": {
+    "title": "Your game",
+    "hostHint": "Friends join with the code you get when the drive starts.",
+    "joinsHint": "Pick your bus and duty on the Drive page, then start."
+  },
+  "views": {
+    "play": "Join & host",
+    "servers": "Server list"
+  }
+}

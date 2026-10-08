@@ -4,9 +4,19 @@ import de from './de.json';
 export type SupportedLanguage = 'en' | 'de';
 
 const translations: Record<SupportedLanguage, Record<string, unknown>> = {
-  en,
-  de,
+  en: { ...en },
+  de: { ...de },
 };
+
+// Each page keeps its strings in `pages/<namespace>.<language>.json`, merged in under `<namespace>`.
+const pages = import.meta.glob<Record<string, unknown>>('./pages/*.json', {
+  eager: true,
+  import: 'default',
+});
+for (const [file, strings] of Object.entries(pages)) {
+  const match = file.match(/\/(\w+)\.(en|de)\.json$/);
+  if (match) translations[match[2] as SupportedLanguage][match[1]] = strings;
+}
 
 export function normalizeLanguage(code?: string | null): SupportedLanguage {
   if (!code) {

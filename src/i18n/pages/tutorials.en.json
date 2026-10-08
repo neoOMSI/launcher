@@ -1,0 +1,14 @@
+{
+  "loadFailed": "Could not read the tutorials",
+  "reading": "Looking for the tutorials…",
+  "none": "No tutorials found",
+  "noneHint": "The OMSI 2 folder has no Tutorials folder.",
+  "start": "Start",
+  "starting": "Starting…",
+  "again": "Again",
+  "startedAgo": "Started {when}",
+  "started": "Lesson {n} is starting (process {pid})",
+  "lessonOf": "Lesson {n} of {count}",
+  "notStarted": "Not started yet",
+  "next": "Next lesson"
+}

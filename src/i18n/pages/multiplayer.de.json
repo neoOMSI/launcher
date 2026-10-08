@@ -1,0 +1,70 @@
+{
+  "host": {
+    "switch": "Nächste Fahrt hosten",
+    "joins": "Nächste Fahrt tritt {name} bei",
+    "toDrive": "Zu Fahren"
+  },
+  "join": {
+    "title": "Spiel beitreten",
+    "placeholder": "Sitzungscode oder Serveradresse",
+    "hint": "Füge den Code eines Freundes ein oder eine IP / Adresse mit Port.",
+    "checking": "Wird geprüft…",
+    "button": "Beitreten",
+    "joined": "{name} beigetreten: Wähle Bus und Dienst, dann geht's los"
+  },
+  "sessions": {
+    "host": "Host",
+    "guest": "Beigetreten",
+    "with": "bei {host}",
+    "ready": "Freunde können von überall beitreten",
+    "preparing": "Wird fürs Internet vorbereitet…",
+    "players": "{count} Spieler",
+    "onePlayer": "1 Spieler",
+    "copy": "Code kopieren",
+    "copied": "Sitzungscode kopiert",
+    "connecting": "Verbinde mit {host}…",
+    "rejected": "Nicht hereingelassen: {reason}"
+  },
+  "servers": {
+    "filter": "Server filtern",
+    "summary": "{servers} online · {players} Spieler",
+    "official": "Offizieller Server",
+    "joinedBadge": "Beigetreten",
+    "join": "Beitreten",
+    "leave": "Verlassen",
+    "unreachable": "Nicht erreichbar: {error}",
+    "mapWeather": "Wetter der Karte",
+    "notInstalled": "Karte nicht installiert",
+    "mapMissing": "Auf dem Server läuft {map}, das hier nicht installiert ist: Installiere zuerst diese Karte.",
+    "players": "{players} von {max} Spielern",
+    "remove": "Aus der Liste entfernen",
+    "confirmRemove": "{name} entfernen?",
+    "confirmRemoveText": "Mit der Adresse kannst du ihn jederzeit wieder hinzufügen.",
+    "none": "Noch keine Server",
+    "noneHint": "Füge einen Server mit der Adresse hinzu, die dir sein Betreiber gibt.",
+    "noMatch": "Kein Server passt zu „{query}“",
+    "loadFailed": "Die Server konnten nicht abgefragt werden",
+    "reading": "Server werden abgefragt…",
+    "add": "Server hinzufügen",
+    "addTitle": "Server hinzufügen",
+    "address": "Adresse",
+    "name": "Name (optional)",
+    "addSubmit": "Hinzufügen",
+    "added": "{name} wurde zu deiner Liste hinzugefügt",
+    "removed": "{name} wurde aus deiner Liste entfernt",
+    "errors": {
+      "empty": "Gib die Adresse des Servers ein (eine IP, einen Namen oder einen Link)",
+      "duplicate": "Dieser Server ist schon in der Liste"
+    },
+    "title": "Server"
+  },
+  "yours": {
+    "title": "Dein Spiel",
+    "hostHint": "Freunde treten mit dem Code bei, den du beim Start bekommst.",
+    "joinsHint": "Wähle auf der Fahren-Seite Bus und Dienst, dann starte."
+  },
+  "views": {
+    "play": "Beitreten & hosten",
+    "servers": "Serverliste"
+  }
+}

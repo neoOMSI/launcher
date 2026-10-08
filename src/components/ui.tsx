@@ -1,85 +1,13 @@
-import React, { type CSSProperties, type ReactNode } from 'react';
+import React, {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { Icon } from './Icon';
 
 export { Select } from './Select';
-
-export const Page: React.FC<{
-  title: string;
-  subtitle?: string;
-  actions?: ReactNode;
-  tabs?: ReactNode;
-  className?: string;
-  children: ReactNode;
-}> = ({ title, subtitle, actions, tabs, className = '', children }) => (
-  <div className="flex h-full min-h-0 flex-col">
-    <header className="shrink-0 px-12 pt-10">
-      <div className="flex items-start justify-between gap-8">
-        <div className="min-w-0">
-          <h1 className="section-title">{title}</h1>
-          {subtitle && <p className="mt-2 max-w-[44em] text-[16px] text-muted">{subtitle}</p>}
-        </div>
-        {actions && <div className="flex shrink-0 items-center gap-3">{actions}</div>}
-      </div>
-      {tabs && <div className="mt-8">{tabs}</div>}
-    </header>
-    <div className={`min-h-0 flex-1 overflow-y-auto px-12 pt-8 pb-12 ${className}`}>{children}</div>
-  </div>
-);
-
-export function Tabs<T extends string>({
-  items,
-  value,
-  onChange,
-}: {
-  items: readonly (readonly [T, string, string?])[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div role="tablist" className="tabs">
-      {items.map(([id, label, icon]) => (
-        <button
-          key={id}
-          type="button"
-          role="tab"
-          className="tab"
-          aria-selected={id === value}
-          onClick={() => onChange(id)}
-        >
-          {icon && <Icon name={icon} size={18} />}
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export const Panel: React.FC<{
-  title?: string;
-  description?: string;
-  icon?: string;
-  actions?: ReactNode;
-  className?: string;
-  children?: ReactNode;
-}> = ({ title, description, icon, actions, className = '', children }) => (
-  <section className={`card p-7 ${className}`}>
-    {(title || actions) && (
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          {title && (
-            <h2 className="flex items-center gap-2.5 font-sans text-[1.15rem]">
-              {icon && <Icon name={icon} size={20} style={{ color: 'var(--accent)' }} />}
-              {title}
-            </h2>
-          )}
-          {description && <p className="mt-1.5 text-[15px] text-muted">{description}</p>}
-        </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-      </div>
-    )}
-    {children}
-  </section>
-);
 
 export const Switch: React.FC<{
   checked: boolean;
@@ -138,12 +66,35 @@ export function Segmented<T extends string>({
   label?: string;
   fill?: boolean;
 }) {
+  const track = useRef<HTMLDivElement>(null);
+  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = track.current!;
+    const measure = () => {
+      const on = el.querySelector<HTMLElement>('.seg[aria-pressed="true"]');
+      setThumb(on ? { left: on.offsetLeft, width: on.offsetWidth } : null);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [value, options.map(([, text]) => text).join('|')]);
+
   return (
     <div
+      ref={track}
       className={fill ? 'segmented flex w-full [&>.seg]:flex-1 [&>.seg]:px-2' : 'segmented'}
       role="group"
       aria-label={label}
     >
+      {thumb && (
+        <span
+          aria-hidden="true"
+          className="seg-thumb"
+          style={{ width: thumb.width, transform: `translateX(${thumb.left}px)` }}
+        />
+      )}
       {options.map(([v, text]) => (
         <button
           key={v}
@@ -159,37 +110,6 @@ export function Segmented<T extends string>({
   );
 }
 
-export const SettingGroup: React.FC<{
-  title: string;
-  description?: string;
-  children: ReactNode;
-}> = ({ title, description, children }) => (
-  <section className="mb-12 last:mb-0">
-    <h2 className="font-sans text-[1.15rem]">{title}</h2>
-    {description && <p className="mt-1.5 max-w-[40em] text-[15px] text-muted">{description}</p>}
-    <div className="mt-4 border-b border-line">{children}</div>
-  </section>
-);
-
-export const SettingRow: React.FC<{
-  label: string;
-  hint?: string;
-  wide?: boolean;
-  children: ReactNode;
-}> = ({ label, hint, wide, children }) => (
-  <div
-    className={`grid items-center gap-x-10 gap-y-3 border-t border-line py-4 ${
-      wide ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_auto]'
-    }`}
-  >
-    <div className="min-w-0">
-      <p className="text-ink">{label}</p>
-      {hint && <p className="mt-0.5 text-[14.5px] leading-snug text-muted">{hint}</p>}
-    </div>
-    <div className={wide ? '' : 'flex w-[18rem] justify-end'}>{children}</div>
-  </div>
-);
-
 export const EmptyState: React.FC<{ icon?: string; title: string; children?: ReactNode }> = ({
   icon,
   title,
@@ -197,8 +117,8 @@ export const EmptyState: React.FC<{ icon?: string; title: string; children?: Rea
 }) => (
   <div className="flex flex-col items-center rounded-xl border border-dashed border-line px-8 py-14 text-center">
     {icon && (
-      <span className="mb-4 grid size-12 place-items-center rounded-full bg-sunken text-muted">
-        <Icon name={icon} size={24} />
+      <span className="mb-4 grid size-12 place-items-center text-muted">
+        <Icon name={icon} size={32} />
       </span>
     )}
     <p className="font-semibold text-heading">{title}</p>

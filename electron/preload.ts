@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron';
 import type {
   EngineStatus,
   GetMapsResponse,
@@ -12,7 +12,16 @@ import type {
 import type { NeoomsiBridge } from '../src/types/neoomsi';
 import type { Command, CommandArgs, CommandResult } from '../src/types/launcher';
 
+function listen<T>(channel: string, callback: (value: T) => void) {
+  const handler = (_: IpcRendererEvent, value: T) => callback(value);
+  ipcRenderer.on(channel, handler);
+  return () => {
+    ipcRenderer.removeListener(channel, handler);
+  };
+}
+
 const api: NeoomsiBridge = {
+  platform: process.platform,
   call: <C extends Command>(command: C, args?: CommandArgs<C>): Promise<CommandResult<C>> =>
     ipcRenderer.invoke('engine:call', command, args),
   getMaps: (filter?: string): Promise<GetMapsResponse> =>
@@ -34,23 +43,29 @@ const api: NeoomsiBridge = {
   startEngine: (): Promise<EngineStatus> => ipcRenderer.invoke('engine:start'),
   stopEngine: (): Promise<void> => ipcRenderer.invoke('engine:stop'),
 
-  onEngineStatus: (callback: (status: EngineStatus) => void) => {
-    const handler = (_: IpcRendererEvent, status: EngineStatus) => callback(status);
-    ipcRenderer.on('engine:status-changed', handler);
-    return () => ipcRenderer.removeListener('engine:status-changed', handler);
-  },
+  onEngineStatus: (callback) => listen<EngineStatus>('engine:status-changed', callback),
+  onSessionEvent: (callback) => listen<SessionEvent>('engine:session-event', callback),
+  onDiagnosticLog: (callback) => listen<string>('engine:diagnostic-log', callback),
 
-  onSessionEvent: (callback: (event: SessionEvent) => void) => {
-    const handler = (_: IpcRendererEvent, event: SessionEvent) => callback(event);
-    ipcRenderer.on('engine:session-event', handler);
-    return () => ipcRenderer.removeListener('engine:session-event', handler);
+  window: {
+    minimize: () => ipcRenderer.invoke('window:minimize'),
+    toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),
+    close: () => ipcRenderer.invoke('window:close'),
+    isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+    onMaximized: (callback) => listen<boolean>('window:maximized', callback),
   },
-
-  onDiagnosticLog: (callback: (log: string) => void) => {
-    const handler = (_: IpcRendererEvent, log: string) => callback(log);
-    ipcRenderer.on('engine:diagnostic-log', handler);
-    return () => ipcRenderer.removeListener('engine:diagnostic-log', handler);
+  prefs: {
+    get: () => ipcRenderer.invoke('prefs:get'),
+    set: (patch) => ipcRenderer.invoke('prefs:set', patch),
   },
+  pickFiles: (kind, multiple = false) => ipcRenderer.invoke('dialog:pick-files', kind, multiple),
+  pickFolder: (defaultPath) => ipcRenderer.invoke('dialog:pick-folder', defaultPath),
+  pathForFile: (file) => webUtils.getPathForFile(file),
+  openPath: (path) => ipcRenderer.invoke('shell:open-path', path),
+  showItem: (path) => ipcRenderer.invoke('shell:show-item', path),
+  openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  appInfo: () => ipcRenderer.invoke('app:info'),
+  checkUpdates: (current) => ipcRenderer.invoke('updates:check', current),
 };
 
 contextBridge.exposeInMainWorld('neoomsi', api);

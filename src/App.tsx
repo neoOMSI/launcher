@@ -1,56 +1,72 @@
 import React from 'react';
 import './styles/app.css';
 import { Sidebar } from './components/Sidebar';
-import { EmptyState, Page } from './components/ui';
-import { t } from './i18n';
+import { TitleBar } from './components/TitleBar';
+import { Tooltips } from './components/Tooltip';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { EngineProvider, useEngine } from './lib/engine';
 import { NavProvider, ToastProvider, useNav, type PageId } from './lib/nav';
-import { DiagnosticsPage } from './pages/DiagnosticsPage';
-import { DrivePage } from './pages/drive/DrivePage';
 import { DutyProvider } from './lib/duty';
+import { SettingsProvider, useSettings } from './lib/settings';
+import { DrivePage } from './pages/drive/DrivePage';
+import { SettingsPage } from './pages/settings/SettingsPage';
+import { ControlsPage } from './pages/controls/ControlsPage';
+import { ModsPage } from './pages/mods/ModsPage';
+import { ProfilePage } from './pages/profile/ProfilePage';
+import { SessionsPage } from './pages/sessions/SessionsPage';
+import { TimetablesPage } from './pages/timetables/TimetablesPage';
+import { TutorialsPage } from './pages/tutorials/TutorialsPage';
+import { MultiplayerPage } from './pages/multiplayer/MultiplayerPage';
 
-const PAGES: Partial<Record<PageId, React.FC>> = {
+const PAGES: Record<PageId, React.FC> = {
   drive: DrivePage,
+  multiplayer: MultiplayerPage,
+  tutorials: TutorialsPage,
+  mods: ModsPage,
+  timetables: TimetablesPage,
+  profile: ProfilePage,
+  sessions: SessionsPage,
+  settings: SettingsPage,
+  controls: ControlsPage,
 };
-
-function Diagnostics() {
-  const { status, logs, connect, disconnect, clearLogs } = useEngine();
-  return (
-    <DiagnosticsPage
-      status={status}
-      logs={logs}
-      onConnect={connect}
-      onDisconnect={disconnect}
-      onClearLogs={clearLogs}
-    />
-  );
-}
 
 function Current() {
   const { route } = useNav();
-  if (route.page === 'settings') return <Diagnostics />;
+  const { log } = useEngine();
   const Screen = PAGES[route.page];
-  if (Screen) return <Screen />;
   return (
-    <Page title={t(`nav.${route.page}`)}>
-      <EmptyState icon="construction" title={t(`nav.${route.page}`)} />
-    </Page>
+    <ErrorBoundary key={route.page} onError={log}>
+      <Screen />
+    </ErrorBoundary>
+  );
+}
+
+function Shell() {
+  const { language } = useSettings();
+  return (
+    <div key={language} className="flex h-screen flex-col">
+      <TitleBar />
+      <div className="flex min-h-0 flex-1">
+        <Sidebar />
+        <main className="flex min-w-0 flex-1 flex-col">
+          <Current />
+        </main>
+      </div>
+    </div>
   );
 }
 
 export const App: React.FC = () => (
   <EngineProvider>
-    <NavProvider>
-      <ToastProvider>
-        <DutyProvider>
-          <div className="flex h-screen">
-            <Sidebar />
-            <main className="flex min-w-0 flex-1 flex-col">
-              <Current />
-            </main>
-          </div>
-        </DutyProvider>
-      </ToastProvider>
-    </NavProvider>
+    <SettingsProvider>
+      <NavProvider>
+        <ToastProvider>
+          <DutyProvider>
+            <Shell />
+            <Tooltips />
+          </DutyProvider>
+        </ToastProvider>
+      </NavProvider>
+    </SettingsProvider>
   </EngineProvider>
 );

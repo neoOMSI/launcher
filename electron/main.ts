@@ -1,32 +1,42 @@
-import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  net,
+  shell,
+  type IpcMainInvokeEvent,
+} from 'electron';
+import { existsSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { EngineClient } from './client';
 import { MockEngineClient } from './mock-client';
 import { ProcessEngineClient } from './process-client';
 import { CliEngineClient } from './cli-client';
+import { loadPrefs, savePrefs } from './prefs';
+import { newerVersion } from './version';
 import type { EngineStatus, SessionEvent } from '../src/types/scaffold';
-import { COMMANDS, type Config, type MapInfo } from '../src/types/launcher';
+import type { LauncherPrefs, PickKind, UpdateInfo } from '../src/types/neoomsi';
+import { COMMANDS, type Config, type Instance, type MapInfo } from '../src/types/launcher';
 import packageJson from '../package.json' with { type: 'json' };
 
 let mainWindow: BrowserWindow | null = null;
 let engine: EngineClient | null = null;
+let engineError: string | null = null;
 let isQuitting = false;
 
-function initializeEngineClient(): EngineClient {
-  const useMock = process.env.NEOOMSI_USE_MOCK === '1' || process.argv.includes('--mock');
+const useMock = () => process.env.NEOOMSI_USE_MOCK === '1' || process.argv.includes('--mock');
 
-  if (useMock) {
-    return new MockEngineClient();
-  }
+function initializeEngineClient(): EngineClient {
+  if (useMock()) return new MockEngineClient();
 
   const cli =
     process.argv.find((a) => a.startsWith('--cli='))?.slice('--cli='.length) ||
     process.env.NEOOMSI_LAUNCHER_CLI;
-  if (cli) {
-    return new CliEngineClient(resolve(cli));
-  }
+  if (cli) return new CliEngineClient(resolve(cli));
 
   const enginePath = process.env.NEOOMSI_ENGINE_PATH;
   if (!enginePath) {
@@ -34,11 +44,7 @@ function initializeEngineClient(): EngineClient {
       'Engine path is not configured. Set NEOOMSI_ENGINE_PATH or run with NEOOMSI_USE_MOCK=1 (or --mock in development).',
     );
   }
-
-  return new ProcessEngineClient({
-    enginePath,
-    launcherVersion: packageJson.version,
-  });
+  return new ProcessEngineClient({ enginePath, launcherVersion: packageJson.version });
 }
 
 function setupEngineClient(): void {
@@ -55,26 +61,85 @@ function setupEngineClient(): void {
     engine.on('diagnostic', (log: string) => {
       mainWindow?.webContents.send('engine:diagnostic-log', log);
     });
+    engineError = null;
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('Failed to initialize engine client:', message);
+    engineError = err instanceof Error ? err.message : String(err);
+    console.error('Failed to initialize engine client:', engineError);
   }
 }
 
+let hiddenForGame = false;
+let gameWatch: NodeJS.Timeout | null = null;
+
+function watchGames(instances?: Instance[]) {
+  if (!hiddenForGame || !instances) return;
+  if (instances.some((i) => i.running)) return;
+  hiddenForGame = false;
+  if (gameWatch) clearInterval(gameWatch);
+  gameWatch = null;
+  if (!loadPrefs().restoreOnExit || !mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function gameLaunched() {
+  const { onLaunch } = loadPrefs();
+  if (!mainWindow || onLaunch === 'keep') return;
+  hiddenForGame = true;
+  if (onLaunch === 'hide') mainWindow.hide();
+  else mainWindow.minimize();
+  if (gameWatch) clearInterval(gameWatch);
+  // The game takes a while to register itself; until then `instances` may still be empty.
+  const since = Date.now();
+  gameWatch = setInterval(() => {
+    if (Date.now() - since < 10_000) return;
+    engine
+      ?.sendRequest<Instance[]>('instances', {})
+      .then(watchGames)
+      .catch(() => {});
+  }, 3000);
+}
+
+function iconPath() {
+  const name = process.platform === 'win32' ? 'icon.ico' : 'icon.png';
+  const packaged = join(process.resourcesPath, name);
+  return existsSync(packaged) ? packaged : join(app.getAppPath(), 'build', name);
+}
+
 function createWindow(): void {
+  const saved = loadPrefs().window;
   mainWindow = new BrowserWindow({
-    width: 1320,
-    height: 840,
+    width: saved?.width ?? 1320,
+    height: saved?.height ?? 840,
+    x: saved?.x,
+    y: saved?.y,
     minWidth: 1080,
     minHeight: 680,
-    title: 'neoOMSI Launcher',
+    title: 'neoOMSI',
+    icon: iconPath(),
     backgroundColor: '#0f0f0f',
+    titleBarStyle: 'hidden',
+    ...(process.platform === 'darwin' ? { trafficLightPosition: { x: 18, y: 16 } } : {}),
+    show: false,
     webPreferences: {
       preload: join(import.meta.dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      backgroundThrottling: false,
     },
+  });
+  if (saved?.maximized) mainWindow.maximize();
+  mainWindow.once('ready-to-show', () => mainWindow?.show());
+
+  const sendMaximized = () =>
+    mainWindow?.webContents.send('window:maximized', mainWindow.isMaximized());
+  mainWindow.on('maximize', sendMaximized);
+  mainWindow.on('unmaximize', sendMaximized);
+  mainWindow.on('close', () => {
+    if (!mainWindow) return;
+    savePrefs({ window: { ...mainWindow.getNormalBounds(), maximized: mainWindow.isMaximized() } });
   });
 
   // Renderer navigation stays confined to the launcher window.
@@ -131,24 +196,24 @@ function registerIpcHandler<T, TArgs extends unknown[] = unknown[]>(
   });
 }
 
-registerIpcHandler('engine:get-status', () => {
+function requireEngine(): EngineClient {
+  if (!engine) throw new Error(engineError ?? 'Engine client not initialized');
+  return engine;
+}
+
+registerIpcHandler('engine:get-status', (): EngineStatus => {
   return engine
     ? engine.getStatus()
     : {
         connectionState: 'error',
         capabilities: [],
-        lastError: 'Engine client not initialized',
+        lastError: engineError ?? 'Engine client not initialized',
       };
 });
 
 registerIpcHandler('engine:start', async () => {
-  if (!engine) {
-    setupEngineClient();
-  }
-  if (!engine) {
-    throw new Error('Engine client could not be initialized');
-  }
-  return engine.start();
+  if (!engine) setupEngineClient();
+  return requireEngine().start();
 });
 
 registerIpcHandler('engine:stop', async () => {
@@ -157,47 +222,40 @@ registerIpcHandler('engine:stop', async () => {
   }
 });
 
-registerIpcHandler('engine:get-maps', (_, filter: string | undefined) => {
-  if (!engine) throw new Error('Engine client not initialized');
-  return engine.sendRequest('get_maps', { filter });
-});
+registerIpcHandler('engine:get-maps', (_, filter: string | undefined) =>
+  requireEngine().sendRequest('get_maps', { filter }),
+);
 
-registerIpcHandler('engine:get-vehicles', (_, filter: string | undefined) => {
-  if (!engine) throw new Error('Engine client not initialized');
-  return engine.sendRequest('get_vehicles', { filter });
-});
+registerIpcHandler('engine:get-vehicles', (_, filter: string | undefined) =>
+  requireEngine().sendRequest('get_vehicles', { filter }),
+);
 
-registerIpcHandler('engine:get-settings', () => {
-  if (!engine) throw new Error('Engine client not initialized');
-  return engine.sendRequest('get_settings', {});
-});
+registerIpcHandler('engine:get-settings', () => requireEngine().sendRequest('get_settings', {}));
 
-registerIpcHandler('engine:update-settings', (_, settingsJson: string) => {
-  if (!engine) throw new Error('Engine client not initialized');
-  return engine.sendRequest('update_settings', { settingsJson });
-});
+registerIpcHandler('engine:update-settings', (_, settingsJson: string) =>
+  requireEngine().sendRequest('update_settings', { settingsJson }),
+);
 
-registerIpcHandler('engine:start-session', (_, req: unknown) => {
-  if (!engine) throw new Error('Engine client not initialized');
-  return engine.sendRequest('start_session', req);
-});
+registerIpcHandler('engine:start-session', (_, req: unknown) =>
+  requireEngine().sendRequest('start_session', req),
+);
 
-registerIpcHandler('engine:stop-session', (_, sessionId: string) => {
-  if (!engine) throw new Error('Engine client not initialized');
-  return engine.sendRequest('stop_session', { sessionId });
-});
+registerIpcHandler('engine:stop-session', (_, sessionId: string) =>
+  requireEngine().sendRequest('stop_session', { sessionId }),
+);
 
-registerIpcHandler('engine:call', (_, command: string, args: unknown) => {
-  if (!engine) throw new Error('Engine client not initialized');
+registerIpcHandler('engine:call', async (_, command: string, args: unknown) => {
+  const client = requireEngine();
   if (!(COMMANDS as readonly string[]).includes(command)) {
     throw new Error(`Unknown launcher command '${command}'`);
   }
-  return engine.sendRequest(command, args ?? {});
+  const result = await client.sendRequest(command, args ?? {});
+  if (command === 'launch') gameLaunched();
+  return result;
 });
 
 registerIpcHandler('engine:preview-model', async (_, bus: string, paint: string) => {
-  if (!engine) throw new Error('Engine client not initialized');
-  const path = await engine.sendRequest<string>('preview', { bus, paint });
+  const path = await requireEngine().sendRequest<string>('preview', { bus, paint });
   if (typeof path !== 'string' || !path.toLowerCase().endsWith('.glb')) {
     throw new Error('The engine did not export a model');
   }
@@ -205,10 +263,10 @@ registerIpcHandler('engine:preview-model', async (_, bus: string, paint: string)
 });
 
 registerIpcHandler('engine:map-picture', async (_, mapFile: string) => {
-  if (!engine) throw new Error('Engine client not initialized');
+  const client = requireEngine();
   const [config, maps] = await Promise.all([
-    engine.sendRequest<Config>('config', {}),
-    engine.sendRequest<MapInfo[]>('maps', {}),
+    client.sendRequest<Config>('config', {}),
+    client.sendRequest<MapInfo[]>('maps', {}),
   ]);
   const map = maps.find((m) => m.file === mapFile);
   if (!map || !config.root) return null;
@@ -223,7 +281,116 @@ registerIpcHandler('engine:map-picture', async (_, mapFile: string) => {
   }
 });
 
+registerIpcHandler('window:minimize', () => mainWindow?.minimize());
+registerIpcHandler('window:toggle-maximize', () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMaximized()) mainWindow.unmaximize();
+  else mainWindow.maximize();
+});
+registerIpcHandler('window:close', () => mainWindow?.close());
+registerIpcHandler('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
+
+registerIpcHandler('prefs:get', () => loadPrefs());
+registerIpcHandler('prefs:set', (_, patch: Partial<LauncherPrefs>) => savePrefs(patch));
+
+const PICK_FILTERS: Record<PickKind, Electron.FileFilter[]> = {
+  mod: [{ name: 'Mods', extensions: ['zip', '7z', 'rar'] }],
+  engine: process.platform === 'win32' ? [{ name: 'neoOMSI', extensions: ['exe'] }] : [],
+  any: [],
+};
+
+registerIpcHandler('dialog:pick-files', async (_, kind: PickKind, multiple: boolean) => {
+  if (!mainWindow) return [];
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: multiple ? ['openFile', 'multiSelections'] : ['openFile'],
+    filters: PICK_FILTERS[kind] ?? [],
+  });
+  return result.canceled ? [] : result.filePaths;
+});
+
+registerIpcHandler('dialog:pick-folder', async (_, defaultPath?: string) => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    defaultPath: defaultPath || undefined,
+  });
+  return result.canceled ? null : result.filePaths[0];
+});
+
+const OPENABLE = new Set(['.log', '.txt', '.json', '.toml', '.cfg']);
+
+registerIpcHandler('shell:open-path', async (_, path: string) => {
+  if (!existsSync(path)) throw new Error(`${path} does not exist`);
+  if (!statSync(path).isDirectory() && !OPENABLE.has(extname(path).toLowerCase())) {
+    throw new Error(`${path} cannot be opened from the launcher`);
+  }
+  const error = await shell.openPath(path);
+  if (error) throw new Error(error);
+});
+
+registerIpcHandler('shell:show-item', (_, path: string) => {
+  if (existsSync(path)) shell.showItemInFolder(path);
+});
+
+registerIpcHandler('shell:open-external', (_, url: string) => {
+  if (!/^https:\/\//.test(url)) throw new Error('Only https links can be opened');
+  return shell.openExternal(url);
+});
+
+registerIpcHandler('app:info', () => ({
+  version: app.getVersion(),
+  electron: process.versions.electron,
+  chrome: process.versions.chrome,
+  platform: process.platform,
+  arch: process.arch,
+  userData: app.getPath('userData'),
+}));
+
+const RELEASES = 'https://api.github.com/repos/neoOMSI/neoOMSI/releases?per_page=10';
+
+registerIpcHandler('updates:check', async (_, current: string): Promise<UpdateInfo> => {
+  const response = await net.fetch(RELEASES, {
+    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'neoOMSI-launcher' },
+  });
+  if (!response.ok) throw new Error(`GitHub answered ${response.status}`);
+  const releases = (await response.json()) as {
+    tag_name: string;
+    name: string;
+    html_url: string;
+    body: string | null;
+    draft: boolean;
+    prerelease: boolean;
+    published_at: string;
+  }[];
+  const latest = releases.find((r) => !r.draft);
+  if (!latest) return { current, latest: null, available: false };
+  return {
+    current,
+    latest: {
+      version: latest.tag_name,
+      name: latest.name || latest.tag_name,
+      url: latest.html_url,
+      notes: latest.body ?? '',
+      prerelease: latest.prerelease,
+      published: latest.published_at,
+    },
+    available: !!current && newerVersion(latest.tag_name, current),
+  };
+});
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+}
+
+app.on('second-instance', () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+});
+
 app.whenReady().then(() => {
+  if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
   setupEngineClient();
   createWindow();
 
