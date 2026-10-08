@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Confirm } from '../../components/Dialog';
 import { Icon } from '../../components/Icon';
 import { PanelScreen, SearchField } from '../../components/Screen';
@@ -9,7 +9,7 @@ import { useNav, useToast } from '../../lib/nav';
 import { useSettings } from '../../lib/settings';
 import { DiagnosticsTab } from './DiagnosticsTab';
 import { LauncherProvider, useLauncherReset } from './launcher';
-import { GroupList, needsSettings } from './rows';
+import { GroupList, needsSettings, visibleGroups } from './rows';
 import {
   DEFAULTS,
   isTab,
@@ -49,19 +49,108 @@ function Settings() {
     Boolean(status.engineVersion?.includes('mock'));
   const ctx: Ctx | null = settings ? { s: { ...DEFAULTS, ...settings }, windows } : null;
   const searching = query.trim() !== '';
+  const groups = tab && !searching ? visibleGroups(tab.groups, ctx) : [];
+  const outline = groups.map((g) => g.id).join('|');
 
-  const open = (id: Section) => {
+  const body = useRef<HTMLDivElement>(null);
+  const nav = useRef<HTMLElement>(null);
+  const jump = useRef<string | null>(null);
+  const pinned = useRef(false);
+  const [active, setActive] = useState<string | null>(null);
+
+  const open = (id: Section, group?: string) => {
     setQuery('');
+    jump.current = group ?? null;
     go('settings', id);
   };
 
-  const sections: [Section, string][] = [
-    ...TABS.map(({ id, icon }) => [id, icon] as [Section, string]),
-    ['diagnostics', 'monitor_heart'],
-  ];
+  const scrollTo = (group: string, smooth: boolean) => {
+    const el = body.current?.querySelector(`[data-group="${group}"]`);
+    if (!el) return;
+    pinned.current = smooth;
+    setActive(group);
+    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant', block: 'start' });
+  };
+
+  useLayoutEffect(() => {
+    if (searching) return;
+    if (jump.current) scrollTo(jump.current, false);
+    else body.current?.scrollTo({ top: 0 });
+    jump.current = null;
+  }, [current, searching]);
+
+  useEffect(() => {
+    const el = body.current;
+    if (!el || searching) return;
+    const spy = () => {
+      if (pinned.current) return;
+      const anchors = [...el.querySelectorAll<HTMLElement>('[data-group]')];
+      if (!anchors.length) return setActive(null);
+      const line = el.getBoundingClientRect().top + el.clientHeight * 0.3;
+      const end = el.scrollTop > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+      const hit = end
+        ? anchors[anchors.length - 1]
+        : (anchors.findLast((a) => a.getBoundingClientRect().top <= line) ?? anchors[0]);
+      setActive(hit.dataset.group ?? null);
+    };
+    const release = () => {
+      pinned.current = false;
+    };
+    spy();
+    el.addEventListener('scroll', spy, { passive: true });
+    el.addEventListener('scrollend', release);
+    el.addEventListener('wheel', release, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', spy);
+      el.removeEventListener('scrollend', release);
+      el.removeEventListener('wheel', release);
+    };
+  }, [current, searching, outline]);
+
+  useEffect(() => {
+    const list = nav.current;
+    const item = list?.querySelector('.subnav-link.on');
+    if (!list || !item) return;
+    const a = item.getBoundingClientRect();
+    const b = list.getBoundingClientRect();
+    if (a.bottom > b.bottom) list.scrollTop += a.bottom - b.bottom + 12;
+    else if (a.top < b.top) list.scrollTop -= b.top - a.top + 12;
+  }, [active]);
+
+  const navItem = (id: Section, icon: string) => {
+    const on = !searching && id === current;
+    return (
+      <div key={id}>
+        <button
+          type="button"
+          aria-current={on ? 'page' : undefined}
+          className={`nav-link h-9 ${on ? 'on' : ''}`}
+          onClick={() => open(id)}
+        >
+          <Icon name={icon} size={20} />
+          <span className="truncate">{tr(`tabs.${id}`)}</span>
+        </button>
+        {on && groups.length > 1 && (
+          <div className="mt-0.5 mb-1.5 flex flex-col">
+            {groups.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className={`subnav-link ${active === g.id ? 'on' : ''}`}
+                onClick={() => scrollTo(g.id, true)}
+              >
+                <span className="truncate">{tr(`groups.${g.id}`)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <PanelScreen
+      bodyRef={body}
       panel={
         <>
           <div className="shrink-0 px-6 pt-6">
@@ -73,22 +162,15 @@ function Settings() {
               placeholder={tr('search')}
             />
           </div>
-          <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4 [scrollbar-width:none]">
-            {sections.map(([id, icon]) => {
-              const on = !searching && id === current;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  aria-current={on ? 'page' : undefined}
-                  className={`nav-link ${on ? 'on' : ''}`}
-                  onClick={() => open(id)}
-                >
-                  <Icon name={icon} size={20} />
-                  <span className="truncate">{tr(`tabs.${id}`)}</span>
-                </button>
-              );
-            })}
+          <nav
+            ref={nav}
+            className="mt-3 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-4 pb-3 [scrollbar-width:none]"
+          >
+            {TABS.filter((x) => x.id !== 'launcher').map((x) => navItem(x.id, x.icon))}
+            <div className="mt-3 flex flex-col gap-0.5">
+              {navItem('launcher', 'rocket_launch')}
+              {navItem('diagnostics', 'monitor_heart')}
+            </div>
           </nav>
           {settings && (
             <div className="shrink-0 px-6 pt-2 pb-5">
@@ -211,11 +293,9 @@ function TabBody({ tab, ctx }: { tab: Tab; ctx: Ctx | null }) {
       )}
       {!offline && (
         <div>
-          {tab.groups
-            .filter((g) => !ctx || !g.visible || g.visible(ctx))
-            .map((group) => (
-              <GroupList key={group.id} group={group} ctx={ctx} />
-            ))}
+          {visibleGroups(tab.groups, ctx).map((group) => (
+            <GroupList key={group.id} group={group} ctx={ctx} />
+          ))}
         </div>
       )}
       {confirm && (
@@ -241,7 +321,7 @@ function Results({
   query: string;
   ctx: Ctx | null;
   windows: boolean;
-  open: (id: TabId) => void;
+  open: (id: TabId, group?: string) => void;
 }) {
   const matches = search(query, ctx ?? { s: DEFAULTS, windows }).filter(
     ({ groups }) => ctx || groups.some((g) => g.rows.some((r) => !needsSettings(r.control))),
@@ -265,7 +345,13 @@ function Results({
             <Icon name="chevron_right" size={20} />
           </button>
           {groups.map(({ group, rows }) => (
-            <GroupList key={group.id} group={group} rows={rows} ctx={ctx} />
+            <GroupList
+              key={group.id}
+              group={group}
+              rows={rows}
+              ctx={ctx}
+              onOpen={() => open(tab.id, group.id)}
+            />
           ))}
         </section>
       ))}

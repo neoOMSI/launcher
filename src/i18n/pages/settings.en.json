@@ -22,10 +22,9 @@
     "diagnostics": "Diagnostics"
   },
   "groups": {
-    "graphics": "Effects",
-    "display": "Display",
-    "world": "World & memory",
-    "keyboard": "Keyboard & mouse",
+    "display": "Screen",
+    "world": "Distance & detail",
+    "keyboard": "Keyboard",
     "controllers": "Wheel & pedals",
     "driverView": "Driver's view",
     "outside": "Outside views",
@@ -35,7 +34,7 @@
     "voices": "Voices",
     "passengers": "Passengers",
     "traffic": "Traffic",
-    "simulation": "Simulation",
+    "simulation": "Wear & collisions",
     "language": "Language & units",
     "hud": "Game interface",
     "online": "Online",
@@ -45,7 +44,17 @@
     "folder": "OMSI 2 folder",
     "updates": "Updates",
     "about": "About",
-    "quality": "Quality"
+    "quality": "Quality",
+    "sharpness": "Sharpness",
+    "lighting": "Light & shadows",
+    "glow": "Lamps & displays",
+    "mirrors": "Mirrors",
+    "memory": "Memory",
+    "steering": "Steering",
+    "assists": "Driving aids",
+    "seat": "Seat",
+    "paxModels": "Models & animation",
+    "timeWeather": "Time & weather"
   },
   "groupHints": {
     "hud": "How the overlays look while you drive.",

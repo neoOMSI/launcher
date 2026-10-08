@@ -243,43 +243,6 @@ export const TABS: readonly Tab[] = [
         ],
       },
       {
-        id: 'graphics',
-        rows: [
-          select('msaa', [[1, 'opt.off'], ...n('fmt.msaa', [2, 4, 8])]),
-          select('render_scale', [
-            ['auto', 'opt.auto'],
-            ['1', 'fmt.percent', { n: 100 }],
-            ['0.85', 'fmt.percent', { n: 85 }],
-            ['0.75', 'fmt.percent', { n: 75 }],
-            ['0.67', 'fmt.percent', { n: 67 }],
-            ['0.5', 'fmt.percent', { n: 50 }],
-          ]),
-          select('anisotropy', [[1, 'opt.off'], ...n('fmt.times', [2, 4, 8, 16])]),
-          select('shadow_size', n('fmt.plain', [1024, 2048, 4096]), { visible: enhancedOnly }),
-          toggle('ssao', { visible: enhancedOnly }),
-          toggle('shadows', { visible: enhancedOnly }),
-          select(
-            'shadow_casters',
-            [
-              ['all', 'opt.castersAll'],
-              ['omsi', 'opt.castersOmsi'],
-            ],
-            { visible: enhancedOnly },
-          ),
-          toggle('detail_textures', { visible: enhancedOnly }),
-          slider('led_glow', 0, 15, 1, glow, { visible: enhancedOnly, hint: true }),
-          slider('nightmap_glow', 0, 15, 1, glow, { visible: enhancedOnly, hint: true }),
-          slider('atmosphere_brightness', 0, 2, 0.05, two, { visible: enhancedOnly }),
-          slider('led_mips', 0, 4, 0.05, (v) => (v < 0.005 ? tr('opt.off') : two(v)), {
-            visible: enhancedOnly,
-            hint: true,
-          }),
-          toggle('shadow_blobs', { hint: true }),
-          toggle('reflections', { hint: true }),
-          toggle('clouds'),
-        ],
-      },
-      {
         id: 'display',
         rows: [
           toggle('fullscreen'),
@@ -288,6 +251,14 @@ export const TABS: readonly Tab[] = [
             [0, 'opt.refreshRate'],
             ...n('fmt.fps', [30, 45, 60, 120, 144]),
             [1000, 'opt.unlimited'],
+          ]),
+          select('render_scale', [
+            ['auto', 'opt.auto'],
+            ['1', 'fmt.percent', { n: 100 }],
+            ['0.85', 'fmt.percent', { n: 85 }],
+            ['0.75', 'fmt.percent', { n: 75 }],
+            ['0.67', 'fmt.percent', { n: 67 }],
+            ['0.5', 'fmt.percent', { n: 50 }],
           ]),
           select(
             'graphics_api',
@@ -301,19 +272,47 @@ export const TABS: readonly Tab[] = [
         ],
       },
       {
+        id: 'sharpness',
+        rows: [
+          select('msaa', [[1, 'opt.off'], ...n('fmt.msaa', [2, 4, 8])]),
+          select('anisotropy', [[1, 'opt.off'], ...n('fmt.times', [2, 4, 8, 16])]),
+          toggle('detail_textures', { visible: enhancedOnly }),
+        ],
+      },
+      {
+        id: 'lighting',
+        rows: [
+          toggle('shadows', { visible: enhancedOnly }),
+          select('shadow_size', n('fmt.plain', [1024, 2048, 4096]), { visible: enhancedOnly }),
+          select(
+            'shadow_casters',
+            [
+              ['all', 'opt.castersAll'],
+              ['omsi', 'opt.castersOmsi'],
+            ],
+            { visible: enhancedOnly },
+          ),
+          toggle('ssao', { visible: enhancedOnly }),
+          toggle('shadow_blobs', { hint: true }),
+          toggle('reflections', { hint: true }),
+          slider('atmosphere_brightness', 0, 2, 0.05, two, { visible: enhancedOnly }),
+          toggle('clouds'),
+        ],
+      },
+      {
+        id: 'glow',
+        rows: [
+          slider('led_glow', 0, 15, 1, glow, { visible: enhancedOnly, hint: true }),
+          slider('nightmap_glow', 0, 15, 1, glow, { visible: enhancedOnly, hint: true }),
+          slider('led_mips', 0, 4, 0.05, (v) => (v < 0.005 ? tr('opt.off') : two(v)), {
+            visible: enhancedOnly,
+            hint: true,
+          }),
+        ],
+      },
+      {
         id: 'world',
         rows: [
-          select(
-            'map_detail',
-            [
-              [-1, 'opt.omsiSetting'],
-              [0, 'opt.low'],
-              [1, 'opt.normal'],
-              [2, 'opt.full'],
-              [255, 'opt.allLevels'],
-            ],
-            { hint: true },
-          ),
           select('view_distance', [
             ['auto', 'opt.viewDefault'],
             ['600', 'opt.viewFastest'],
@@ -334,6 +333,22 @@ export const TABS: readonly Tab[] = [
             ],
             { hint: true },
           ),
+          select(
+            'map_detail',
+            [
+              [-1, 'opt.omsiSetting'],
+              [0, 'opt.low'],
+              [1, 'opt.normal'],
+              [2, 'opt.full'],
+              [255, 'opt.allLevels'],
+            ],
+            { hint: true },
+          ),
+        ],
+      },
+      {
+        id: 'mirrors',
+        rows: [
           select('mirror_size', [
             [0, 'opt.off'],
             [128, 'opt.mirrorLow'],
@@ -350,6 +365,11 @@ export const TABS: readonly Tab[] = [
             ],
             { hint: true },
           ),
+        ],
+      },
+      {
+        id: 'memory',
+        rows: [
           {
             key: 'texture_memory',
             hint: true,
@@ -380,22 +400,30 @@ export const TABS: readonly Tab[] = [
     resettable: true,
     groups: [
       {
-        id: 'keyboard',
+        id: 'steering',
         rows: [
+          slider('mouse_sens', 0.1, 3, 0.05, omsiOrPct, { hint: true }),
+          slider('stick_sens', 0.1, 2, 0.05, pct),
           toggle('steering_linear', { hint: true }),
           toggle('old_steering', { hint: true }),
           toggle('red_steer_spd', { hint: true }),
-          slider('mouse_sens', 0.1, 3, 0.05, omsiOrPct, { hint: true }),
-          slider('stick_sens', 0.1, 2, 0.05, pct),
           toggle('steer_center', { hint: true }),
           toggle('mouse_right_off', { hint: true }),
-          toggle('blinker_cancel', { hint: true }),
-          toggle('brake_hold', { hint: true }),
-          toggle('auto_clutch', { hint: true }),
-          toggle('auto_ibis', { hint: true }),
-          toggle('momentary_gears', { hint: true }),
-          custom('keys', 'keys', { hint: true }),
         ],
+      },
+      {
+        id: 'assists',
+        rows: [
+          toggle('auto_clutch', { hint: true }),
+          toggle('momentary_gears', { hint: true }),
+          toggle('brake_hold', { hint: true }),
+          toggle('blinker_cancel', { hint: true }),
+          toggle('auto_ibis', { hint: true }),
+        ],
+      },
+      {
+        id: 'keyboard',
+        rows: [custom('keys', 'keys', { hint: true })],
       },
       {
         id: 'controllers',
@@ -420,12 +448,17 @@ export const TABS: readonly Tab[] = [
     resettable: true,
     groups: [
       {
-        id: 'driverView',
+        id: 'seat',
         rows: [
           slider('seat_y', -0.6, 0.6, 0.01, cm),
           slider('seat_z', -0.6, 0.6, 0.01, cm),
           slider('seat_x', -0.6, 0.6, 0.01, cm),
           custom('seat', 'seat', { hint: true }),
+        ],
+      },
+      {
+        id: 'driverView',
+        rows: [
           slider('fov', 0, 120, 1, (v) => (v < 20 ? tr('opt.default') : deg(v)), {
             hint: true,
             store: (v) => (v < 20 ? 0 : Math.round(v)),
@@ -529,6 +562,12 @@ export const TABS: readonly Tab[] = [
           ),
           toggle('exact_fare'),
           toggle('pax_prefer_seats'),
+          slider('pax_density', 0, 2, 0.1, pct),
+        ],
+      },
+      {
+        id: 'paxModels',
+        rows: [
           {
             key: 'pax_models',
             hint: true,
@@ -551,7 +590,6 @@ export const TABS: readonly Tab[] = [
             },
           },
           toggle('pax_ik', { hint: true }),
-          slider('pax_density', 0, 2, 0.1, pct),
         ],
       },
       {
@@ -587,6 +625,11 @@ export const TABS: readonly Tab[] = [
           toggle('collision_vehicles'),
           toggle('collision_objects', { hint: true }),
           toggle('collision_pedestrians'),
+        ],
+      },
+      {
+        id: 'timeWeather',
+        rows: [
           toggle('time_sync', { hint: true }),
           toggle('metar_sync', { hint: true }),
           select('time_speed', [['1', 'opt.realTime'], ...ns('fmt.speed', [2, 4, 8, 15, 30])], {

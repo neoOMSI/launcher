@@ -22,10 +22,9 @@
     "diagnostics": "Diagnose"
   },
   "groups": {
-    "graphics": "Effekte",
-    "display": "Anzeige",
-    "world": "Welt & Speicher",
-    "keyboard": "Tastatur & Maus",
+    "display": "Bildschirm",
+    "world": "Entfernung & Details",
+    "keyboard": "Tastatur",
     "controllers": "Lenkrad & Pedale",
     "driverView": "Fahrersicht",
     "outside": "Außenansichten",
@@ -35,7 +34,7 @@
     "voices": "Stimmen",
     "passengers": "Fahrgäste",
     "traffic": "Verkehr",
-    "simulation": "Simulation",
+    "simulation": "Verschleiß & Kollisionen",
     "language": "Sprache & Einheiten",
     "hud": "Spieloberfläche",
     "online": "Online",
@@ -45,7 +44,17 @@
     "folder": "OMSI-2-Ordner",
     "updates": "Updates",
     "about": "Über",
-    "quality": "Qualität"
+    "quality": "Qualität",
+    "sharpness": "Schärfe",
+    "lighting": "Licht & Schatten",
+    "glow": "Lampen & Anzeigen",
+    "mirrors": "Spiegel",
+    "memory": "Speicher",
+    "steering": "Lenkung",
+    "assists": "Fahrhilfen",
+    "seat": "Sitz",
+    "paxModels": "Modelle & Animation",
+    "timeWeather": "Zeit & Wetter"
   },
   "groupHints": {
     "hud": "Wie die Einblendungen beim Fahren aussehen.",
