@@ -189,9 +189,37 @@ const Corner: React.FC<CustomProps> = ({ ctx }) => {
   );
 };
 
+const MetarStation: React.FC<CustomProps> = ({ ctx }) => {
+  const { update } = useSettings();
+  const stored = String(ctx?.s.metar_station ?? '');
+  const [draft, setDraft] = React.useState(stored);
+  React.useEffect(() => setDraft(stored), [stored]);
+  if (!ctx) return null;
+  const set = (raw: string) => {
+    const icao = raw
+      .replace(/[^a-z]/gi, '')
+      .slice(0, 4)
+      .toUpperCase();
+    setDraft(icao);
+    if ((icao.length === 0 || icao.length === 4) && icao !== stored)
+      update({ metar_station: icao });
+  };
+  return (
+    <input
+      className="input w-32 font-mono uppercase"
+      aria-label={tr('rows.metar_station')}
+      maxLength={4}
+      placeholder={tr('opt.automatic')}
+      value={draft}
+      onChange={(e) => set(e.target.value)}
+      onBlur={() => setDraft(stored)}
+    />
+  );
+};
+
 export const CUSTOM: Pick<
   Record<CustomId, React.FC<CustomProps>>,
-  'preset' | 'keys' | 'vrKeys' | 'wheel' | 'seat' | 'corner' | 'paxPack'
+  'preset' | 'keys' | 'vrKeys' | 'wheel' | 'seat' | 'corner' | 'paxPack' | 'metarStation'
 > = {
   paxPack: PaxPackRow,
   preset: Preset,
@@ -200,4 +228,5 @@ export const CUSTOM: Pick<
   wheel: Wheel,
   seat: Seat,
   corner: Corner,
+  metarStation: MetarStation,
 };

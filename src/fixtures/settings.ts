@@ -1,10 +1,10 @@
-// Snapshot of the engine defaults used by mock mode.
 // Keep in sync with crates/config/src/default_settings.rs.
 export const DEFAULT_SETTINGS_FIXTURE = {
   gameplay: {
     'drive-keys': 'simple',
     boarding: 'auto',
     pax_prefer_seats: false,
+    pax_rear_entry: true,
     exact_fare: true,
     driver: true,
     maintenance: 0,
@@ -78,7 +78,7 @@ export const DEFAULT_SETTINGS_FIXTURE = {
   graphics: {
     graphics: 'vanilla_plus',
     graphics_api: 'auto',
-    fullscreen: false,
+    window_mode: 'windowed',
     vsync: true,
     max_fps: 0,
     msaa: 4,
@@ -166,8 +166,7 @@ const float = (lo: number, hi = Number.MAX_VALUE): Kind => ({ kind: 'float', lo,
 const auto = (off: number): Kind => ({ kind: 'auto', off });
 const choice = (...options: string[]): Kind => ({ kind: 'choice', options });
 
-// Port of `SETTINGS` in crates/legacy-launcher-core/src/lib.rs: (page key, category, config key, kind).
-// map_detail and momentary_gears are not in the engine's table yet.
+// Keep in sync with `SETTINGS` in crates/legacy-launcher-core/src/lib.rs.
 export const PAGE_SETTINGS: readonly (readonly [string, string, string, Kind])[] = [
   ['msaa', 'graphics', 'msaa', int(0, 16)],
   ['anisotropy', 'graphics', 'anisotropy', int(1, 16)],
@@ -175,7 +174,7 @@ export const PAGE_SETTINGS: readonly (readonly [string, string, string, Kind])[]
   ['shadows', 'graphics', 'shadows', bool],
   ['shadow_size', 'graphics', 'shadow_size', int(0)],
   ['detail_textures', 'graphics', 'detail_textures', bool],
-  ['fullscreen', 'graphics', 'fullscreen', bool],
+  ['window_mode', 'graphics', 'window_mode', choice('windowed', 'borderless', 'fullscreen')],
   ['vsync', 'graphics', 'vsync', bool],
   ['texture_memory', 'graphics', 'texture_memory', int(0)],
   ['texture_compression', 'graphics', 'texture_compression', bool],
@@ -209,8 +208,10 @@ export const PAGE_SETTINGS: readonly (readonly [string, string, string, Kind])[]
   ['name_tags', 'ui', 'name_tags', bool],
   ['language', 'ui', 'language', { kind: 'language' }],
   ['units', 'ui', 'units', choice('metric', 'uk', 'imperial')],
+  ['drive_keys', 'gameplay', 'drive-keys', text],
   ['boarding', 'gameplay', 'boarding', text],
   ['pax_prefer_seats', 'gameplay', 'pax_prefer_seats', bool],
+  ['pax_rear_entry', 'gameplay', 'pax_rear_entry', bool],
   ['exact_fare', 'gameplay', 'exact_fare', bool],
   ['driver', 'gameplay', 'driver', bool],
   ['maintenance', 'gameplay', 'maintenance', int(0, 4)],
@@ -225,6 +226,7 @@ export const PAGE_SETTINGS: readonly (readonly [string, string, string, Kind])[]
   ['auto_clutch', 'gameplay', 'auto_clutch', bool],
   ['auto_ibis', 'gameplay', 'auto_ibis', bool],
   ['momentary_gears', 'gameplay', 'momentary_gears', bool],
+  ['auto_shift', 'gameplay', 'auto_shift', bool],
   ['steering_linear', 'controls', 'steering_linear', bool],
   ['old_steering', 'controls', 'old_steering', bool],
   ['red_steer_spd', 'controls', 'red_steer_spd', bool],
@@ -329,7 +331,6 @@ function toPage(kind: Kind, v: Value): Value {
   }
 }
 
-/** The engine's `default_settings()`: the config defaults as the settings page sees them. */
 export function pageDefaults(): Record<string, Value> {
   const nested = DEFAULT_SETTINGS_FIXTURE as Record<string, Record<string, Value>>;
   const page: Record<string, Value> = {};
