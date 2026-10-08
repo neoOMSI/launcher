@@ -1,6 +1,4 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { Icon } from '../components/Icon';
-import { t } from '../i18n';
 
 export type PageId =
   | 'drive'
@@ -34,9 +32,9 @@ export function NavProvider({ children }: { children: ReactNode }) {
   );
 }
 
-type Tone = 'note' | 'tip' | 'caution';
+export type Tone = 'note' | 'tip' | 'caution';
 
-interface Toast {
+export interface Notice {
   id: number;
   text: string;
   tone: Tone;
@@ -44,46 +42,49 @@ interface Toast {
 
 const ToastContext = createContext<(text: string, tone?: Tone) => void>(() => {});
 
-export const useToast = () => useContext(ToastContext);
+const NoticeContext = createContext<{
+  notice: Notice | null;
+  dismiss: () => void;
+  hold: (on: boolean) => void;
+}>({ notice: null, dismiss() {}, hold() {} });
 
-const TONE_ICON: Record<Tone, string> = { note: 'info', tip: 'check_circle', caution: 'error' };
+export const useToast = () => useContext(ToastContext);
+export const useNotice = () => useContext(NoticeContext);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const next = useRef(0);
-  const dismiss = (id: number) => setToasts((all) => all.filter((t) => t.id !== id));
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const show = useCallback((text: string, tone: Tone = 'note') => {
-    const id = ++next.current;
-    setToasts((all) => [...all.slice(-2), { id, text, tone }]);
-    if (tone !== 'caution') setTimeout(() => dismiss(id), 6000);
+  const schedule = useCallback((n: Notice) => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(
+      () => setNotice((current) => (current?.id === n.id ? null : current)),
+      n.tone === 'caution' ? 12000 : 6000,
+    );
   }, []);
+
+  const show = useCallback(
+    (text: string, tone: Tone = 'note') => {
+      const n = { id: ++next.current, text, tone };
+      setNotice(n);
+      schedule(n);
+    },
+    [schedule],
+  );
+
+  const dismiss = () => {
+    clearTimeout(timer.current);
+    setNotice(null);
+  };
+  const hold = (on: boolean) => {
+    if (on) clearTimeout(timer.current);
+    else if (notice) schedule(notice);
+  };
 
   return (
     <ToastContext value={show}>
-      {children}
-      <div className="pointer-events-none fixed right-6 bottom-6 z-50 flex w-[24rem] flex-col gap-2">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            role="status"
-            className={`callout callout-${toast.tone} pointer-events-auto flex items-start gap-3 bg-raised py-3 pr-3 text-[15px] shadow-lg`}
-          >
-            <span className="mt-0.5" style={{ color: 'var(--c)' }}>
-              <Icon name={TONE_ICON[toast.tone]} size={18} />
-            </span>
-            <span className="min-w-0 flex-1 select-text">{toast.text}</span>
-            <button
-              type="button"
-              className="theme-toggle size-7"
-              aria-label={t('common.dismiss')}
-              onClick={() => dismiss(toast.id)}
-            >
-              <Icon name="close" size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
+      <NoticeContext value={{ notice, dismiss, hold }}>{children}</NoticeContext>
     </ToastContext>
   );
 }

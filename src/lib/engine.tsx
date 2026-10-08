@@ -2,15 +2,44 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Command, CommandArgs, CommandResult, Instance } from '../types/launcher';
 import type { EngineStatus } from '../types/scaffold';
 
-export function call<C extends Command>(
+const stale = new EventTarget();
+
+const AFFECTS: Partial<Record<Command, Command[]>> = {
+  save_config: ['config', 'profile', 'profiles', 'maps', 'vehicles', 'weather', 'mods'],
+  create_profile: ['config', 'profile', 'profiles'],
+  delete_profile: ['config', 'profile', 'profiles'],
+  save_settings: ['settings'],
+  save_keybindings: ['keybindings'],
+  save_servers: ['servers'],
+  install: ['mods', 'maps', 'vehicles', 'weather'],
+  start_install: ['mods'],
+  cancel_install: ['mods'],
+  clear_installs: ['mods'],
+  uninstall_mod: ['mods', 'maps', 'vehicles', 'weather'],
+  launch: ['instances'],
+  stop: ['instances'],
+};
+
+export function invalidate(...commands: Command[]) {
+  for (const command of commands) stale.dispatchEvent(new Event(command));
+}
+
+export async function call<C extends Command>(
   command: C,
   args?: CommandArgs<C>,
 ): Promise<CommandResult<C>> {
-  if (!window.neoomsi) return Promise.reject(new Error('The engine bridge is not available'));
-  return window.neoomsi.call(command, args);
+  if (!window.neoomsi) throw new Error('The engine bridge is not available');
+  const result = await window.neoomsi.call(command, args);
+  invalidate(...(AFFECTS[command] ?? []));
+  return result;
 }
 
-export const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
+// Electron wraps errors thrown in the main process as "Error invoking remote method '…': Error: …".
+export const errorText = (err: unknown) =>
+  (err instanceof Error ? err.message : String(err)).replace(
+    /^Error invoking remote method '[^']+': (?:\w*Error: )?/,
+    '',
+  );
 
 interface EngineValue {
   status: EngineStatus;
@@ -125,6 +154,12 @@ export function useCommand<C extends Command>(command: C, args?: CommandArgs<C> 
       live = false;
     };
   }, [ready, command, key, tick]);
+
+  useEffect(() => {
+    const bump = () => setTick((t) => t + 1);
+    stale.addEventListener(command, bump);
+    return () => stale.removeEventListener(command, bump);
+  }, [command]);
 
   return { ...state, reload: () => setTick((t) => t + 1) };
 }

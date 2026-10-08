@@ -149,3 +149,194 @@ export const DEFAULT_SETTINGS_FIXTURE = {
     update_auto: false,
   },
 };
+
+type Value = string | number | boolean;
+
+type Kind =
+  | { kind: 'bool' }
+  | { kind: 'int' | 'float' | 'floatText'; lo: number; hi: number }
+  | { kind: 'auto'; off: number }
+  | { kind: 'percent' | 'mirror' | 'text' | 'language' | 'graphics' | 'station' }
+  | { kind: 'choice'; options: readonly string[] };
+
+const bool: Kind = { kind: 'bool' };
+const text: Kind = { kind: 'text' };
+const int = (lo: number, hi = Number.MAX_SAFE_INTEGER): Kind => ({ kind: 'int', lo, hi });
+const float = (lo: number, hi = Number.MAX_VALUE): Kind => ({ kind: 'float', lo, hi });
+const auto = (off: number): Kind => ({ kind: 'auto', off });
+const choice = (...options: string[]): Kind => ({ kind: 'choice', options });
+
+// Port of `SETTINGS` in crates/legacy-launcher-core/src/lib.rs: (page key, category, config key, kind).
+// map_detail and momentary_gears are not in the engine's table yet.
+export const PAGE_SETTINGS: readonly (readonly [string, string, string, Kind])[] = [
+  ['msaa', 'graphics', 'msaa', int(0, 16)],
+  ['anisotropy', 'graphics', 'anisotropy', int(1, 16)],
+  ['ssao', 'graphics', 'ssao', bool],
+  ['shadows', 'graphics', 'shadows', bool],
+  ['shadow_size', 'graphics', 'shadow_size', int(0)],
+  ['detail_textures', 'graphics', 'detail_textures', bool],
+  ['fullscreen', 'graphics', 'fullscreen', bool],
+  ['vsync', 'graphics', 'vsync', bool],
+  ['texture_memory', 'graphics', 'texture_memory', int(0)],
+  ['texture_compression', 'graphics', 'texture_compression', bool],
+  ['clouds', 'graphics', 'clouds', bool],
+  ['mirror_size', 'graphics', 'mirror_size', { kind: 'mirror' }],
+  ['mirror_refresh', 'graphics', 'mirror_refresh', choice('full', 'eco', 'off')],
+  ['max_fps', 'graphics', 'max_fps', int(0)],
+  ['min_obj_size', 'graphics', 'min_obj_size', float(0)],
+  ['max_obj_dist', 'graphics', 'max_obj_dist', auto(-1)],
+  ['view_distance', 'graphics', 'view_distance', auto(0)],
+  ['render_scale', 'graphics', 'render_scale', auto(0)],
+  ['shadow_casters', 'graphics', 'shadow_casters', choice('all', 'omsi')],
+  ['shadow_blobs', 'graphics', 'shadow_blobs', bool],
+  ['reflections', 'graphics', 'reflections', bool],
+  ['graphics_api', 'graphics', 'graphics_api', choice('auto', 'vulkan', 'dx12')],
+  ['graphics', 'graphics', 'graphics', { kind: 'graphics' }],
+  ['led_glow', 'graphics', 'led_glow', int(0, 15)],
+  ['nightmap_glow', 'graphics', 'nightmap_glow', int(0, 15)],
+  ['led_mips', 'graphics', 'led_mips', float(0, 4)],
+  ['atmosphere_brightness', 'graphics', 'atmosphere_brightness', float(0, 2)],
+  ['map_detail', 'graphics', 'map_detail', int(-1, 255)],
+  ['navigator', 'ui', 'navigator', bool],
+  ['ui_opacity', 'ui', 'opacity', float(0, 1)],
+  ['navigator_corner', 'ui', 'navigator_corner', text],
+  ['ui_scale', 'ui', 'scale', float(0.5, 2)],
+  ['ui_scale_window', 'ui', 'scale_window', bool],
+  ['notes', 'ui', 'notes', bool],
+  ['show_fps', 'ui', 'show_fps', bool],
+  ['chat', 'ui', 'chat', bool],
+  ['tooltips', 'ui', 'tooltips', bool],
+  ['name_tags', 'ui', 'name_tags', bool],
+  ['language', 'ui', 'language', { kind: 'language' }],
+  ['units', 'ui', 'units', choice('metric', 'uk', 'imperial')],
+  ['boarding', 'gameplay', 'boarding', text],
+  ['pax_prefer_seats', 'gameplay', 'pax_prefer_seats', bool],
+  ['exact_fare', 'gameplay', 'exact_fare', bool],
+  ['driver', 'gameplay', 'driver', bool],
+  ['maintenance', 'gameplay', 'maintenance', int(0, 4)],
+  ['collision_vehicles', 'gameplay', 'collision_vehicles', bool],
+  ['collision_objects', 'gameplay', 'collision_objects', bool],
+  ['collision_pedestrians', 'gameplay', 'collision_pedestrians', bool],
+  ['hands_in_cab', 'gameplay', 'hands_in_cab', bool],
+  ['time_speed', 'gameplay', 'time_speed', { kind: 'floatText', lo: 1, hi: 30 }],
+  ['time_sync', 'gameplay', 'time_sync', bool],
+  ['metar_sync', 'gameplay', 'metar_sync', bool],
+  ['metar_station', 'gameplay', 'metar_station', { kind: 'station' }],
+  ['auto_clutch', 'gameplay', 'auto_clutch', bool],
+  ['auto_ibis', 'gameplay', 'auto_ibis', bool],
+  ['momentary_gears', 'gameplay', 'momentary_gears', bool],
+  ['steering_linear', 'controls', 'steering_linear', bool],
+  ['old_steering', 'controls', 'old_steering', bool],
+  ['red_steer_spd', 'controls', 'red_steer_spd', bool],
+  ['mouse_sens', 'controls', 'mouse_sens', float(0.1, 3)],
+  ['stick_sens', 'controls', 'stick_sens', float(0.1, 2)],
+  ['steer_center', 'controls', 'steer_center', bool],
+  ['brake_hold', 'controls', 'brake_hold', bool],
+  ['mouse_steering', 'controls', 'mouse_steering', bool],
+  ['mouse_right_off', 'controls', 'mouse_right_off', bool],
+  ['blinker_cancel', 'controls', 'blinker_cancel', bool],
+  ['wheel_range', 'controls', 'wheel_range', float(90, 2880)],
+  ['wheel_lock', 'controls', 'wheel_lock', float(0, 2880)],
+  ['pedal_throttle', 'controls', 'pedal_throttle', float(0.25, 4)],
+  ['pedal_brake', 'controls', 'pedal_brake', float(0.25, 4)],
+  ['ai_unsched_factor', 'ai', 'unsched_factor', { kind: 'percent' }],
+  ['ai_max_scheduled', 'ai', 'max_scheduled', int(0)],
+  ['ai_max_parked', 'ai', 'max_parked', int(-1)],
+  ['nav_arrows', 'navigator', 'arrows', bool],
+  ['nav_ai', 'navigator', 'ai', bool],
+  ['nav_topbar', 'navigator', 'topbar', bool],
+  ['nav_turn', 'navigator', 'turn', bool],
+  ['nav_stoplist', 'navigator', 'stoplist', bool],
+  ['nav_stops_ext', 'navigator', 'stops_ext', bool],
+  ['pax_voices', 'passengers', 'voices', choice('all', 'tickets', 'off')],
+  ['pax_models', 'passengers', 'models', choice('omsi', 'realistic')],
+  ['pax_motion', 'passengers', 'motion', choice('natural', 'omsi')],
+  ['pax_ik', 'passengers', 'ik', bool],
+  ['pax_density', 'passengers', 'density', float(0, 5)],
+  ['discord_status', 'discord', 'status', bool],
+  ['discord_app_id', 'discord', 'app_id', text],
+  ['volume', 'audio', 'master-volume', float(0, 1)],
+  ['vol_ai', 'audio', 'ai-volume', float(0, 1)],
+  ['vol_scenery', 'audio', 'scenery-volume', float(0, 1)],
+  ['doppler', 'audio', 'doppler', bool],
+  ['ff_enabled', 'controller', 'ff_enabled', bool],
+  ['ff_invert', 'controller', 'ff_invert', bool],
+  ['ctrl_assign', 'controller', 'assign', text],
+  ['fov', 'camera', 'fov', float(0, 120)],
+  ['camera_collision', 'camera', 'collision', bool],
+  ['driverview_smooth', 'camera', 'smooth', bool],
+  ['head_movement', 'camera', 'head_movement', bool],
+  ['steer_look', 'camera', 'steer_look', bool],
+  ['steer_look_angle', 'camera', 'steer_look_angle', float(0, 60)],
+  ['steer_look_response', 'camera', 'steer_look_response', float(0.05, 1)],
+  ['seat_x', 'camera', 'seat_x', float(-1.5, 1.5)],
+  ['seat_y', 'camera', 'seat_y', float(-1.5, 1.5)],
+  ['seat_z', 'camera', 'seat_z', float(-1.5, 1.5)],
+  ['look_sens', 'camera', 'look_sens', float(0.1, 2)],
+  ['alt_view', 'camera', 'alt_view', bool],
+  ['free_look', 'camera', 'free_look', bool],
+  ['crosshair', 'camera', 'crosshair', bool],
+  ['head_tracking', 'camera', 'head_tracking', bool],
+  ['vr', 'vr', 'enabled', bool],
+  ['vr_scale', 'vr', 'scale', float(0.5, 1)],
+  ['vr_head_smoothing_ms', 'vr', 'head-smoothing-ms', float(0, 30)],
+  ['vr_mirror_rate', 'vr', 'mirror-rate', float(-1, 360)],
+  ['vr_desktop_mirror', 'vr', 'desktop-mirror', bool],
+  ['update_check', 'launcher', 'update_check', bool],
+  ['update_auto', 'launcher', 'update_auto', bool],
+];
+
+const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+
+function graphicsMode(v: string): string {
+  const s = v.trim().toLowerCase().replace(/[- ]/g, '_');
+  if (s === 'enhanced' || s === '1') return 'enhanced';
+  if (['vanilla', 'classic', 'original', 'omsi', 'omsi2', 'omsi_2'].includes(s)) return 'vanilla';
+  return 'vanilla_plus';
+}
+
+function toPage(kind: Kind, v: Value): Value {
+  switch (kind.kind) {
+    case 'bool':
+      return Boolean(v);
+    case 'int':
+      return clamp(Math.trunc(Number(v)), kind.lo, kind.hi);
+    case 'float':
+      return clamp(Number(v), kind.lo, kind.hi);
+    case 'floatText':
+      return String(clamp(Number(v), kind.lo, kind.hi));
+    case 'auto':
+      return Number(v) <= kind.off ? 'auto' : String(Number(v));
+    case 'percent':
+      return clamp(Math.round(Number(v) * 100), 0, 300);
+    case 'mirror':
+      return Number(v) === 0 ? 0 : clamp(Math.trunc(Number(v)), 64, 2048);
+    case 'choice': {
+      const s = String(v).trim().toLowerCase();
+      return kind.options.includes(s) ? s : kind.options[0];
+    }
+    case 'language':
+      return /^(de|ger|german|deutsch)$/i.test(String(v).trim()) ? 'de' : 'en';
+    case 'graphics':
+      return graphicsMode(String(v));
+    case 'station':
+      return String(v)
+        .replace(/[^a-z]/gi, '')
+        .slice(0, 4)
+        .toUpperCase();
+    case 'text':
+      return String(v);
+  }
+}
+
+/** The engine's `default_settings()`: the config defaults as the settings page sees them. */
+export function pageDefaults(): Record<string, Value> {
+  const nested = DEFAULT_SETTINGS_FIXTURE as Record<string, Record<string, Value>>;
+  const page: Record<string, Value> = {};
+  for (const [key, cat, name, kind] of PAGE_SETTINGS) {
+    const v = nested[cat]?.[name];
+    if (v !== undefined) page[key] = toPage(kind, v);
+  }
+  page.enhanced = page.graphics === 'enhanced';
+  return page;
+}

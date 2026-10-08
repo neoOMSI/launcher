@@ -47,15 +47,11 @@
   },
   "rail": {
     "label": "Launcher",
-    "play": "Play",
-    "content": "Content",
-    "you": "You",
     "noDriver": "No driver",
     "level": "Level {level}",
     "running": "{count} running"
   },
   "common": {
-    "dismiss": "Dismiss",
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
@@ -97,7 +93,6 @@
       "duty": "Start the duty",
       "another": "Start another game",
       "continue": "Continue where you left off",
-      "running": "{count} running · Sessions",
       "chooseFirst": "Choose a bus and a map first.",
       "alreadyRunning": "A game is running already. Click again to start another one.",
       "started": "Game started (process {pid})"
@@ -211,15 +206,10 @@
         "time": "When do you drive?",
         "roadbook": "Your roadbook"
       },
-      "next": {
-        "route": "Map & route",
-        "time": "Time & weather",
-        "roadbook": "Roadbook"
-      },
-      "back": "Back",
-      "toOverview": "Overview",
+      "overviewTitle": "Your drive",
+      "close": "Close",
       "done": "Done",
-      "overviewTitle": "Your drive"
+      "next": "Next: {step}"
     },
     "roadbook": {
       "none": "No duty chosen",
@@ -234,6 +224,26 @@
       "entry": "Entry point",
       "fit": "Fit",
       "loading": "Drawing the map from above…"
+    },
+    "promo": {
+      "badge": "New",
+      "title": "Realistic passengers",
+      "text": "Passengers with higher quality, more detailed models.",
+      "enable": "Turn on",
+      "dismiss": "Hide",
+      "enabled": "Realistic passengers are on. You will see them on your next drive."
     }
+  },
+  "window": {
+    "minimize": "Minimise",
+    "maximize": "Maximise",
+    "restore": "Restore",
+    "close": "Close"
+  },
+  "crash": {
+    "title": "This page ran into a problem",
+    "text": "The rest of the launcher still works. Try again, or pick another page on the left.",
+    "retry": "Try again",
+    "copy": "Copy details"
   }
 }

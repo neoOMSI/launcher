@@ -97,7 +97,7 @@ export function Select<T extends string | number>({
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={onKey}
-        className={`select flex items-center gap-3 text-left ${open ? 'border-brand' : ''} ${className}`}
+        className={`select flex items-center gap-3 text-left ${className}`}
       >
         {current?.[2]}
         <span className="min-w-0 flex-1 truncate">{current?.[1] ?? (String(value) || '–')}</span>
@@ -115,7 +115,8 @@ export function Select<T extends string | number>({
               width: place.width,
               ...(place.up ? { bottom: window.innerHeight - place.top } : { top: place.top }),
             }}
-            className="fixed z-50 max-h-[18rem] overflow-y-auto rounded-xl border border-line-strong bg-raised p-1.5 shadow-2xl"
+            data-up={place.up || undefined}
+            className="menu"
           >
             {options.map(([v, text, lead], i) => (
               <li
@@ -124,9 +125,8 @@ export function Select<T extends string | number>({
                 aria-selected={v === value}
                 onPointerEnter={() => setActive(i)}
                 onClick={() => pick(i)}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-[15.5px] ${
-                  i === active ? 'bg-line text-heading' : 'text-ink'
-                }`}
+                data-active={i === active || undefined}
+                className="menu-item"
               >
                 {lead}
                 <span className="min-w-0 flex-1 truncate">{text}</span>

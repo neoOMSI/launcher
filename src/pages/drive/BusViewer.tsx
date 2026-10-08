@@ -88,13 +88,15 @@ function dropShadowBlobs(root: Object3D) {
   }
 }
 
-export const BusViewer: React.FC<{ bus: string; paint: string; centreX?: number }> = ({
-  bus,
-  paint,
-  centreX,
-}) => {
-  const centre = useRef(centreX);
-  centre.current = centreX;
+export const BusViewer: React.FC<{
+  bus: string;
+  paint: string;
+  centreX?: number;
+  centreY?: number;
+  fit?: number;
+}> = ({ bus, paint, centreX, centreY, fit = 1 }) => {
+  const frame = useRef({ centreX, centreY, fit });
+  frame.current = { centreX, centreY, fit };
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<{ scene: Scene; place: (o: Object3D) => void } | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | string>('loading');
@@ -141,7 +143,7 @@ export const BusViewer: React.FC<{ bus: string; paint: string; centreX?: number 
 
       const long = size.x >= size.z ? new Vector3(1, 0, 0) : new Vector3(0, 0, 1);
       const side = long.x ? new Vector3(0, 0, 1) : new Vector3(1, 0, 0);
-      const distance = (radius / Math.sin((camera.fov * Math.PI) / 360)) * 0.8;
+      const distance = (radius / Math.sin((camera.fov * Math.PI) / 360)) * 0.5;
       camera.position
         .copy(side.multiplyScalar(distance * 0.7))
         .add(long.multiplyScalar(-distance * 0.78))
@@ -164,16 +166,26 @@ export const BusViewer: React.FC<{ bus: string; paint: string; centreX?: number 
     observer.observe(el);
     resize();
 
-    let shift = 0;
+    let shiftX = 0;
+    let shiftY = 0;
+    let zoom = 0;
     renderer.setAnimationLoop(() => {
       const { width, height } = renderer.domElement;
       const ratio = renderer.getPixelRatio();
       const w = width / ratio;
       const h = height / ratio;
-      const target = centre.current === undefined ? 0 : w / 2 - centre.current;
-      shift += (target - shift) * 0.12;
-      if (Math.abs(shift) > 0.5) camera.setViewOffset(w, h, shift, 0, w, h);
-      else camera.clearViewOffset();
+      const { centreX: x, centreY: y, fit: f } = frame.current;
+      shiftX += ((x === undefined ? 0 : w / 2 - x) - shiftX) * 0.12;
+      shiftY += ((y === undefined ? 0 : h / 2 - y) - shiftY) * 0.12;
+      const z = Math.min(f, (w / h) * 0.44);
+      if (zoom !== z) {
+        zoom = z;
+        camera.zoom = z;
+        camera.updateProjectionMatrix();
+      }
+      if (Math.abs(shiftX) > 0.5 || Math.abs(shiftY) > 0.5) {
+        camera.setViewOffset(w, h, shiftX, shiftY, w, h);
+      } else camera.clearViewOffset();
       controls.update();
       renderer.render(scene, camera);
     });

@@ -1,0 +1,14 @@
+{
+  "loadFailed": "Die Tutorials konnten nicht gelesen werden",
+  "reading": "Tutorials werden gesucht…",
+  "none": "Keine Tutorials gefunden",
+  "noneHint": "Im OMSI-2-Ordner gibt es keinen Ordner Tutorials.",
+  "start": "Starten",
+  "starting": "Startet…",
+  "again": "Nochmal",
+  "startedAgo": "Begonnen {when}",
+  "started": "Lektion {n} wird gestartet (Prozess {pid})",
+  "lessonOf": "Lektion {n} von {count}",
+  "notStarted": "Noch nicht begonnen",
+  "next": "Nächste Lektion"
+}

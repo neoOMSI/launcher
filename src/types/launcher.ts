@@ -187,6 +187,14 @@ export interface ModsStatus {
   free_bytes: number;
   cleaned: string[];
   jobs: InstallProgress[];
+  installed?: InstalledMod[];
+}
+
+export interface InstalledMod {
+  name: string;
+  installed: number;
+  folders: string[];
+  size: number;
 }
 
 export interface LanPlayer {
@@ -326,10 +334,13 @@ export interface ServerInfo {
   error: string | null;
 }
 
+export type AxisFunction =
+  '' | 'steering' | 'throttle' | 'brake' | 'clutch' | 'throttle_brake' | 'look_x' | 'look_y';
+
 export interface ControllerAxis {
   name: string;
   value: number;
-  function: string;
+  function: AxisFunction;
   reversed: boolean;
   shape: 'linear' | 'progressive' | 'degressive' | 'bi-progressive' | 'bi-degressive';
 }
@@ -350,6 +361,30 @@ export interface SavedSituation {
   time: number;
 }
 
+export interface EngineVersion {
+  version: string;
+  protocol: number;
+}
+
+export interface SourceInfo {
+  is_archive: boolean;
+  is_zip: boolean;
+  files: number;
+  unpacked_bytes: number;
+  archive_bytes: number;
+  needed_bytes: number;
+  free_bytes: number;
+  fits: boolean;
+  in_place: string;
+  in_place_ok: boolean;
+  suggested: InstallMode;
+}
+
+export interface OptionPreset {
+  name: string;
+  values: Settings;
+}
+
 export interface Commands {
   config: { args: void; result: Config };
   maps: { args: void; result: MapInfo[] };
@@ -364,7 +399,7 @@ export interface Commands {
   instances: { args: void; result: Instance[] };
   stop: { args: { pid: number }; result: { stopped: boolean; ended_by_itself: boolean } };
   log: { args: { pid: number; lines?: number }; result: string[] };
-  join: { args: { text: string }; result: { ok: boolean; text: string } };
+  join: { args: { text: string }; result: { ok: boolean; text: string; map?: string } };
   settings: { args: void; result: Settings };
   save_settings: { args: Settings; result: Settings };
   keybindings: { args: void; result: KeyBindings };
@@ -373,8 +408,22 @@ export interface Commands {
   minimap: { args: { map: string }; result: Minimap };
   tutorials: { args: void; result: Tutorial[] };
   servers: { args: void; result: ServerInfo[] };
+  save_servers: { args: { servers: { name: string; address: string }[] }; result: unknown };
   controllers: { args: void; result: Controller[] };
+  save_controllers: { args: { controllers: Controller[] }; result: Controller[] };
   situations: { args: { map: string }; result: SavedSituation[] };
+  version: { args: void; result: EngineVersion };
+  save_config: { args: Partial<Config>; result: Config };
+  create_profile: { args: { name: string; sex?: string }; result: Profile };
+  delete_profile: { args: { name: string }; result: { deleted: boolean } };
+  save_keybindings: { args: KeyBindings; result: KeyBindings };
+  modinfo: { args: { path: string }; result: SourceInfo };
+  start_install: { args: { path: string; mode?: InstallMode }; result: InstallProgress };
+  cancel_install: { args: { id: number }; result: { cancelled: boolean } };
+  clear_installs: { args: void; result: unknown };
+  uninstall_mod: { args: { name: string }; result: { uninstalled: string[] } };
+  option_presets: { args: void; result: OptionPreset[] };
+  open_game_launcher: { args: { page?: string }; result: { pid: number } };
 }
 
 export type Command = keyof Commands;
@@ -405,5 +454,19 @@ export const COMMANDS: readonly Command[] = [
   'tutorials',
   'servers',
   'controllers',
+  'save_controllers',
   'situations',
+  'save_servers',
+  'version',
+  'save_config',
+  'create_profile',
+  'delete_profile',
+  'save_keybindings',
+  'modinfo',
+  'start_install',
+  'cancel_install',
+  'clear_installs',
+  'uninstall_mod',
+  'option_presets',
+  'open_game_launcher',
 ];

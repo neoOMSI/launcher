@@ -1,0 +1,103 @@
+{
+  "installMod": "Mod installieren…",
+  "dropHint": "Archive einfach hierher ziehen oder",
+  "chooseFolder": "einen Ordner wählen",
+  "dropOverlay": "Loslassen zum Installieren",
+  "free": "{size} frei",
+  "openContent": "Inhaltsordner öffnen",
+  "open": "Öffnen",
+  "reading": "Inhaltsordner wird gelesen…",
+  "loadFailed": "Der Inhaltsordner konnte nicht gelesen werden",
+  "cleaned": "Reste einer abgebrochenen Installation entfernt",
+  "search": "Mods durchsuchen",
+  "none": "Noch keine Mods installiert",
+  "noneHint": "Installier eine mit dem Knopf links oder zieh ein Archiv hierher.",
+  "noMatch": "Keine Mod passt zu „{query}“",
+  "inPlace": "direkt genutzt",
+  "archives": "Direkt genutzte Archive",
+  "sections": {
+    "installed": "Installiert",
+    "installing": "Wird installiert",
+    "folders": "Inhaltsordner"
+  },
+  "sheet": {
+    "of": "{n} von {total}",
+    "reading": "Wird angesehen…",
+    "failed": "Konnte nicht hineinschauen",
+    "archive": "Archiv",
+    "unpacked": "Entpackt",
+    "files": "Dateien",
+    "free": "Frei",
+    "fits": "Passt: braucht {needed}, frei sind {free}.",
+    "noFit": "Entpackt braucht es {needed}, frei sind nur {free}.",
+    "folder": "Ein Ordner: Seine Dateien werden in den Inhaltsordner kopiert.",
+    "mode": "Installieren als",
+    "install": "Installieren",
+    "skip": "Überspringen",
+    "started": "{name} wird installiert…"
+  },
+  "mode": {
+    "auto": "Automatisch",
+    "autoWill": {
+      "extract": "Wird entpackt, weil es auf die Platte passt.",
+      "inplace": "Die .zip wird direkt genutzt, weil sie entpackt nicht passt."
+    },
+    "extract": "Entpacken",
+    "extractHint": "Entpackt eine Kopie. Dein Archiv bleibt, wo es ist.",
+    "inplace": "Direkt",
+    "inplaceHint": "Das Spiel liest die .zip direkt: kaum zusätzlicher Platz.",
+    "noSpace": "Zum Entpacken ist nicht genug Platz frei.",
+    "inplaceZipOnly": "Nur eine .zip kann direkt genutzt werden.",
+    "inplaceNo": "Bei diesem Archiv nicht möglich: {reason}"
+  },
+  "modeName": {
+    "auto": "Automatisch",
+    "extract": "Entpackt",
+    "inplace": "Direkt genutzt"
+  },
+  "state": {
+    "queued": "Wartet",
+    "planning": "Plant",
+    "checking": "Prüft Platz",
+    "unpacking": "Entpackt",
+    "copying": "Kopiert",
+    "moving": "Verschiebt",
+    "done": "Fertig",
+    "failed": "Fehlgeschlagen",
+    "cancelled": "Abgebrochen"
+  },
+  "jobs": {
+    "running": "Läuft",
+    "finished": "Abgeschlossen",
+    "idle": "Gerade wird nichts installiert",
+    "idleHint": "Zieh ein Archiv hierher oder nimm „Mod installieren…“.",
+    "clear": "Fertige entfernen",
+    "files": "{done} / {total} Dateien",
+    "preparing": "Wird vorbereitet…",
+    "fromInbox": "aus dem Eingang",
+    "installed": "{folder} installiert",
+    "keptAside": "{name} zurückgelegt, bis der Bus installiert ist"
+  },
+  "uninstall": {
+    "label": "{name} deinstallieren",
+    "title": "{name} deinstallieren?",
+    "body": "Gelöscht wird nichts: Die Ordner werden nach {folder} verschoben.",
+    "confirm": "Deinstallieren",
+    "done": "{name} deinstalliert. Die Ordner liegen in Mods/uninstalled."
+  },
+  "content": {
+    "title": "Inhaltsordner",
+    "empty": "Leer: {names}",
+    "none": "Noch keine Ordner"
+  },
+  "inbox": {
+    "title": "Mods-Eingang",
+    "hint": "Alles, was du hier hineinlegst, installiert sich von selbst.",
+    "folder": "Eingangsordner",
+    "settling": "Wird installiert, sobald es fertig kopiert ist"
+  },
+  "waiting": {
+    "title": "Warten auf ihren Bus",
+    "hint": "Lackierungen für einen Bus, den du noch nicht hast. Sie installieren sich, sobald er da ist."
+  }
+}

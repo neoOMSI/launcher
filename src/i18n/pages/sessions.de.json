@@ -1,0 +1,63 @@
+{
+  "goDrive": "Losfahren",
+  "offline": "Keine Verbindung zur Engine",
+  "offlineHint": "Der Launcher sieht deine Spiele wieder, sobald die Engine läuft.",
+  "running": "Läuft",
+  "none": "Kein Spiel läuft",
+  "noneHint": "Starte einen Dienst auf der Seite Fahren.",
+  "ended": "Gerade beendet",
+  "endedAgo": "beendet {ago}, lief {ran}",
+  "freeDrive": "Freie Fahrt",
+  "lineTour": "{line}, Umlauf {tour}",
+  "state": {
+    "stopping": "Wird beendet, die Fahrt wird gespeichert…",
+    "clean": "Normal beendet",
+    "killed": "Zwangsweise beendet, Fahrt nicht gespeichert",
+    "crashed": "Abgestürzt (Exit-Code {code})",
+    "ended": "Beendet"
+  },
+  "showLog": "Protokoll zeigen",
+  "hideLog": "Protokoll ausblenden",
+  "openLog": "Protokolldatei öffnen",
+  "readingLog": "Protokoll wird gelesen…",
+  "emptyLog": "Das Protokoll ist noch leer.",
+  "stop": {
+    "button": "Beenden",
+    "busy": "Wird beendet…",
+    "title": "Dieses Spiel beenden?",
+    "text": "neoOMSI speichert deine Fahrt, verabschiedet sich von den LAN-Mitspielern und schließt. Ist es nach 8 Sekunden nicht beendet, wird es zwangsweise geschlossen und die Fahrt nicht gespeichert.",
+    "confirm": "Spiel beenden",
+    "saved": "Das Spiel ist beendet, deine Fahrt ist gespeichert.",
+    "forced": "Das Spiel hat sich nicht rechtzeitig beendet und wurde zwangsweise geschlossen."
+  },
+  "lan": {
+    "hosting": "Hostet",
+    "joined": "Beigetreten",
+    "hosted": "Dein LAN-Spiel",
+    "joinedGame": "LAN-Spiel",
+    "codeHint": "Deine Freunde fügen ihn bei Mehrspieler → Per Code verbinden ein.",
+    "tunnel": "Klappt übers Internet.",
+    "local": "Klappt nur im lokalen Netzwerk.",
+    "connected": "Verbunden mit {host}",
+    "connecting": "Verbindung wird aufgebaut…",
+    "rejected": "Nicht hereingelassen: {reason}",
+    "players": "Spieler ({count})",
+    "passengers": "Fahrgäste",
+    "host": "Host",
+    "chat": "Chat",
+    "chatHint": "Im Spiel mit V schreiben."
+  },
+  "history": {
+    "title": "Verlauf",
+    "driver": "Fahrer",
+    "allDrivers": "Alle Fahrer",
+    "loading": "Fahrten werden gelesen…",
+    "failed": "Die Fahrten konnten nicht gelesen werden",
+    "none": "Noch keine Fahrten",
+    "noneHint": "Jeder Dienst, den du fährst, erscheint hier, sobald das Spiel beendet ist."
+  },
+  "views": {
+    "running": "Laufend",
+    "history": "Verlauf"
+  }
+}

@@ -1,21 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, type RefObject } from 'react';
 import { Icon } from '../../components/Icon';
 import { Notice, Spinner } from '../../components/ui';
 import { t } from '../../i18n';
 import { call, errorText, useCommand, useEngine } from '../../lib/engine';
 import { seasonOf, toDuty, useDuty, type Choice } from '../../lib/duty';
-import { duration, hhmm, lineLabel, longDate } from '../../lib/format';
+import { contentName, duration, hhmm, lineLabel, longDate } from '../../lib/format';
 import { useNav, useToast } from '../../lib/nav';
 import type { LineInfo, MapInfo, TripInfo, VehicleInfo, WeatherInfo } from '../../types/launcher';
 import { BusStep } from './BusStep';
 import { BusViewer } from './BusViewer';
 import { StopList } from './MapView';
 import { Minimap, type MapPick } from './Minimap';
+import { PassengerPromo } from './Promo';
 import { RoadbookStep } from './RoadbookStep';
 import { RouteStep } from './RouteStep';
 import { TimeStep, weatherIcon, weatherLabel } from './TimeStep';
 
-const STEPS = ['bus', 'route', 'time', 'roadbook'] as const;
+const STEPS = ['route', 'bus', 'time', 'roadbook'] as const;
 type Step = (typeof STEPS)[number];
 type View = Step | 'overview';
 
@@ -32,6 +33,65 @@ interface Picked {
   line?: LineInfo;
   tour?: LineInfo['tours'][number];
   trip?: TripInfo;
+}
+
+const GAP = 16;
+
+interface Frame {
+  centreX: number;
+  centreY: number;
+  fit: number;
+}
+
+function useFrame(above: RefObject<HTMLElement | null>[], below: RefObject<HTMLElement | null>[]) {
+  const [frame, setFrame] = useState<Frame | null>(null);
+  useEffect(() => {
+    const tops = above.map((r) => r.current).filter((el): el is HTMLElement => !!el);
+    const host = tops[0]?.offsetParent as HTMLElement | null;
+    if (!host) return;
+    const blocks = below.map((r) => r.current).filter((el): el is HTMLElement => !!el);
+    const measure = () => {
+      const height = host.clientHeight;
+      const top = Math.max(GAP, ...tops.map((el) => el.offsetTop + el.offsetHeight + GAP));
+      const bottom = Math.min(height - GAP * 2, ...blocks.map((el) => el.offsetTop - GAP));
+      setFrame({
+        centreX: host.clientWidth / 2,
+        centreY: (top + bottom) / 2,
+        fit: Math.max(0.2, (bottom - top) / height),
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    for (const el of [host, ...tops, ...blocks]) observer.observe(el);
+    return () => observer.disconnect();
+  }, [...above, ...below]);
+  return frame;
+}
+
+function Showroom({
+  p,
+  above = [],
+  below = [],
+  hidden,
+}: {
+  p: Picked;
+  above?: RefObject<HTMLElement | null>[];
+  below?: RefObject<HTMLElement | null>[];
+  hidden?: boolean;
+}) {
+  const { choice } = useDuty();
+  const header = useRef<HTMLDivElement>(null);
+  const frame = useFrame([header, ...above], below);
+  return (
+    <>
+      {frame && p.bus && !hidden && (
+        <div className="absolute inset-0">
+          <BusViewer bus={p.bus.file} paint={choice.paint || p.bus.default_paint} {...frame} />
+        </div>
+      )}
+      <BusHeader p={p} ref={header} />
+    </>
+  );
 }
 
 function picked(data: DriveData, choice: Choice): Picked {
@@ -96,7 +156,7 @@ export const DrivePage: React.FC = () => {
       : null;
 
   return (
-    <div className="stage relative m-3 ml-0 min-h-0 flex-1 overflow-hidden rounded-3xl">
+    <div className="stage relative mr-3 mb-3 min-h-0 flex-1 overflow-hidden rounded-3xl">
       {error ? (
         <div className="p-12">
           <Notice tone="caution" icon="error" title={t('drive.loadFailed')}>
@@ -114,75 +174,223 @@ export const DrivePage: React.FC = () => {
   );
 };
 
+const STEP_ICON: Record<Step, string> = {
+  route: 'route',
+  bus: 'directions_bus',
+  time: 'schedule',
+  roadbook: 'receipt_long',
+};
+
 function Stage({ data, view, onView }: { data: DriveData; view: View; onView: (v: View) => void }) {
-  const panel = useRef<HTMLDivElement>(null);
-  const [reserve, setReserve] = useState(0);
+  const [shown, setShown] = useState<Step | null>(null);
+  const open = view !== 'overview';
 
   useEffect(() => {
-    const el = panel.current!;
-    const observer = new ResizeObserver(([e]) => setReserve(e.contentRect.width + 8));
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    if (view !== 'overview') setShown(view);
+  }, [view]);
 
   return (
     <>
-      <Visual view={view} data={data} reserve={reserve} />
+      <div {...(open ? { inert: true } : {})} className="absolute inset-0">
+        <Home data={data} open={open} onView={onView} />
+      </div>
       <div
-        ref={panel}
-        className="absolute top-2 right-2 bottom-2 flex w-[clamp(25rem,28vw,34rem)] flex-col overflow-hidden rounded-[1.25rem] bg-page shadow-2xl"
+        aria-hidden="true"
+        className={`absolute inset-0 bg-[color-mix(in_srgb,var(--page)_45%,transparent)] transition-opacity duration-300 ${
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={() => onView('overview')}
+      />
+      <div
+        role="dialog"
+        aria-modal={open}
+        className={`absolute inset-3 flex flex-col overflow-hidden rounded-[1.25rem] bg-page shadow-2xl transition-[transform,opacity] duration-300 ease-out ${
+          open ? '' : 'pointer-events-none scale-[0.97] opacity-0'
+        }`}
+        {...(open ? {} : { inert: true })}
       >
-        {view === 'overview' ? (
-          <Overview data={data} onView={onView} />
-        ) : (
-          <Flow step={view} data={data} onView={onView} />
-        )}
+        {shown && <Sheet step={shown} data={data} onView={onView} />}
       </div>
     </>
   );
 }
 
-function Visual({ view, data, reserve }: { view: View; data: DriveData; reserve: number }) {
-  const { choice } = useDuty();
+function Home({
+  data,
+  open,
+  onView,
+}: {
+  data: DriveData;
+  open: boolean;
+  onView: (v: View) => void;
+}) {
+  const { choice, server, setServer } = useDuty();
+  const promo = useRef<HTMLDivElement>(null);
+  const side = useRef<HTMLDivElement>(null);
+  const plan = useRef<HTMLDivElement>(null);
   const p = picked(data, choice);
-  const host = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
-
-  useEffect(() => {
-    const el = host.current!;
-    const observer = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const visible = Math.max(0, width - reserve);
-  const centre = view === 'bus' || view === 'overview' ? visible * 0.5 : visible * 0.66;
+  const rows: [Step, string, string][] = [
+    ['route', p.map?.friendly ?? '–', dutyLabel(choice, data, p)],
+    ['bus', p.bus?.name ?? t('drive.summary.noBus'), choice.paint || p.bus?.default_paint || ''],
+    [
+      'time',
+      server ? t('drive.summary.serverClock') : `${choice.time} · ${longDate(choice.date)}`,
+      server ? server.weather : weatherLabel(choice, data.weather),
+    ],
+    [
+      'roadbook',
+      p.trip ? `${hhmm(p.trip.departure)} ${p.trip.from}` : t('drive.roadbook.none'),
+      p.trip ? `→ ${p.trip.terminus}` : '',
+    ],
+  ];
 
   return (
-    <div ref={host} className="absolute inset-0">
-      <div
-        className={`absolute inset-0 pt-24 pb-4 transition-opacity duration-500 ${
-          view === 'route' ? 'pointer-events-none opacity-0' : 'opacity-100'
-        }`}
-      >
-        {p.bus && (
-          <BusViewer
-            bus={p.bus.file}
-            paint={choice.paint || p.bus.default_paint}
-            centreX={centre}
-          />
-        )}
+    <>
+      <Showroom p={p} above={[promo]} below={[plan, side]} hidden={open} />
+      <div ref={promo} className="absolute top-8 right-8 w-[19.5rem]">
+        <PassengerPromo />
       </div>
-      {view === 'route' ? (
-        <RouteVisual data={data} p={p} reserve={reserve} />
-      ) : view === 'time' ? (
-        <TimeVisual data={data} />
-      ) : view === 'roadbook' ? (
-        <RoadbookVisual data={data} p={p} />
-      ) : (
-        <BusHeader p={p} />
-      )}
-    </div>
+
+      <div ref={plan} className="absolute bottom-8 left-9 w-[min(40rem,calc(100%-24rem))]">
+        {p.bus && p.bus.missing_packs.length > 0 && (
+          <p className="mb-3 flex items-center gap-2.5 text-[15px]">
+            <Icon name="warning" size={20} style={{ color: 'var(--color-warn)', flexShrink: 0 }} />
+            <span className="truncate">
+              <span className="font-semibold text-heading">{t('drive.bus.partsMissing')}</span>
+              <span className="text-muted"> · {p.bus.missing_packs.join(', ')}</span>
+            </span>
+          </p>
+        )}
+        {server && (
+          <p className="mb-3 flex items-center gap-2.5 text-[15px]">
+            <Icon name="dns" size={20} style={{ color: 'var(--accent)' }} />
+            <span className="min-w-0 truncate text-heading">{server.name}</span>
+            <button type="button" className="code-action" onClick={() => setServer(null)}>
+              <Icon name="logout" size={16} />
+              {t('drive.summary.leave')}
+            </button>
+          </p>
+        )}
+        <ol className="-mx-3">
+          {rows.map(([step, value, detail]) => (
+            <li key={step}>
+              <button
+                type="button"
+                onClick={() => onView(step)}
+                className="group flex h-14 w-full items-center gap-4 rounded-xl px-3 text-left transition-colors hover:bg-page/70"
+              >
+                <span className="text-accent">
+                  <Icon name={STEP_ICON[step]} size={24} />
+                </span>
+                <span className="w-32 shrink-0 text-[14.5px] text-muted">
+                  {t(`drive.flow.${step}`)}
+                </span>
+                <span className="flex min-w-0 flex-1 items-baseline gap-3">
+                  <span className="truncate font-display text-[1.15rem] font-semibold text-heading">
+                    {value}
+                  </span>
+                  {detail && <span className="truncate text-[14.5px] text-muted">{detail}</span>}
+                </span>
+                <span className="text-muted opacity-0 transition-opacity group-hover:opacity-100">
+                  <Icon name="chevron_right" size={22} />
+                </span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div ref={side} className="absolute right-9 bottom-8 flex w-[18rem] flex-col items-stretch">
+        <Launch data={data} />
+      </div>
+    </>
+  );
+}
+
+function Sheet({ step, data, onView }: { step: Step; data: DriveData; onView: (v: View) => void }) {
+  const { choice } = useDuty();
+  const p = picked(data, choice);
+  const index = STEPS.indexOf(step);
+  const next = STEPS[index + 1];
+
+  return (
+    <>
+      <div className="flex h-16 shrink-0 items-center gap-1 pr-3 pl-4">
+        <nav aria-label={t('drive.flow.overviewTitle')} className="flex min-w-0 flex-1 gap-1">
+          {STEPS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-current={s === step ? 'step' : undefined}
+              onClick={() => onView(s)}
+              className={`flex h-10 items-center gap-2.5 rounded-full px-4 text-[15px] font-medium transition-colors ${
+                s === step ? 'bg-sunken text-heading' : 'text-muted hover:text-ink'
+              }`}
+            >
+              <span className={s === step ? 'text-accent' : ''}>
+                <Icon name={STEP_ICON[s]} size={20} />
+              </span>
+              {t(`drive.flow.${s}`)}
+            </button>
+          ))}
+        </nav>
+        <button
+          type="button"
+          className="theme-toggle size-10 shrink-0 rounded-full"
+          aria-label={t('drive.flow.close')}
+          title={t('drive.flow.close')}
+          onClick={() => onView('overview')}
+        >
+          <Icon name="close" size={22} />
+        </button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 gap-3 px-3 pb-3">
+        <div className="flex w-[clamp(25.5rem,38%,30rem)] shrink-0 flex-col">
+          <div
+            key={step}
+            className="rise min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 pt-4 pb-4"
+          >
+            <h2 className="mb-6 font-display text-[1.6rem] leading-tight font-bold tracking-tight text-heading">
+              {t(`drive.flow.titles.${step}`)}
+            </h2>
+            {step === 'route' ? (
+              <RouteStep data={data} />
+            ) : step === 'bus' ? (
+              <BusStep data={data} />
+            ) : step === 'time' ? (
+              <TimeStep data={data} />
+            ) : (
+              <RoadbookStep data={data} />
+            )}
+          </div>
+          <div className="shrink-0 px-5 pt-3 pb-3">
+            <button
+              type="button"
+              className="btn h-12 w-full justify-center gap-2 rounded-full"
+              onClick={() => onView(next ?? 'overview')}
+            >
+              {next
+                ? t('drive.flow.next', { step: t(`drive.flow.${next}`) })
+                : t('drive.flow.done')}
+              {next && <Icon name="arrow_forward" size={20} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="stage relative min-w-0 flex-1 overflow-hidden rounded-2xl">
+          {step === 'route' ? (
+            <RouteVisual data={data} p={p} />
+          ) : step === 'bus' ? (
+            <Showroom p={p} />
+          ) : step === 'time' ? (
+            <TimeVisual data={data} />
+          ) : (
+            <RoadbookVisual data={data} p={p} />
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -197,7 +405,7 @@ function Heading({ title, children }: { title: string; children?: React.ReactNod
   );
 }
 
-function BusHeader({ p }: { p: Picked }) {
+function BusHeader({ p, ref }: { p: Picked; ref?: React.Ref<HTMLDivElement> }) {
   const { choice, update } = useDuty();
   const paints = p.bus?.paints ?? [];
   const paintIndex = Math.max(0, paints.indexOf(choice.paint));
@@ -205,7 +413,10 @@ function BusHeader({ p }: { p: Picked }) {
     paints.length &&
     update({ paint: paints[(paintIndex + delta + paints.length) % paints.length] });
   return (
-    <div className="legible pointer-events-none absolute top-0 left-0 max-w-[50%] px-12 pt-10">
+    <div
+      ref={ref}
+      className="legible pointer-events-none absolute top-0 left-0 max-w-[85%] px-10 pt-9"
+    >
       <Heading title={p.bus?.name ?? t('drive.summary.noBus')} />
       <div className="pointer-events-auto mt-1 flex w-fit items-center gap-1 text-[17px] text-muted">
         {paints.length > 1 && (
@@ -237,7 +448,7 @@ function BusHeader({ p }: { p: Picked }) {
 function TimeVisual({ data }: { data: DriveData }) {
   const { choice } = useDuty();
   return (
-    <div className="legible pointer-events-none absolute inset-y-0 left-0 flex flex-col justify-center px-12">
+    <div className="legible pointer-events-none absolute inset-y-0 left-0 flex flex-col justify-center px-10">
       <p className="font-display text-[7rem] leading-none font-bold tracking-tight text-heading tabular-nums">
         {choice.time}
       </p>
@@ -263,7 +474,7 @@ function RoadbookVisual({ data, p }: { data: DriveData; p: Picked }) {
     time: hhmm(s.dep >= 0 ? s.dep : s.arr),
   }));
   return (
-    <div className="legible absolute inset-y-0 left-0 flex max-w-[34rem] flex-col px-12 pt-10 pb-10">
+    <div className="legible absolute inset-y-0 left-0 flex max-w-[34rem] flex-col px-10 pt-9 pb-8">
       <Heading title={p.map?.friendly ?? '–'}>
         {dutyLabel(choice, data, p)}
         {p.tour && ` · ${hhmm(p.tour.first)} – ${hhmm(p.tour.last)}`}
@@ -288,7 +499,7 @@ function RoadbookVisual({ data, p }: { data: DriveData; p: Picked }) {
   );
 }
 
-function RouteVisual({ data, p, reserve }: { data: DriveData; p: Picked; reserve: number }) {
+function RouteVisual({ data, p }: { data: DriveData; p: Picked }) {
   const { choice, update } = useDuty();
   const minimap = useCommand('minimap', choice.map ? { map: choice.map } : null);
   const pick: MapPick = choice.stop
@@ -313,7 +524,7 @@ function RouteVisual({ data, p, reserve }: { data: DriveData; p: Picked; reserve
             route={(p.trip?.stops ?? []).map((s) => s.name)}
             trip={p.trip?.name}
             pick={pick}
-            inset={{ top: 150, right: reserve + 32, bottom: 64, left: 48 }}
+            inset={{ top: 140, right: 32, bottom: 48, left: 48 }}
             onPickStop={(s) =>
               update({ stop: { id: s.id, name: s.name, spawn: s.spawn }, entry: -1 })
             }
@@ -327,7 +538,7 @@ function RouteVisual({ data, p, reserve }: { data: DriveData; p: Picked; reserve
           </div>
         )}
       </div>
-      <div className="legible pointer-events-none absolute top-0 left-0 max-w-[60%] px-12 pt-10">
+      <div className="legible pointer-events-none absolute top-0 left-0 max-w-[90%] px-10 pt-9">
         <Heading title={p.map?.friendly ?? '–'}>
           <span className="flex items-center gap-2">
             <span className="truncate">{dutyLabel(choice, data, p)}</span>
@@ -341,98 +552,8 @@ function RouteVisual({ data, p, reserve }: { data: DriveData; p: Picked; reserve
   );
 }
 
-const STEP_ICON: Record<Step, string> = {
-  bus: 'directions_bus',
-  route: 'route',
-  time: 'schedule',
-  roadbook: 'receipt_long',
-};
-
-function Stepper({ step, onView }: { step: Step; onView: (v: View) => void }) {
-  const current = STEPS.indexOf(step);
-  return (
-    <ol className="grid grid-cols-2 gap-1">
-      {STEPS.map((s, i) => (
-        <li key={s} className="min-w-0">
-          <button
-            type="button"
-            onClick={() => onView(s)}
-            aria-current={i === current ? 'step' : undefined}
-            className={`nav-link ${i === current ? 'on' : ''}`}
-          >
-            <Icon
-              name={i < current ? 'check' : STEP_ICON[s]}
-              size={18}
-              color={i < current ? 'var(--accent)' : undefined}
-            />
-            <span className="truncate">{t(`drive.flow.${s}`)}</span>
-          </button>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function Flow({ step, data, onView }: { step: Step; data: DriveData; onView: (v: View) => void }) {
-  const index = STEPS.indexOf(step);
-  const last = index === STEPS.length - 1;
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 px-6 pt-5">
-        <div className="flex items-center gap-3.5">
-          <Icon name={STEP_ICON[step]} size={30} color="var(--accent)" />
-          <h2 className="min-w-0 flex-1 truncate font-display text-[1.45rem] leading-tight font-bold tracking-tight text-heading">
-            {t(`drive.flow.titles.${step}`)}
-          </h2>
-          <button
-            type="button"
-            className="theme-toggle -mr-2 size-11 shrink-0 rounded-full"
-            aria-label={t('drive.flow.toOverview')}
-            title={t('drive.flow.toOverview')}
-            onClick={() => onView('overview')}
-          >
-            <Icon name="close" size={26} />
-          </button>
-        </div>
-        <div className="mt-4">
-          <Stepper step={step} onView={onView} />
-        </div>
-      </div>
-      <div key={step} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6 pt-5 pb-6">
-        {step === 'bus' ? (
-          <BusStep data={data} />
-        ) : step === 'route' ? (
-          <RouteStep data={data} />
-        ) : step === 'time' ? (
-          <TimeStep data={data} />
-        ) : (
-          <RoadbookStep data={data} />
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-3 px-6 pt-2 pb-6">
-        <button
-          type="button"
-          className="btn-quiet h-12 gap-1.5 rounded-full pr-5 pl-4"
-          onClick={() => onView(index === 0 ? 'overview' : STEPS[index - 1])}
-        >
-          <Icon name="chevron_left" size={18} />
-          {index === 0 ? t('drive.flow.toOverview') : t('drive.flow.back')}
-        </button>
-        <button
-          type="button"
-          className="btn ml-auto h-12 gap-1.5 rounded-full pr-4 pl-6"
-          onClick={() => onView(last ? 'overview' : STEPS[index + 1])}
-        >
-          {last ? t('drive.flow.done') : t(`drive.flow.next.${STEPS[index + 1]}`)}
-          <Icon name={last ? 'check' : 'chevron_right'} size={18} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Overview({ data, onView }: { data: DriveData; onView: (v: View) => void }) {
-  const { choice, server, setServer } = useDuty();
+function Launch({ data }: { data: DriveData }) {
+  const { choice, server } = useDuty();
   const { instances, refreshInstances } = useEngine();
   const { go } = useNav();
   const toast = useToast();
@@ -472,111 +593,26 @@ function Overview({ data, onView }: { data: DriveData; onView: (v: View) => void
     }
   };
 
-  const rows: [Step, string, string, string][] = [
-    [
-      'bus',
-      'directions_bus',
-      p.bus?.name ?? t('drive.summary.noBus'),
-      choice.paint || p.bus?.default_paint || '',
-    ],
-    ['route', 'route', p.map?.friendly ?? '–', dutyLabel(choice, data, p)],
-    [
-      'time',
-      'schedule',
-      server ? t('drive.summary.serverClock') : `${choice.time} · ${longDate(choice.date)}`,
-      server ? server.weather : weatherLabel(choice, data.weather),
-    ],
-    [
-      'roadbook',
-      'receipt_long',
-      p.trip ? `${hhmm(p.trip.departure)} · ${p.trip.from}` : t('drive.roadbook.none'),
-      p.trip ? `→ ${p.trip.terminus}` : '',
-    ],
-  ];
-
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-4">
-        <h2 className="section-title text-[1.6rem]">{t('drive.flow.overviewTitle')}</h2>
-        <ol className="mt-4 space-y-0.5">
-          {rows.map(([step, icon, value, detail]) => (
-            <li key={step}>
-              <button
-                type="button"
-                onClick={() => onView(step)}
-                className="group -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-4 rounded-xl px-3 py-3 text-left transition-colors hover:bg-sunken"
-              >
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sunken text-muted transition-colors group-hover:text-accent">
-                  <Icon name={icon} size={20} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium text-heading">{value}</span>
-                  {detail && (
-                    <span className="block truncate text-[14.5px] text-muted">{detail}</span>
-                  )}
-                </span>
-                <Icon name="chevron_right" size={18} style={{ opacity: 0.4 }} />
-              </button>
-            </li>
-          ))}
-        </ol>
-
-        {p.bus && p.bus.missing_packs.length > 0 && (
-          <Notice
-            tone="warning"
-            icon="warning"
-            title={t('drive.bus.partsMissing')}
-            className="mt-5"
-          >
-            {p.bus.missing_packs.join(', ')}
-          </Notice>
-        )}
-        {server && (
-          <div className="mt-5 flex items-center gap-3 rounded-xl border border-line px-4 py-3">
-            <Icon name="dns" size={18} style={{ color: 'var(--accent)' }} />
-            <span className="min-w-0 flex-1 truncate">{server.name}</span>
-            <button type="button" className="code-action" onClick={() => setServer(null)}>
-              <Icon name="logout" size={16} />
-              {t('drive.summary.leave')}
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="shrink-0 space-y-2.5 px-6 pt-2 pb-6">
+    <>
+      {situations.data && situations.data.length > 0 && (
         <button
           type="button"
-          className="btn h-16 w-full justify-center rounded-full text-[19px]"
-          disabled={starting}
-          onClick={() => launch()}
+          className="mb-2 flex items-center justify-center gap-2 py-1.5 text-[15px] font-medium text-muted transition-colors hover:text-ink"
+          onClick={() => launch(situations.data![0].file)}
         >
-          {armed
-            ? t('drive.start.another')
-            : p.line
-              ? t('drive.start.duty')
-              : t('drive.start.drive')}
+          <Icon name="history" size={18} />
+          {t('drive.start.continue')}
         </button>
-        {situations.data && situations.data.length > 0 && (
-          <button
-            type="button"
-            className="btn-quiet h-12 w-full justify-center gap-2 rounded-full"
-            onClick={() => launch(situations.data![0].file)}
-          >
-            <Icon name="history" size={18} />
-            {t('drive.start.continue')}
-          </button>
-        )}
-        {running > 0 && (
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-2 pt-1 text-[14.5px] text-muted hover:text-heading"
-            onClick={() => go('sessions')}
-          >
-            <span className="size-2 rounded-full bg-ok" />
-            {t('drive.start.running', { count: running })}
-          </button>
-        )}
-      </div>
-    </div>
+      )}
+      <button
+        type="button"
+        className="btn h-16 justify-center rounded-full text-[19px]"
+        disabled={starting}
+        onClick={() => launch()}
+      >
+        {armed ? t('drive.start.another') : p.line ? t('drive.start.duty') : t('drive.start.drive')}
+      </button>
+    </>
   );
 }

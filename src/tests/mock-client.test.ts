@@ -109,7 +109,8 @@ describe('MockEngineClient', () => {
       time: '09:00',
     });
     await client.sendRequest('stop', { pid });
-    const [instance] = await client.sendRequest<Instance[]>('instances', {});
+    const instances = await client.sendRequest<Instance[]>('instances', {});
+    const instance = instances.find((i) => i.pid === pid)!;
     expect(instance.running).toBe(false);
     expect(instance.exit_code).toBe(0);
   });

@@ -46,15 +46,11 @@
   },
   "rail": {
     "label": "Launcher",
-    "play": "Spielen",
-    "content": "Inhalte",
-    "you": "Du",
     "noDriver": "Kein Fahrer",
     "level": "Stufe {level}",
     "running": "{count} läuft"
   },
   "common": {
-    "dismiss": "Schließen",
     "loading": "Wird geladen…",
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -96,7 +92,6 @@
       "duty": "Dienst beginnen",
       "another": "Weiteres Spiel starten",
       "continue": "Dort weitermachen, wo du warst",
-      "running": "{count} läuft · Sitzungen",
       "chooseFirst": "Wähle zuerst einen Bus und eine Karte.",
       "alreadyRunning": "Es läuft schon ein Spiel. Klicke nochmal, um ein weiteres zu starten.",
       "started": "Spiel gestartet (Prozess {pid})"
@@ -210,15 +205,10 @@
         "time": "Wann fährst du?",
         "roadbook": "Dein Fahrtenbuch"
       },
-      "next": {
-        "route": "Karte & Strecke",
-        "time": "Zeit & Wetter",
-        "roadbook": "Fahrtenbuch"
-      },
-      "back": "Zurück",
-      "toOverview": "Übersicht",
+      "overviewTitle": "Deine Fahrt",
+      "close": "Schließen",
       "done": "Fertig",
-      "overviewTitle": "Deine Fahrt"
+      "next": "Weiter: {step}"
     },
     "roadbook": {
       "none": "Kein Dienst gewählt",
@@ -233,6 +223,26 @@
       "entry": "Einsetzpunkt",
       "fit": "Einpassen",
       "loading": "Die Karte wird von oben gezeichnet…"
+    },
+    "promo": {
+      "badge": "Neu",
+      "title": "Realistische Fahrgäste",
+      "text": "Fahrgäste mit hochwertigeren, detaillierteren Modellen.",
+      "enable": "Einschalten",
+      "dismiss": "Ausblenden",
+      "enabled": "Realistische Fahrgäste sind an. Du siehst sie bei deiner nächsten Fahrt."
     }
+  },
+  "window": {
+    "minimize": "Minimieren",
+    "maximize": "Maximieren",
+    "restore": "Wiederherstellen",
+    "close": "Schließen"
+  },
+  "crash": {
+    "title": "Diese Seite hat ein Problem",
+    "text": "Der Rest des Launchers funktioniert weiter. Versuch es nochmal oder wähle links eine andere Seite.",
+    "retry": "Nochmal versuchen",
+    "copy": "Details kopieren"
   }
 }

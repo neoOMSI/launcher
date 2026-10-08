@@ -1,0 +1,103 @@
+{
+  "installMod": "Install mod…",
+  "dropHint": "Drop archives anywhere, or",
+  "chooseFolder": "pick a folder",
+  "dropOverlay": "Drop to install",
+  "free": "{size} free",
+  "openContent": "Open content folder",
+  "open": "Open",
+  "reading": "Reading the content folder…",
+  "loadFailed": "Could not read the content folder",
+  "cleaned": "Tidied up after an interrupted install",
+  "search": "Search mods",
+  "none": "No mods installed yet",
+  "noneHint": "Install one with the button on the left, or drop an archive here.",
+  "noMatch": "No mod matches “{query}”",
+  "inPlace": "in place",
+  "archives": "Archives used in place",
+  "sections": {
+    "installed": "Installed",
+    "installing": "Installing",
+    "folders": "Content folders"
+  },
+  "sheet": {
+    "of": "{n} of {total}",
+    "reading": "Looking inside…",
+    "failed": "Could not look inside",
+    "archive": "Archive",
+    "unpacked": "Unpacked",
+    "files": "Files",
+    "free": "Free space",
+    "fits": "Fits: needs {needed}, {free} free.",
+    "noFit": "Unpacked it needs {needed}, only {free} free.",
+    "folder": "A folder: its files are copied into the content folder.",
+    "mode": "Install as",
+    "install": "Install",
+    "skip": "Skip",
+    "started": "Installing {name}…"
+  },
+  "mode": {
+    "auto": "Auto",
+    "autoWill": {
+      "extract": "Unpacks it, since it fits on the disk.",
+      "inplace": "Uses the .zip as it is, since it doesn't fit unpacked."
+    },
+    "extract": "Extract",
+    "extractHint": "Unpacks a copy. Your archive stays where it is.",
+    "inplace": "In place",
+    "inplaceHint": "The game reads the .zip directly: hardly any extra space.",
+    "noSpace": "Not enough free space to unpack it.",
+    "inplaceZipOnly": "Only a .zip can be used in place.",
+    "inplaceNo": "Not possible for this archive: {reason}"
+  },
+  "modeName": {
+    "auto": "Automatic",
+    "extract": "Extracted",
+    "inplace": "In place"
+  },
+  "state": {
+    "queued": "Queued",
+    "planning": "Planning",
+    "checking": "Checking space",
+    "unpacking": "Unpacking",
+    "copying": "Copying",
+    "moving": "Moving into place",
+    "done": "Done",
+    "failed": "Failed",
+    "cancelled": "Cancelled"
+  },
+  "jobs": {
+    "running": "Running",
+    "finished": "Finished",
+    "idle": "Nothing is installing",
+    "idleHint": "Drop an archive here or use Install mod….",
+    "clear": "Clear finished",
+    "files": "{done} / {total} files",
+    "preparing": "Preparing…",
+    "fromInbox": "from the inbox",
+    "installed": "Installed {folder}",
+    "keptAside": "{name} kept aside until its bus is installed"
+  },
+  "uninstall": {
+    "label": "Uninstall {name}",
+    "title": "Uninstall {name}?",
+    "body": "Nothing is deleted: its folders move to {folder}.",
+    "confirm": "Uninstall",
+    "done": "{name} uninstalled. Its folders are in Mods/uninstalled."
+  },
+  "content": {
+    "title": "Content folder",
+    "empty": "Empty: {names}",
+    "none": "No folders yet"
+  },
+  "inbox": {
+    "title": "Mods inbox",
+    "hint": "Anything you put in here installs by itself.",
+    "folder": "Inbox folder",
+    "settling": "Installs once it has finished copying"
+  },
+  "waiting": {
+    "title": "Waiting for their bus",
+    "hint": "Paints for a bus you don't have yet. They install once it's there."
+  }
+}
