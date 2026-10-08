@@ -10,6 +10,8 @@
   "freeDrive": "Freie Fahrt",
   "lineTour": "{line}, Umlauf {tour}",
   "state": {
+    "starting": "Startet…",
+    "loading": "Lädt {percent} %",
     "stopping": "Wird beendet, die Fahrt wird gespeichert…",
     "clean": "Normal beendet",
     "killed": "Zwangsweise beendet, Fahrt nicht gespeichert",

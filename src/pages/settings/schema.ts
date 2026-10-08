@@ -26,6 +26,7 @@ export type CustomId =
   | 'seat'
   | 'vrKeys'
   | 'corner'
+  | 'paxPack'
   | 'theme'
   | 'onLaunch'
   | 'restoreOnExit'
@@ -579,6 +580,7 @@ export const TABS: readonly Tab[] = [
               ],
             },
           },
+          custom('pax_pack', 'paxPack', { visible: ({ s }) => s.pax_models === 'realistic' }),
           {
             key: 'pax_motion',
             control: {

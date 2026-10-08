@@ -9,6 +9,7 @@ import type {
   InstallProgress,
   InstalledMod,
   KeyBindings,
+  PaxPack,
   SourceInfo,
   ServerInfo,
   Settings,
@@ -148,6 +149,7 @@ export class MockLauncher {
     MODS.jobs.filter((j) => j.finished === null).map((j) => [j.id, 4]),
   );
   private nextPid = 18200;
+  private paxPack: PaxPack = { state: 'missing', done: 0, total: 0, message: '' };
 
   handle<C extends Command>(command: C, args: unknown): CommandResult<C> {
     return this.dispatch(command, (args ?? {}) as Record<string, unknown>) as CommandResult<C>;
@@ -172,7 +174,6 @@ export class MockLauncher {
       case 'profile':
         return profile(String(args.name));
       case 'mods':
-        this.advanceJobs();
         return { ...MODS, jobs: this.jobs, installed: this.installedMods };
       case 'install':
         return this.install(String(args.path), (args.mode as InstallMode) ?? 'auto');
@@ -188,7 +189,13 @@ export class MockLauncher {
         return this.settings;
       case 'save_settings':
         this.settings = { ...this.settings, ...(args as Settings) };
+        if (this.settings.pax_models === 'realistic') this.paxPack.state = 'installed';
         return this.settings;
+      case 'pax_pack':
+        return this.paxPack;
+      case 'install_pax_pack':
+        this.paxPack.state = 'installed';
+        return this.paxPack;
       case 'keybindings':
         return this.keys;
       case 'save_keybindings':
@@ -427,13 +434,29 @@ export class MockLauncher {
     return job;
   }
 
-  private advanceJobs() {
+  get installing() {
+    return this.jobs.some((j) => j.finished === null);
+  }
+
+  get installs() {
+    return this.jobs;
+  }
+
+  get games() {
+    return this.instances;
+  }
+
+  /** Moves every running install on by one step; true when one of them finished. */
+  advanceJobs() {
+    let finished = false;
     for (const job of this.jobs) {
       if (job.finished !== null) continue;
       const tick = (this.jobTicks.get(job.id) ?? 0) + 1;
       this.jobTicks.set(job.id, tick);
       this.stepJob(job, tick);
+      finished ||= job.finished !== null;
     }
+    return finished;
   }
 
   private stepJob(job: InstallProgress, tick: number) {

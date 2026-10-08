@@ -94,9 +94,10 @@ export const BusViewer: React.FC<{
   centreX?: number;
   centreY?: number;
   fit?: number;
-}> = ({ bus, paint, centreX, centreY, fit = 1 }) => {
-  const frame = useRef({ centreX, centreY, fit });
-  frame.current = { centreX, centreY, fit };
+  paused?: boolean;
+}> = ({ bus, paint, centreX, centreY, fit = 1, paused = false }) => {
+  const frame = useRef({ centreX, centreY, fit, paused });
+  frame.current = { centreX, centreY, fit, paused };
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<{ scene: Scene; place: (o: Object3D) => void } | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | string>('loading');
@@ -170,6 +171,7 @@ export const BusViewer: React.FC<{
     let shiftY = 0;
     let zoom = 0;
     renderer.setAnimationLoop(() => {
+      if (frame.current.paused) return;
       const { width, height } = renderer.domElement;
       const ratio = renderer.getPixelRatio();
       const w = width / ratio;

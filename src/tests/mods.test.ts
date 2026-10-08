@@ -144,6 +144,7 @@ describe('mock mods engine', () => {
     expect(started.state).toBe('queued');
     const seen = new Set<string>();
     for (let i = 0; i < 12; i++) {
+      engine.advanceJobs();
       const j = engine.handle('mods', undefined).jobs.find((x) => x.id === started.id)!;
       seen.add(j.state);
     }

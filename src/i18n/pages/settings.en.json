@@ -148,6 +148,7 @@
     "exact_fare": "Passengers pay the exact fare",
     "pax_prefer_seats": "Passengers prefer seats",
     "pax_models": "Passenger models",
+    "pax_pack": "Realistic passengers pack",
     "pax_motion": "Passenger movement",
     "pax_ik": "Procedural animation",
     "pax_density": "How many passengers",
@@ -333,6 +334,15 @@
     "keep": "Stay open",
     "minimize": "Minimise",
     "hide": "Hide until it ends"
+  },
+  "paxPack": {
+    "download": "Download (a few hundred MB)",
+    "update": "Update the pack",
+    "retry": "Try again",
+    "starting": "Starting the download…",
+    "downloading": "Downloading {percent} % of {size}",
+    "installing": "Installing…",
+    "installed": "Installed, used from the next game start"
   },
   "actions": {
     "changeKeys": "Change the keys",

@@ -403,15 +403,7 @@
     @apply text-[13px] font-semibold tracking-[0.06em] text-muted uppercase;
   }
 
-  .stage {
-    background: linear-gradient(
-      333deg,
-      color-mix(in srgb, var(--color-brand) 34%, var(--page)) 0%,
-      color-mix(in srgb, var(--color-brand) 13%, var(--page)) 30%,
-      color-mix(in srgb, var(--color-brand) 3%, var(--page)) 58%,
-      var(--raised) 100%
-    );
-  }
+  .stage,
   .stage-calm {
     background: var(--raised);
   }

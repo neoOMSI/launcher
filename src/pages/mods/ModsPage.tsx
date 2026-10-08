@@ -30,9 +30,6 @@ export const ModsPage: React.FC = () => {
   const [handled, setHandled] = useState(0);
   const [dragging, setDragging] = useState(false);
   const depth = useRef(0);
-  const reload = useRef(mods.reload);
-  reload.current = mods.reload;
-
   const data = mods.data ? readMods(mods.data) : null;
   const section: Section =
     route.section === 'installing' || route.section === 'folders' ? route.section : 'installed';
@@ -42,9 +39,6 @@ export const ModsPage: React.FC = () => {
   useEffect(() => {
     if (wasRunning.current && !running) invalidate('maps', 'vehicles', 'weather');
     wasRunning.current = running > 0;
-    if (!running) return;
-    const timer = setInterval(() => reload.current(), 1000);
-    return () => clearInterval(timer);
   }, [running]);
 
   const add = (paths: string[]) => setQueue((q) => enqueue(q, paths));

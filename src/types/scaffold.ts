@@ -1,6 +1,6 @@
-/**
- * Temporary launcher-side types until the engine-owned protocol bindings exist.
- */
+// Mirrors docs/LAUNCHER_PROTOCOL.md in the neoOMSI repository.
+
+export const PROTOCOL_VERSION = '1';
 
 export enum StatusCode {
   STATUS_OK = 0,
@@ -21,39 +21,7 @@ export interface HandshakeResponse {
   protocolVersion: string;
   engineVersion: string;
   supportedCapabilities: string[];
-}
-
-export interface MapSummary {
-  id: string;
-  name: string;
-  relativePath: string;
-  description: string;
-  tileCount: number;
-  hasChronology: boolean;
-}
-
-export interface VehicleSummary {
-  id: string;
-  name: string;
-  manufacturer: string;
-  relativePath: string;
-  availablePaints: string[];
-  availableHofs: string[];
-}
-
-export interface GetMapsResponse {
-  status: Status;
-  maps: MapSummary[];
-}
-
-export interface GetVehiclesResponse {
-  status: Status;
-  vehicles: VehicleSummary[];
-}
-
-export interface GetSettingsResponse {
-  status: Status;
-  settingsJson: string;
+  commands?: string[];
 }
 
 export enum SessionState {
@@ -66,25 +34,12 @@ export enum SessionState {
   SESSION_FAILED = 6,
 }
 
-export interface StartSessionRequest {
-  mapId: string;
-  vehicleId: string;
-  profileId: string;
-  entryPoint?: string;
-  simTimeEpochSeconds?: number;
-  weatherPreset?: string;
-  situationFile?: string;
-}
-
-export interface StartSessionResponse {
-  status: Status;
-  sessionId?: string;
-}
-
 export interface SessionEvent {
   sessionId: string;
+  pid: number;
   state: SessionState;
   message: string;
+  progress?: number;
   exitCode?: number;
 }
 
@@ -96,6 +51,7 @@ export interface EngineStatus {
   protocolVersion?: string;
   engineVersion?: string;
   capabilities: string[];
+  commands?: string[];
   lastError?: string;
   pid?: number;
 }

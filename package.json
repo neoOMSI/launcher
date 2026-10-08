@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "vite",
     "dev:app": "pnpm run build:electron && concurrently -k \"vite\" \"wait-on tcp:5173 && electron dist-electron/main.js --dev --mock\"",
-    "dev:real": "pnpm run build:electron && concurrently -k \"vite\" \"wait-on tcp:5173 && electron dist-electron/main.js --dev --cli=../neoOMSI/target/release/neoomsi-launcher.exe\"",
+    "dev:real": "pnpm run build:electron && concurrently -k \"vite\" \"wait-on tcp:5173 && electron dist-electron/main.js --dev --engine=../neoOMSI/target/release/neoomsi.exe\"",
     "build": "tsc -b && vite build && pnpm run build:electron",
     "build:electron": "vite build --config vite.electron.config.ts && vite build --config vite.preload.config.ts",
     "test": "vitest run",

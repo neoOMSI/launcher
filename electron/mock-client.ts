@@ -1,22 +1,16 @@
 import { EventEmitter } from 'node:events';
 import type { EngineClient } from './client';
-import { DEFAULT_SETTINGS_FIXTURE } from '../src/fixtures/settings';
-import type {
-  EngineStatus,
-  GetMapsResponse,
-  GetSettingsResponse,
-  GetVehiclesResponse,
-  HandshakeResponse,
-  StartSessionRequest,
-  StartSessionResponse,
-  Status,
-} from '../src/types/scaffold';
-import { StatusCode } from '../src/types/scaffold';
-import { COMMANDS, type Command } from '../src/types/launcher';
+import { PROTOCOL_VERSION, SessionState, type EngineStatus } from '../src/types/scaffold';
+import { COMMANDS, type Command, type EngineEvent, type Launched } from '../src/types/launcher';
 import { MockLauncher } from './mock/launcher';
+
+const INSTALL_TICK_MS = 700;
+const LOAD_STEPS_MS = [400, 1200, 2400];
 
 export class MockEngineClient extends EventEmitter implements EngineClient {
   private readonly launcher = new MockLauncher();
+  private ticker: NodeJS.Timeout | null = null;
+  private readonly timers = new Set<NodeJS.Timeout>();
   private status: EngineStatus = {
     connectionState: 'disconnected',
     capabilities: [],
@@ -26,28 +20,30 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
     return {
       ...this.status,
       capabilities: [...this.status.capabilities],
+      commands: this.status.commands && [...this.status.commands],
     };
   }
 
   public async start(): Promise<EngineStatus> {
     this.status = {
       connectionState: 'connected',
-      protocolVersion: '1.0-mock',
+      protocolVersion: `${PROTOCOL_VERSION}-mock`,
       engineVersion: '0.2.0-mock',
-      capabilities: ['content.discovery', 'settings.read_write', 'session.lifecycle'],
+      capabilities: ['events.instances', 'events.installs', 'events.content', 'events.session'],
+      commands: [...COMMANDS],
     };
     this.emit('diagnostic', 'MockEngineClient active');
     this.emit('status', this.getStatus());
+    this.watchInstalls();
     return this.getStatus();
   }
 
   public async stop(): Promise<void> {
-    this.status = {
-      connectionState: 'disconnected',
-      protocolVersion: undefined,
-      engineVersion: undefined,
-      capabilities: [],
-    };
+    if (this.ticker) clearInterval(this.ticker);
+    this.ticker = null;
+    for (const timer of this.timers) clearTimeout(timer);
+    this.timers.clear();
+    this.status = { connectionState: 'disconnected', capabilities: [] };
     this.emit('status', this.getStatus());
   }
 
@@ -55,106 +51,101 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
     if (this.status.connectionState !== 'connected') {
       throw new Error('Mock engine is not connected');
     }
-
-    const response = this.dispatchMock(type, payload);
-    return response as T;
+    if (!(COMMANDS as readonly string[]).includes(type)) {
+      throw new Error(`Unsupported mock request type: ${type}`);
+    }
+    const result = this.launcher.handle(type as Command, payload);
+    this.after(type as Command, payload, result);
+    return result as T;
   }
 
-  private dispatchMock(type: string, payload: unknown): unknown {
-    switch (type) {
-      case 'handshake':
-        return {
-          status: { code: StatusCode.STATUS_OK, message: 'OK' },
-          protocolVersion: '1.0-mock',
-          engineVersion: '0.2.0-mock',
-          supportedCapabilities: ['content.discovery', 'settings.read_write', 'session.lifecycle'],
-        } as HandshakeResponse;
+  private send(event: EngineEvent) {
+    this.emit('event', event);
+  }
 
-      case 'get_maps':
-        return {
-          status: { code: StatusCode.STATUS_OK, message: 'OK' },
-          maps: [
-            {
-              id: 'berlin-spandau',
-              name: 'Berlin-Spandau 1989',
-              relativePath: 'maps/Berlin-Spandau_1989',
-              description: 'Historical Berlin omnibus lines 92 and 13N.',
-              tileCount: 94,
-              hasChronology: true,
-            },
-            {
-              id: 'grundorf',
-              name: 'Grundorf',
-              relativePath: 'maps/Grundorf',
-              description: 'Standard test and training map.',
-              tileCount: 4,
-              hasChronology: false,
-            },
-          ],
-        } as GetMapsResponse;
+  private later(ms: number, run: () => void) {
+    const timer = setTimeout(() => {
+      this.timers.delete(timer);
+      run();
+    }, ms);
+    timer.unref?.();
+    this.timers.add(timer);
+  }
 
-      case 'get_vehicles':
-        return {
-          status: { code: StatusCode.STATUS_OK, message: 'OK' },
-          vehicles: [
-            {
-              id: 'man-sd200-sd80',
-              name: 'MAN SD200 (SD80)',
-              manufacturer: 'MAN',
-              relativePath: 'Vehicles/MAN_SD200/MAN_SD80.bus',
-              availablePaints: ['Standard Beige', 'Pop Werbung', 'White'],
-              availableHofs: ['Spandau 1989', 'Grundorf'],
-            },
-            {
-              id: 'man-sd202-d92',
-              name: 'MAN SD202 (D92)',
-              manufacturer: 'MAN',
-              relativePath: 'Vehicles/MAN_SD202/MAN_D92.bus',
-              availablePaints: ['Standard Beige', 'BVG Corporate'],
-              availableHofs: ['Spandau 1989', 'Grundorf'],
-            },
-          ],
-        } as GetVehiclesResponse;
+  private session(id: string, pid: number, state: SessionState, message = '', progress?: number) {
+    this.send({
+      type: 'session_event',
+      payload: { sessionId: id, pid, state, message, progress },
+    });
+  }
 
-      case 'get_settings':
-        return {
-          status: { code: StatusCode.STATUS_OK, message: 'OK' },
-          settingsJson: JSON.stringify(DEFAULT_SETTINGS_FIXTURE, null, 2),
-        } as GetSettingsResponse;
-
-      case 'update_settings':
-        return {
-          code: StatusCode.STATUS_OK,
-          message: 'Settings saved',
-        } as Status;
-
-      case 'start_session': {
-        const req = payload as StartSessionRequest;
-        const sessionId = `sim_${Date.now()}`;
-        setTimeout(() => {
-          this.emit('session_event', {
-            sessionId,
-            state: 3, // RUNNING
-            message: `Simulation started for map ${req.mapId}`,
+  private after(command: Command, payload: unknown, result: unknown) {
+    switch (command) {
+      case 'launch': {
+        const { pid } = result as Launched;
+        const game = this.launcher.games.find((i) => i.pid === pid);
+        if (!game) return;
+        this.send({ type: 'instances_changed', payload: this.launcher.games });
+        this.session(game.id, pid, SessionState.SESSION_STARTING);
+        LOAD_STEPS_MS.forEach((ms, k) => {
+          const last = k === LOAD_STEPS_MS.length - 1;
+          this.later(ms, () => {
+            if (!game.running) return;
+            game.link = last
+              ? { state: 'running', progress: null, message: '', window: true }
+              : {
+                  state: 'loading',
+                  progress: (k + 1) / LOAD_STEPS_MS.length,
+                  message: game.map,
+                  window: true,
+                };
+            this.send({ type: 'instances_changed', payload: this.launcher.games });
+            if (last) this.session(game.id, pid, SessionState.SESSION_RUNNING);
+            else
+              this.session(
+                game.id,
+                pid,
+                SessionState.SESSION_LOADING,
+                game.map,
+                game.link.progress!,
+              );
           });
-        }, 300);
-        return {
-          status: { code: StatusCode.STATUS_OK, message: 'Session launched' },
-          sessionId,
-        } as StartSessionResponse;
+        });
+        return;
       }
-
-      case 'stop_session':
-        return {
-          code: StatusCode.STATUS_OK,
-          message: 'Session stopped',
-        } as Status;
-
-      default:
-        if ((COMMANDS as readonly string[]).includes(type)) {
-          return this.launcher.handle(type as Command, payload);
-        }
-        throw new Error(`Unsupported mock request type: ${type}`);
+      case 'stop': {
+        const pid = Number((payload as { pid?: number })?.pid);
+        const game = this.launcher.games.find((i) => i.pid === pid);
+        if (game) game.link = null;
+        this.send({ type: 'instances_changed', payload: this.launcher.games });
+        if (game) this.session(game.id, pid, SessionState.SESSION_EXITED, game.last_line);
+        return;
+      }
+      case 'install':
+      case 'start_install':
+      case 'cancel_install':
+      case 'clear_installs':
+        this.send({ type: 'installs_changed', payload: this.launcher.installs });
+        this.watchInstalls();
+        return;
+      case 'uninstall_mod':
+      case 'save_config':
+        this.send({ type: 'content_changed', payload: { stamp: String(Date.now()) } });
+        return;
     }
+  }
+
+  private watchInstalls() {
+    if (this.ticker || !this.launcher.installing) return;
+    this.ticker = setInterval(() => {
+      const finished = this.launcher.advanceJobs();
+      this.send({ type: 'installs_changed', payload: this.launcher.installs });
+      if (finished) this.send({ type: 'content_changed', payload: { stamp: String(Date.now()) } });
+      if (!this.launcher.installing && this.ticker) {
+        clearInterval(this.ticker);
+        this.ticker = null;
+      }
+    }, INSTALL_TICK_MS);
+    this.ticker.unref?.();
   }
 }
