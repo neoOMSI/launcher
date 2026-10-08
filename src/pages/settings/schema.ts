@@ -26,6 +26,7 @@ export type CustomId =
   | 'seat'
   | 'vrKeys'
   | 'corner'
+  | 'metarStation'
   | 'paxPack'
   | 'theme'
   | 'onLaunch'
@@ -138,7 +139,7 @@ const on =
 export const PRESET_IDS = ['low', 'medium', 'high', 'ultra'] as const;
 export type PresetId = (typeof PRESET_IDS)[number];
 
-// crates/core/src/game_lists/settings.rs `PRESETS`, in the page's value types.
+// Keep in sync with `PRESETS` in crates/core/src/game_lists/settings.rs.
 export const PRESETS: Record<PresetId, Settings> = {
   low: {
     msaa: 1,
@@ -246,7 +247,11 @@ export const TABS: readonly Tab[] = [
       {
         id: 'display',
         rows: [
-          toggle('fullscreen'),
+          select('window_mode', [
+            ['windowed', 'opt.windowed'],
+            ['borderless', 'opt.borderless'],
+            ['fullscreen', 'opt.fullscreen'],
+          ]),
           toggle('vsync'),
           select('max_fps', [
             [0, 'opt.refreshRate'],
@@ -409,6 +414,7 @@ export const TABS: readonly Tab[] = [
           toggle('old_steering', { hint: true }),
           toggle('red_steer_spd', { hint: true }),
           toggle('steer_center', { hint: true }),
+          toggle('mouse_steering', { hint: true }),
           toggle('mouse_right_off', { hint: true }),
         ],
       },
@@ -416,6 +422,7 @@ export const TABS: readonly Tab[] = [
         id: 'assists',
         rows: [
           toggle('auto_clutch', { hint: true }),
+          toggle('auto_shift', { hint: true }),
           toggle('momentary_gears', { hint: true }),
           toggle('brake_hold', { hint: true }),
           toggle('blinker_cancel', { hint: true }),
@@ -475,6 +482,8 @@ export const TABS: readonly Tab[] = [
           toggle('driverview_smooth'),
           toggle('hands_in_cab'),
           toggle('alt_view', { hint: true }),
+          toggle('free_look', { hint: true }),
+          toggle('crosshair', { hint: true }),
         ],
       },
       {
@@ -562,7 +571,8 @@ export const TABS: readonly Tab[] = [
             { hint: true },
           ),
           toggle('exact_fare'),
-          toggle('pax_prefer_seats'),
+          toggle('pax_prefer_seats', { hint: true }),
+          toggle('pax_rear_entry', { hint: true }),
           slider('pax_density', 0, 2, 0.1, pct),
         ],
       },
@@ -634,6 +644,11 @@ export const TABS: readonly Tab[] = [
         rows: [
           toggle('time_sync', { hint: true }),
           toggle('metar_sync', { hint: true }),
+          custom('metar_station', 'metarStation', {
+            visible: on('metar_sync'),
+            hint: true,
+            writes: ['metar_station'],
+          }),
           select('time_speed', [['1', 'opt.realTime'], ...ns('fmt.speed', [2, 4, 8, 15, 30])], {
             hint: true,
           }),
@@ -682,6 +697,13 @@ export const TABS: readonly Tab[] = [
           toggle('navigator', { hint: true }),
           toggle('nav_arrows', { visible: on('navigator') }),
           toggle('nav_ai', { visible: on('navigator') }),
+          toggle('nav_topbar', { visible: on('navigator'), hint: true }),
+          toggle('nav_turn', { visible: on('navigator'), hint: true }),
+          toggle('nav_stoplist', { visible: on('navigator'), hint: true }),
+          toggle('nav_stops_ext', {
+            visible: ({ s }) => s.navigator === true && s.nav_stoplist === true,
+            hint: true,
+          }),
           custom('navigator_corner', 'corner', {
             visible: on('navigator'),
             writes: ['navigator_corner'],

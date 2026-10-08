@@ -32,6 +32,7 @@ const NEEDS_SETTINGS: ReadonlySet<CustomId> = new Set([
   'wheel',
   'seat',
   'corner',
+  'metarStation',
 ] satisfies CustomId[]);
 
 export const needsSettings = (control: Control) =>

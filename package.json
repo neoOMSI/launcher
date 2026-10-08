@@ -13,22 +13,18 @@
   "scripts": {
     "dev": "vite",
     "dev:app": "pnpm run build:electron && concurrently -k \"vite\" \"wait-on tcp:5173 && electron dist-electron/main.js --dev --mock\"",
-    "dev:real": "pnpm run build:electron && concurrently -k \"vite\" \"wait-on tcp:5173 && electron dist-electron/main.js --dev --engine=../neoOMSI/target/release/neoomsi.exe\"",
+    "dev:real": "pnpm run build:electron && concurrently -k \"vite\" \"wait-on tcp:5173 && electron dist-electron/main.js --dev\"",
     "build": "tsc -b && vite build && pnpm run build:electron",
     "build:electron": "vite build --config vite.electron.config.ts && vite build --config vite.preload.config.ts",
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "electron dist-electron/main.js"
-  },
-  "dependencies": {
-    "@fontsource-variable/rubik": "^5.3.0",
-    "@fontsource/barlow": "^5.3.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "three": "^0.186.1"
+    "start": "electron dist-electron/main.js",
+    "package": "electron-builder --dir"
   },
   "devDependencies": {
+    "@fontsource-variable/rubik": "^5.3.0",
+    "@fontsource/barlow": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/react": "^16.3.3",
     "@types/node": "24.19.1",
@@ -38,9 +34,13 @@
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.5",
     "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
     "jsdom": "^30.1.2",
     "prettier": "^3.9.9",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3",
+    "three": "^0.186.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
     "vitest": "^5.0.3",

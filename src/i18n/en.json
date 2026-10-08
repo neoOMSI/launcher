@@ -234,6 +234,23 @@
       "enable": "Turn on",
       "dismiss": "Hide",
       "enabled": "Realistic passengers are on. You will see them on your next drive."
+    },
+    "pax": {
+      "badge": "Passengers",
+      "missingTitle": "Realistic passengers are not installed yet",
+      "missingText": "They are turned on, but the pack still has to be downloaded (a few hundred MB).",
+      "download": "Download",
+      "retry": "Try again",
+      "starting": "Starting the download…",
+      "downloading": "Downloading {percent} % of {size}",
+      "installing": "Installing…",
+      "updateTitle": "New passengers: version {version}",
+      "updateText": "A new version of the realistic passengers is out.",
+      "outdatedTitle": "Your realistic passengers are out of date",
+      "outdatedText": "neoOMSI needs a newer pack. Its release could not be looked up just now; Update tries again.",
+      "update": "Update",
+      "whatsNew": "What's new",
+      "hideChanges": "Hide changes"
     }
   },
   "window": {
@@ -247,5 +264,14 @@
     "text": "The rest of the launcher still works. Try again, or pick another page on the left.",
     "retry": "Try again",
     "copy": "Copy details"
+  },
+  "update": {
+    "available": "neoOMSI {version} is available",
+    "prerelease": "Pre-release",
+    "whatsNew": "What's new",
+    "hide": "Hide changes",
+    "download": "Download",
+    "dismiss": "Not now",
+    "noNotes": "This release lists no changes."
   }
 }

@@ -9,10 +9,11 @@ import React, {
 import { Icon } from '../../components/Icon';
 import { Badge, Notice, Segmented, Select, Spinner, Switch } from '../../components/ui';
 import { call, errorText, useCommand, useEngine } from '../../lib/engine';
-import { longDate } from '../../lib/format';
 import { useToast } from '../../lib/nav';
 import { useTheme } from '../../lib/theme';
-import type { AppInfo, LauncherPrefs, OnLaunch, UpdateInfo } from '../../types/neoomsi';
+import type { AppInfo, LauncherPrefs, OnLaunch } from '../../types/neoomsi';
+import type { GameRelease } from '../../types/launcher';
+import { Changelog } from '../../components/Changelog';
 import type { CustomProps } from './rows';
 import { tr, type CustomId } from './schema';
 
@@ -216,7 +217,7 @@ const Folder: React.FC<CustomProps> = () => {
 type Check =
   | { state: 'idle' }
   | { state: 'checking' }
-  | { state: 'done'; info: UpdateInfo }
+  | { state: 'done'; latest: GameRelease | null }
   | { state: 'failed'; error: string };
 
 const openExternal = (url: string) => {
@@ -231,15 +232,14 @@ const CheckUpdates: React.FC<CustomProps> = () => {
   const [check, setCheck] = useState<Check>({ state: 'idle' });
 
   const run = () => {
-    const b = bridge();
-    if (!b || !version) return;
+    if (!version) return;
     setCheck({ state: 'checking' });
-    b.checkUpdates(version)
-      .then((info) => setCheck({ state: 'done', info }))
+    call('update_check')
+      .then((latest) => setCheck({ state: 'done', latest }))
       .catch((err) => setCheck({ state: 'failed', error: errorText(err) }));
   };
 
-  const latest = check.state === 'done' && check.info.available ? check.info.latest : null;
+  const latest = check.state === 'done' ? check.latest : null;
 
   return (
     <div>
@@ -259,7 +259,7 @@ const CheckUpdates: React.FC<CustomProps> = () => {
         <button
           type="button"
           className="btn-quiet shrink-0 gap-2"
-          disabled={!bridge() || !version || check.state === 'checking'}
+          disabled={!version || check.state === 'checking'}
           onClick={run}
         >
           {check.state === 'checking' ? (
@@ -282,22 +282,14 @@ const CheckUpdates: React.FC<CustomProps> = () => {
           title={tr('updates.available', { version: latest.version })}
           className="mt-4"
         >
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14.5px] text-muted">
-            {latest.name && latest.name !== latest.version && <span>{latest.name}</span>}
-            {latest.published && <span>{longDate(latest.published.slice(0, 10))}</span>}
-            {latest.prerelease && (
-              <Badge color="var(--color-warn)">{tr('updates.prerelease')}</Badge>
-            )}
-          </div>
-          {latest.notes && (
-            <div className="mt-3 max-h-56 overflow-y-auto pr-2 text-[15px] whitespace-pre-wrap text-ink select-text">
-              {latest.notes}
-            </div>
+          {latest.prerelease && <Badge color="var(--color-warn)">{tr('updates.prerelease')}</Badge>}
+          {latest.notes.trim() && (
+            <Changelog notes={latest.notes} className="mt-3 max-h-56 overflow-y-auto pr-2" />
           )}
           <button
             type="button"
             className="btn mt-4 gap-2"
-            onClick={() => openExternal(latest.url || `${REPO}/releases`)}
+            onClick={() => openExternal(latest.page || `${REPO}/releases`)}
           >
             <Icon name="open_in_new" size={18} />
             {tr('updates.open')}

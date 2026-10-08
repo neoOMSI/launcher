@@ -175,7 +175,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
 
 export function useCommand<C extends Command>(command: C, args?: CommandArgs<C> | null) {
   const { ready } = useEngine();
-  const key = JSON.stringify(args ?? null);
+  const key = args === null ? null : JSON.stringify(args ?? {});
   const [state, setState] = useState<{
     data?: CommandResult<C>;
     error?: string;

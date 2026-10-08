@@ -1,0 +1,41 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, reopened]
+  schedule:
+    - cron: '17 3 * * *'
+      timezone: 'Europe/Berlin'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  classify:
+    name: Ensure triage status
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-slim
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      ISSUE: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Add untriaged status when missing
+        shell: bash
+        run: bash scripts/ci/triage-issues.sh classify
+
+  needs-info:
+    name: Needs-info cleanup
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-slim
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Close inactive needs-info issues
+        shell: bash
+        run: bash scripts/ci/triage-issues.sh clean-needs-info

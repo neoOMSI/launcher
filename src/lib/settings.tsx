@@ -17,6 +17,7 @@ interface SettingsValue {
   saving: boolean;
   language: SupportedLanguage;
   update: (patch: Settings) => void;
+  save: (patch: Settings) => Promise<void>;
   reload: () => void;
 }
 
@@ -25,6 +26,7 @@ const SettingsContext = createContext<SettingsValue>({
   saving: false,
   language: 'en',
   update() {},
+  save: async () => {},
   reload() {},
 });
 
@@ -37,7 +39,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const [language, setLang] = useState<SupportedLanguage>(getLanguage());
   const pending = useRef<Settings>({});
+  const waiting = useRef<{ resolve: () => void; reject: (err: unknown) => void }[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const started = useRef(0);
+  const inFlight = useRef(0);
 
   const adopt = useCallback((next: Settings) => {
     setSettings(next);
@@ -48,10 +53,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // A read that overlaps a save may come back with what the file held before it.
+  const unsettled = () => Object.keys(pending.current).length > 0 || inFlight.current > 0;
+
   const reload = useCallback(() => {
-    if (Object.keys(pending.current).length) return;
+    if (unsettled()) return;
+    const at = started.current;
     call('settings')
-      .then(adopt)
+      .then((next) => {
+        if (at === started.current && !unsettled()) adopt(next);
+      })
       .catch((err) => setError(errorText(err)));
   }, [adopt]);
 
@@ -67,19 +78,52 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const flush = useCallback(() => {
     const patch = pending.current;
+    const waiters = waiting.current;
     pending.current = {};
-    if (!Object.keys(patch).length) return;
+    waiting.current = [];
+    if (!Object.keys(patch).length) {
+      for (const w of waiters) w.resolve();
+      return;
+    }
+    const at = ++started.current;
+    inFlight.current++;
     setSaving(true);
+    const settle = () => {
+      inFlight.current--;
+      if (!inFlight.current) setSaving(false);
+    };
     call('save_settings', patch)
       .then((saved) => {
-        if (!Object.keys(pending.current).length) adopt(saved);
+        settle();
+        if (at === started.current && !unsettled()) adopt(saved);
+        for (const w of waiters) w.resolve();
       })
       .catch((err) => {
+        settle();
         log(`[Settings] ${errorText(err)}`);
         setError(errorText(err));
-      })
-      .finally(() => setSaving(false));
+        for (const w of waiters) w.reject(err);
+        call('settings')
+          .then((stored) => {
+            if (at !== started.current || unsettled()) return;
+            adopt(stored);
+            setError(errorText(err));
+          })
+          .catch(() => {});
+      });
   }, [adopt, log]);
+
+  useEffect(() => {
+    const now = () => {
+      clearTimeout(timer.current);
+      flush();
+    };
+    window.addEventListener('pagehide', now);
+    return () => {
+      window.removeEventListener('pagehide', now);
+      now();
+    };
+  }, [flush]);
 
   const update = useCallback(
     (patch: Settings) => {
@@ -95,8 +139,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [flush],
   );
 
+  const save = useCallback(
+    (patch: Settings) =>
+      new Promise<void>((resolve, reject) => {
+        waiting.current.push({ resolve, reject });
+        update(patch);
+      }),
+    [update],
+  );
+
   return (
-    <SettingsContext value={{ settings, error, saving, language, update, reload }}>
+    <SettingsContext value={{ settings, error, saving, language, update, save, reload }}>
       {children}
     </SettingsContext>
   );

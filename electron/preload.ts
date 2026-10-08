@@ -45,7 +45,6 @@ const api: NeoomsiBridge = {
   showItem: (path) => ipcRenderer.invoke('shell:show-item', path),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   appInfo: () => ipcRenderer.invoke('app:info'),
-  checkUpdates: (current) => ipcRenderer.invoke('updates:check', current),
 };
 
 contextBridge.exposeInMainWorld('neoomsi', api);

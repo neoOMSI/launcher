@@ -35,6 +35,40 @@ import {
 
 const now = () => Math.floor(Date.now() / 1000);
 
+const PAX_RELEASE = {
+  version: 2,
+  notes:
+    '- 40 new people, from school children to commuters with suitcases\n- Faster loading of the passenger models',
+  page: 'https://github.com/neoOMSI/neoOMSI/releases/tag/realistic-pax-v2',
+  published: '2026-10-01T12:00:00Z',
+};
+
+const GAME_RELEASE = {
+  version: '0.3.0',
+  page: 'https://github.com/neoOMSI/neoOMSI/releases/tag/v0.3.0',
+  prerelease: false,
+  size: 140_000_000,
+  notes: [
+    '> **Early development build.** Expect bugs.',
+    '',
+    "## What's changed",
+    '',
+    '### Features',
+    '',
+    '- The launcher shows what a new version brings ([#120](https://github.com/neoOMSI/neoOMSI/pull/120))',
+    '- Start times can be typed to the minute',
+    '',
+    '### Fixes',
+    '',
+    '- Tutorials are listed again (`menu_1_ENG.html`)',
+    '',
+    '## Downloads',
+    '',
+    '| Platform | Game |',
+    '| --- | --- |',
+  ].join('\n'),
+};
+
 function seedInstances(): Instance[] {
   const game = (pid: number, slot: number, patch: Partial<Instance>): Instance => ({
     id: `game-${pid}`,
@@ -149,7 +183,14 @@ export class MockLauncher {
     MODS.jobs.filter((j) => j.finished === null).map((j) => [j.id, 4]),
   );
   private nextPid = 18200;
-  private paxPack: PaxPack = { state: 'missing', done: 0, total: 0, message: '' };
+  private paxPack: PaxPack = {
+    state: 'missing',
+    done: 0,
+    total: 0,
+    message: '',
+    installed: null,
+    latest: PAX_RELEASE,
+  };
 
   handle<C extends Command>(command: C, args: unknown): CommandResult<C> {
     return this.dispatch(command, (args ?? {}) as Record<string, unknown>) as CommandResult<C>;
@@ -189,13 +230,17 @@ export class MockLauncher {
         return this.settings;
       case 'save_settings':
         this.settings = { ...this.settings, ...(args as Settings) };
-        if (this.settings.pax_models === 'realistic') this.paxPack.state = 'installed';
+        if (this.settings.pax_models === 'realistic' && this.paxPack.installed === null) {
+          this.paxPack = { ...this.paxPack, state: 'outdated', installed: 1 };
+        }
         return this.settings;
       case 'pax_pack':
         return this.paxPack;
       case 'install_pax_pack':
-        this.paxPack.state = 'installed';
+        this.paxPack = { ...this.paxPack, state: 'installed', installed: PAX_RELEASE.version };
         return this.paxPack;
+      case 'update_check':
+        return GAME_RELEASE;
       case 'keybindings':
         return this.keys;
       case 'save_keybindings':
@@ -274,8 +319,6 @@ export class MockLauncher {
       }
       case 'option_presets':
         return [];
-      case 'open_game_launcher':
-        throw new Error('The mock engine has no game window.');
       case 'controllers':
         return this.controllers;
       case 'save_controllers':

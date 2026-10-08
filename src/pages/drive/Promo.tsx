@@ -1,65 +1,235 @@
 import React, { useState } from 'react';
+import { Changelog } from '../../components/Changelog';
 import { Icon } from '../../components/Icon';
 import { t } from '../../i18n';
+import { call, errorText, useCommand } from '../../lib/engine';
+import { bytes } from '../../lib/format';
 import { useToast } from '../../lib/nav';
 import { useSettings } from '../../lib/settings';
+import type { PaxPack } from '../../types/launcher';
 
 const DISMISSED = 'neoomsi.promo.realisticPax';
+const SEEN_RELEASE = 'neoomsi.pax.dismissedRelease';
 
-function readDismissed() {
+function read(key: string) {
   try {
-    return localStorage.getItem(DISMISSED) === '1';
+    return localStorage.getItem(key);
   } catch {
-    return false;
+    return null;
   }
 }
 
-export const PassengerPromo: React.FC = () => {
-  const { settings, update } = useSettings();
-  const toast = useToast();
-  const [dismissed, setDismissed] = useState(readDismissed);
+function write(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+}
 
-  if (!settings || settings.pax_models === 'realistic' || dismissed) return null;
+export type PaxNotice = 'promo' | 'missing' | 'busy' | 'update' | null;
 
-  const dismiss = () => {
-    setDismissed(true);
-    try {
-      localStorage.setItem(DISMISSED, '1');
-    } catch {}
-  };
+export function paxNotice(
+  realistic: boolean,
+  pack: PaxPack | undefined,
+  promoDismissed: boolean,
+  dismissedRelease: string | null,
+): PaxNotice {
+  if (!realistic) return promoDismissed ? null : 'promo';
+  if (!pack) return null;
+  if (pack.state === 'downloading' || pack.state === 'installing') return 'busy';
+  if (pack.state === 'missing' || pack.state === 'failed') return 'missing';
+  if (pack.state !== 'outdated') return null;
+  if (!pack.latest) return 'update';
+  return String(pack.latest.version) !== dismissedRelease ? 'update' : null;
+}
 
+function Card({
+  badge,
+  onDismiss,
+  children,
+}: {
+  badge: string;
+  onDismiss?: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <aside className="rise rounded-2xl bg-page/85 p-4 shadow-xl backdrop-blur-md">
       <div className="flex items-center gap-2 text-accent">
         <Icon name="groups" size={22} />
-        <span className="text-[12.5px] font-bold tracking-[0.08em] uppercase">
-          {t('drive.promo.badge')}
-        </span>
-        <button
-          type="button"
-          className="theme-toggle -my-1 -mr-1.5 ml-auto size-8 rounded-full"
-          title={t('drive.promo.dismiss')}
-          onClick={dismiss}
-        >
-          <Icon name="close" size={18} />
-        </button>
+        <span className="text-[12.5px] font-bold tracking-[0.08em] uppercase">{badge}</span>
+        {onDismiss && (
+          <button
+            type="button"
+            className="theme-toggle -my-1 -mr-1.5 ml-auto size-8 rounded-full"
+            title={t('drive.promo.dismiss')}
+            onClick={onDismiss}
+          >
+            <Icon name="close" size={18} />
+          </button>
+        )}
       </div>
-      <h3 className="mt-1.5 font-display text-[1.15rem] leading-tight font-bold text-heading">
-        {t('drive.promo.title')}
-      </h3>
-      <p className="mt-1 text-[14px] leading-snug text-muted">{t('drive.promo.text')}</p>
-      <div className="mt-3.5">
-        <button
-          type="button"
-          className="btn h-9 rounded-full px-4 text-[14.5px]"
-          onClick={() => {
-            update({ pax_models: 'realistic' });
-            toast(t('drive.promo.enabled'), 'tip');
-          }}
-        >
-          {t('drive.promo.enable')}
-        </button>
-      </div>
+      {children}
     </aside>
   );
+}
+
+const Title = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="mt-1.5 font-display text-[1.15rem] leading-tight font-bold text-heading">
+    {children}
+  </h3>
+);
+
+const Text = ({ children }: { children: React.ReactNode }) => (
+  <p className="mt-1 text-[14px] leading-snug text-muted">{children}</p>
+);
+
+export const PassengerPromo: React.FC = () => {
+  const { settings, save } = useSettings();
+  const realistic = settings?.pax_models === 'realistic';
+  const pack = useCommand('pax_pack', realistic ? undefined : null);
+  const toast = useToast();
+  const [promoDismissed, setPromoDismissed] = useState(() => read(DISMISSED) === '1');
+  const [dismissedRelease, setDismissedRelease] = useState(() => read(SEEN_RELEASE));
+  const [changes, setChanges] = useState(false);
+
+  if (!settings) return null;
+  const p = pack.data;
+  const notice = paxNotice(realistic, p, promoDismissed, dismissedRelease);
+  const get = () => call('install_pax_pack').catch((err) => toast(errorText(err), 'caution'));
+
+  if (notice === 'promo') {
+    return (
+      <Card
+        badge={t('drive.promo.badge')}
+        onDismiss={() => {
+          setPromoDismissed(true);
+          write(DISMISSED, '1');
+        }}
+      >
+        <Title>{t('drive.promo.title')}</Title>
+        <Text>{t('drive.promo.text')}</Text>
+        <div className="mt-3.5">
+          <button
+            type="button"
+            className="btn h-9 rounded-full px-4 text-[14.5px]"
+            onClick={() =>
+              save({ pax_models: 'realistic' })
+                .then(() => toast(t('drive.promo.enabled'), 'tip'))
+                .catch((err) => toast(errorText(err), 'caution'))
+            }
+          >
+            {t('drive.promo.enable')}
+          </button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!p) return null;
+
+  if (notice === 'busy') {
+    const share = p.total > 0 ? p.done / p.total : null;
+    const known = share !== null && p.state !== 'installing';
+    return (
+      <Card badge={t('drive.pax.badge')}>
+        <Title>{t('drive.promo.title')}</Title>
+        <Text>
+          {p.state === 'installing'
+            ? t('drive.pax.installing')
+            : share === null
+              ? t('drive.pax.starting')
+              : t('drive.pax.downloading', {
+                  percent: Math.round(share * 100),
+                  size: bytes(p.total),
+                })}
+        </Text>
+        <div
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-sunken"
+          role="progressbar"
+          aria-label={t('drive.promo.title')}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={known ? Math.round(share * 100) : undefined}
+        >
+          <div
+            className={`h-full rounded-full bg-brand transition-[width] duration-300 ${
+              known ? '' : 'w-1/3 animate-pulse'
+            }`}
+            style={known ? { width: `${share * 100}%` } : {}}
+          />
+        </div>
+      </Card>
+    );
+  }
+
+  if (notice === 'missing') {
+    return (
+      <Card badge={t('drive.pax.badge')}>
+        <Title>{t('drive.pax.missingTitle')}</Title>
+        <Text>{t('drive.pax.missingText')}</Text>
+        {p.state === 'failed' && (
+          <p className="mt-2 text-[13.5px] leading-snug text-danger">{p.message}</p>
+        )}
+        <div className="mt-3.5">
+          <button
+            type="button"
+            className="btn h-9 gap-1.5 rounded-full px-4 text-[14.5px]"
+            onClick={get}
+          >
+            <Icon name="download" size={18} />
+            {p.state === 'failed' ? t('drive.pax.retry') : t('drive.pax.download')}
+          </button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (notice === 'update') {
+    const latest = p.latest;
+    return (
+      <Card
+        badge={t('drive.promo.badge')}
+        onDismiss={
+          latest
+            ? () => {
+                setDismissedRelease(String(latest.version));
+                write(SEEN_RELEASE, String(latest.version));
+              }
+            : undefined
+        }
+      >
+        <Title>
+          {latest
+            ? t('drive.pax.updateTitle', { version: latest.version })
+            : t('drive.pax.outdatedTitle')}
+        </Title>
+        {changes && latest?.notes.trim() ? (
+          <Changelog notes={latest.notes} className="mt-2 max-h-48 overflow-y-auto pr-1" />
+        ) : (
+          <Text>{latest ? t('drive.pax.updateText') : t('drive.pax.outdatedText')}</Text>
+        )}
+        <div className="mt-3.5 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn h-9 gap-1.5 rounded-full px-4 text-[14.5px]"
+            onClick={get}
+          >
+            <Icon name="download" size={18} />
+            {t('drive.pax.update')}
+          </button>
+          {latest?.notes.trim() && (
+            <button
+              type="button"
+              className="btn-quiet h-9 rounded-full px-4 text-[14.5px]"
+              aria-expanded={changes}
+              onClick={() => setChanges((v) => !v)}
+            >
+              {changes ? t('drive.pax.hideChanges') : t('drive.pax.whatsNew')}
+            </button>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
+  return null;
 };

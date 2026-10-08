@@ -1,0 +1,27 @@
+appId: org.neoomsi.launcher
+productName: neoOMSI Launcher
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+npmRebuild: false
+electronLanguages:
+  - en
+  - en-US
+  - de
+extraResources:
+  - from: build/icon.ico
+    to: icon.ico
+  - from: build/icon.png
+    to: icon.png
+win:
+  icon: build/icon.ico
+mac:
+  icon: build/icon.icns
+  identity: null
+linux:
+  icon: build/icon.png
+  executableName: neoomsi-launcher-app
