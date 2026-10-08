@@ -84,6 +84,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         log(`[Settings] ${errorText(err)}`);
         setError(errorText(err));
         for (const w of waiters) w.reject(err);
+        call('settings')
+          .then((stored) => {
+            if (Object.keys(pending.current).length) return;
+            adopt(stored);
+            setError(errorText(err));
+          })
+          .catch(() => {});
       })
       .finally(() => setSaving(false));
   }, [adopt, log]);

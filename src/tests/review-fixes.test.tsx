@@ -46,8 +46,11 @@ afterEach(() => {
 
 describe('saving a setting', () => {
   let save: ReturnType<typeof useSettings>['save'] = async () => {};
+  let shown: ReturnType<typeof useSettings>['settings'] = null;
   const Grab = () => {
-    save = useSettings().save;
+    const s = useSettings();
+    save = s.save;
+    shown = s.settings;
     return null;
   };
 
@@ -74,6 +77,7 @@ describe('saving a setting', () => {
     const fake: Fake = { calls: [], settings: { pax_models: 'omsi' }, failSave: true };
     await mount(fake);
     await act(() => expect(save({ pax_models: 'realistic' })).rejects.toThrow('disk full'));
+    await waitFor(() => expect(shown?.pax_models).toBe('omsi'));
   });
 });
 
