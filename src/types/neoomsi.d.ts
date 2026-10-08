@@ -21,19 +21,6 @@ export interface AppInfo {
   userData: string;
 }
 
-export interface UpdateInfo {
-  current: string;
-  available: boolean;
-  latest: {
-    version: string;
-    name: string;
-    url: string;
-    notes: string;
-    prerelease: boolean;
-    published: string;
-  } | null;
-}
-
 export interface NeoomsiBridge {
   platform: string;
   call<C extends Command>(command: C, args?: CommandArgs<C>): Promise<CommandResult<C>>;
@@ -64,7 +51,6 @@ export interface NeoomsiBridge {
   showItem(path: string): Promise<void>;
   openExternal(url: string): Promise<void>;
   appInfo(): Promise<AppInfo>;
-  checkUpdates(current: string): Promise<UpdateInfo>;
 }
 
 declare global {

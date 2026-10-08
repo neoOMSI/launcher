@@ -233,6 +233,21 @@
       "enable": "Einschalten",
       "dismiss": "Ausblenden",
       "enabled": "Realistische Fahrgäste sind an. Du siehst sie bei deiner nächsten Fahrt."
+    },
+    "pax": {
+      "badge": "Fahrgäste",
+      "missingTitle": "Realistische Fahrgäste sind noch nicht installiert",
+      "missingText": "Sie sind eingeschaltet, das Paket muss aber noch heruntergeladen werden (einige hundert MB).",
+      "download": "Herunterladen",
+      "retry": "Nochmal versuchen",
+      "starting": "Download startet…",
+      "downloading": "Lädt {percent} % von {size}",
+      "installing": "Wird installiert…",
+      "updateTitle": "Neue Fahrgäste: Version {version}",
+      "updateText": "Eine neue Version der realistischen Fahrgäste ist da.",
+      "update": "Aktualisieren",
+      "whatsNew": "Was ist neu",
+      "hideChanges": "Änderungen ausblenden"
     }
   },
   "window": {
@@ -246,5 +261,14 @@
     "text": "Der Rest des Launchers funktioniert weiter. Versuch es nochmal oder wähle links eine andere Seite.",
     "retry": "Nochmal versuchen",
     "copy": "Details kopieren"
+  },
+  "update": {
+    "available": "neoOMSI {version} ist verfügbar",
+    "prerelease": "Nightly",
+    "whatsNew": "Was ist neu",
+    "hide": "Änderungen ausblenden",
+    "download": "Herunterladen",
+    "dismiss": "Nicht jetzt",
+    "noNotes": "Diese Version nennt keine Änderungen."
   }
 }

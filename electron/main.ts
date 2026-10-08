@@ -4,7 +4,6 @@ import {
   dialog,
   ipcMain,
   Menu,
-  net,
   shell,
   type IpcMainInvokeEvent,
 } from 'electron';
@@ -16,9 +15,8 @@ import type { EngineClient } from './client';
 import { MockEngineClient } from './mock-client';
 import { ProcessEngineClient } from './process-client';
 import { loadPrefs, savePrefs } from './prefs';
-import { newerVersion } from './version';
 import type { EngineStatus } from '../src/types/scaffold';
-import type { LauncherPrefs, PickKind, UpdateInfo } from '../src/types/neoomsi';
+import type { LauncherPrefs, PickKind } from '../src/types/neoomsi';
 import {
   COMMANDS,
   type Config,
@@ -343,38 +341,6 @@ registerIpcHandler('app:info', () => ({
   arch: process.arch,
   userData: app.getPath('userData'),
 }));
-
-const RELEASES = 'https://api.github.com/repos/neoOMSI/neoOMSI/releases?per_page=10';
-
-registerIpcHandler('updates:check', async (_, current: string): Promise<UpdateInfo> => {
-  const response = await net.fetch(RELEASES, {
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'neoOMSI-launcher' },
-  });
-  if (!response.ok) throw new Error(`GitHub answered ${response.status}`);
-  const releases = (await response.json()) as {
-    tag_name: string;
-    name: string;
-    html_url: string;
-    body: string | null;
-    draft: boolean;
-    prerelease: boolean;
-    published_at: string;
-  }[];
-  const latest = releases.find((r) => !r.draft);
-  if (!latest) return { current, latest: null, available: false };
-  return {
-    current,
-    latest: {
-      version: latest.tag_name,
-      name: latest.name || latest.tag_name,
-      url: latest.html_url,
-      notes: latest.body ?? '',
-      prerelease: latest.prerelease,
-      published: latest.published_at,
-    },
-    available: !!current && newerVersion(latest.tag_name, current),
-  };
-});
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

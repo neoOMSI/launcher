@@ -393,11 +393,28 @@ export interface OptionPreset {
   values: Settings;
 }
 
+export interface PaxRelease {
+  version: number;
+  notes: string;
+  page: string;
+  published: string;
+}
+
 export interface PaxPack {
   state: 'missing' | 'outdated' | 'downloading' | 'installing' | 'installed' | 'failed';
   done: number;
   total: number;
   message: string;
+  installed: number | null;
+  latest: PaxRelease | null;
+}
+
+export interface GameRelease {
+  version: string;
+  page: string;
+  notes: string;
+  prerelease: boolean;
+  size: number;
 }
 
 export interface Commands {
@@ -419,6 +436,7 @@ export interface Commands {
   save_settings: { args: Settings; result: Settings };
   pax_pack: { args: void; result: PaxPack };
   install_pax_pack: { args: void; result: PaxPack };
+  update_check: { args: void; result: GameRelease | null };
   keybindings: { args: void; result: KeyBindings };
   launch: { args: Duty; result: Launched };
   preview: { args: { bus: string; paint: string }; result: string };
@@ -481,6 +499,7 @@ export const COMMANDS: readonly Command[] = [
   'save_settings',
   'pax_pack',
   'install_pax_pack',
+  'update_check',
   'keybindings',
   'launch',
   'preview',
