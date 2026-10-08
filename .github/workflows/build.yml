@@ -16,8 +16,33 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    name: Detect packaging-relevant changes
+    runs-on: ubuntu-slim
+
+    outputs:
+      run-build: ${{ steps.changes.outputs.run-tests }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_HEAD: ${{ github.sha }}
+        run: bash scripts/ci/detect-test-changes.sh
+
   package:
     name: Package ${{ matrix.platform }}-${{ matrix.arch }}
+    needs: changes
+    if: needs.changes.outputs.run-build == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -50,10 +75,49 @@ jobs:
           pnpm exec electron-builder --dir ${{ matrix.flag }} --${{ matrix.arch }}
           -c.directories.output=release/${{ matrix.platform }}-${{ matrix.arch }}
 
+      - name: Archive
+        shell: bash
+        run: |
+          out="release/${{ matrix.platform }}-${{ matrix.arch }}"
+          shopt -s nullglob
+          dirs=("$out"/*-unpacked "$out"/mac*)
+          [ "${#dirs[@]}" -eq 1 ] || { echo "::error::expected one packaged app in $out: ${dirs[*]}"; exit 1; }
+          tar -czf "neoOMSI-Launcher-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz" -C "$out" "$(basename "${dirs[0]}")"
+
       - uses: actions/upload-artifact@v7
         with:
-          name: neoOMSI-Launcher-${{ matrix.platform }}-${{ matrix.arch }}
-          path: |
-            release/${{ matrix.platform }}-${{ matrix.arch }}/*-unpacked
-            release/${{ matrix.platform }}-${{ matrix.arch }}/mac*
+          path: neoOMSI-Launcher-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
+          archive: false
           retention-days: ${{ github.ref == 'refs/heads/main' && 14 || 3 }}
+
+  required:
+    name: Packaging
+    needs: [changes, package]
+    if: always()
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Verify packaging result
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          PACKAGE_RESULT: ${{ needs.package.result }}
+          RUN_BUILD: ${{ needs.changes.outputs.run-build }}
+        run: |
+          set -euo pipefail
+
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            echo "::error::Change detection failed."
+            exit 1
+          fi
+
+          if [ "$RUN_BUILD" = "true" ]; then
+            if [ "$PACKAGE_RESULT" != "success" ]; then
+              echo "::error::Packaging was required but did not succeed on every platform."
+              exit 1
+            fi
+
+            echo "Every platform packaged."
+          else
+            echo "No code changes. Packaging was safely skipped."
+          fi

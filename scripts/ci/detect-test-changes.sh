@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Detect whether changes between commits/refs require running the tests.
+# Detect whether changes between commits/refs require running the tests and packaging.
 set -euo pipefail
 
 EVENT_NAME="${EVENT_NAME:-}"
@@ -37,7 +37,7 @@ echo "Changed files:"
 printf '%s\n' "$changed"
 
 if printf '%s\n' "$changed" | grep -Eq \
-  '^(src/|electron/|build/|assets/|index\.html$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig[^/]*\.json$|vite[^/]*\.ts$|vitest\.config\.ts$|electron-builder\.yml$|\.prettier[^/]*$|\.github/workflows/test\.yml$|scripts/ci/)'
+  '^(src/|electron/|build/|assets/|index\.html$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig[^/]*\.json$|vite[^/]*\.ts$|vitest\.config\.ts$|electron-builder\.yml$|\.prettier[^/]*$|\.github/workflows/(test|build)\.yml$|scripts/ci/)'
 then
   echo "run-tests=true" >> "$GITHUB_OUTPUT"
   echo "Test-relevant changes detected."

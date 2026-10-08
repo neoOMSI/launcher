@@ -84,7 +84,7 @@ const Text = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const PassengerPromo: React.FC = () => {
-  const { settings, update } = useSettings();
+  const { settings, save } = useSettings();
   const realistic = settings?.pax_models === 'realistic';
   const pack = useCommand('pax_pack', realistic ? undefined : null);
   const toast = useToast();
@@ -112,10 +112,11 @@ export const PassengerPromo: React.FC = () => {
           <button
             type="button"
             className="btn h-9 rounded-full px-4 text-[14.5px]"
-            onClick={() => {
-              update({ pax_models: 'realistic' });
-              toast(t('drive.promo.enabled'), 'tip');
-            }}
+            onClick={() =>
+              save({ pax_models: 'realistic' })
+                .then(() => toast(t('drive.promo.enabled'), 'tip'))
+                .catch((err) => toast(errorText(err), 'caution'))
+            }
           >
             {t('drive.promo.enable')}
           </button>

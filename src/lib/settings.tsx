@@ -17,6 +17,7 @@ interface SettingsValue {
   saving: boolean;
   language: SupportedLanguage;
   update: (patch: Settings) => void;
+  save: (patch: Settings) => Promise<void>;
   reload: () => void;
 }
 
@@ -25,6 +26,7 @@ const SettingsContext = createContext<SettingsValue>({
   saving: false,
   language: 'en',
   update() {},
+  save: async () => {},
   reload() {},
 });
 
@@ -37,6 +39,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const [language, setLang] = useState<SupportedLanguage>(getLanguage());
   const pending = useRef<Settings>({});
+  const waiting = useRef<{ resolve: () => void; reject: (err: unknown) => void }[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const adopt = useCallback((next: Settings) => {
@@ -67,16 +70,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const flush = useCallback(() => {
     const patch = pending.current;
+    const waiters = waiting.current;
     pending.current = {};
+    waiting.current = [];
     if (!Object.keys(patch).length) return;
     setSaving(true);
     call('save_settings', patch)
       .then((saved) => {
         if (!Object.keys(pending.current).length) adopt(saved);
+        for (const w of waiters) w.resolve();
       })
       .catch((err) => {
         log(`[Settings] ${errorText(err)}`);
         setError(errorText(err));
+        for (const w of waiters) w.reject(err);
       })
       .finally(() => setSaving(false));
   }, [adopt, log]);
@@ -95,8 +102,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [flush],
   );
 
+  const save = useCallback(
+    (patch: Settings) =>
+      new Promise<void>((resolve, reject) => {
+        waiting.current.push({ resolve, reject });
+        update(patch);
+      }),
+    [update],
+  );
+
   return (
-    <SettingsContext value={{ settings, error, saving, language, update, reload }}>
+    <SettingsContext value={{ settings, error, saving, language, update, save, reload }}>
       {children}
     </SettingsContext>
   );
