@@ -26,6 +26,7 @@ export const openRelease = (url: string) => {
 export const UpdateBanner: React.FC = () => {
   const { ready } = useEngine();
   const { settings } = useSettings();
+  const enabled = settings !== null && settings.update_check !== false;
   const [release, setRelease] = useState<GameRelease | null>(null);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(readDismissed);
