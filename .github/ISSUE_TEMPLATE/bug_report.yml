@@ -1,0 +1,61 @@
+name: Bug report
+description: Something in the launcher is broken, crashes, or regressed
+labels: ['bug', 'status: untriaged']
+type: Bug
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for the launcher: its pages, settings, mod installs, starting and stopping games, or its connection to the engine.
+
+        If the problem happens inside the game window, report it in the [neoOMSI repository](https://github.com/neoOMSI/neoOMSI/issues/new/choose) instead.
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened?
+      description: Describe one observable problem. Include the exact error message or a screenshot. The Diagnostics tab under Settings shows the engine log; paste the relevant lines.
+      placeholder: Describe what you saw and when it happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How can we reproduce it?
+      description: Give the smallest reliable sequence of clicks. Name the page and the settings only when they matter.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen instead?
+      description: Describe the expected observable result, not a proposed implementation.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: neoOMSI version
+      description: The exact version from Settings → About (the launcher ships with neoOMSI). Avoid values such as "latest".
+      placeholder: 0.2.0-nightly.g8742a619
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - macOS
+    validations:
+      required: true

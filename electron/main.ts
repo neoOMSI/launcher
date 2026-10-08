@@ -36,6 +36,12 @@ const useMock = () => process.env.NEOOMSI_USE_MOCK === '1' || process.argv.inclu
 
 const ENGINE = process.platform === 'win32' ? 'neoomsi.exe' : 'neoomsi';
 
+// `pnpm dev:real`: a release build in a neoOMSI checkout beside this one.
+function developmentEngine(): string | undefined {
+  const candidate = resolve(process.cwd(), '../neoOMSI/target/release', ENGINE);
+  return existsSync(candidate) ? candidate : undefined;
+}
+
 function bundledEngine(): string | undefined {
   let dir = dirname(process.execPath);
   for (let up = 0; up < 8; up++) {
@@ -55,7 +61,7 @@ function initializeEngineClient(): EngineClient {
   const enginePath =
     process.argv.find((a) => a.startsWith('--engine='))?.slice('--engine='.length) ||
     process.env.NEOOMSI_ENGINE_PATH ||
-    (app.isPackaged ? bundledEngine() : undefined);
+    (app.isPackaged ? bundledEngine() : developmentEngine());
   if (!enginePath) {
     throw new Error(
       app.isPackaged

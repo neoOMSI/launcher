@@ -1,0 +1,97 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  changes:
+    name: Detect test-relevant changes
+    runs-on: ubuntu-slim
+
+    outputs:
+      run-tests: ${{ steps.changes.outputs.run-tests }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_HEAD: ${{ github.sha }}
+        run: bash scripts/ci/detect-test-changes.sh
+
+  test:
+    name: Format, type-check, tests
+    needs: changes
+    if: needs.changes.outputs.run-tests == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Formatting
+        run: pnpm format:check
+
+      - name: Type-check and build
+        run: pnpm build
+
+      - name: Tests
+        run: pnpm test
+
+  required:
+    name: Tests
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-slim
+
+    steps:
+      - name: Verify test result
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          RUN_TESTS: ${{ needs.changes.outputs.run-tests }}
+        run: |
+          set -euo pipefail
+
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            echo "::error::Change detection failed."
+            exit 1
+          fi
+
+          if [ "$RUN_TESTS" = "true" ]; then
+            if [ "$TEST_RESULT" != "success" ]; then
+              echo "::error::Tests were required but did not pass."
+              exit 1
+            fi
+
+            echo "Tests passed."
+          else
+            echo "No code changes. Tests were safely skipped."
+          fi

@@ -1,0 +1,59 @@
+name: Build
+
+# neoOMSI's release CI packs the launcher from main into every release: a launcher that no
+# longer packages breaks those builds, so every platform is packaged here first.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  package:
+    name: Package ${{ matrix.platform }}-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: windows, flag: --win, arch: x64, runner: windows-latest }
+          - { platform: windows, flag: --win, arch: arm64, runner: windows-latest }
+          - { platform: macos, flag: --mac, arch: arm64, runner: macos-latest }
+          - { platform: macos, flag: --mac, arch: x64, runner: macos-latest }
+          - { platform: linux, flag: --linux, arch: x64, runner: ubuntu-22.04 }
+          - { platform: linux, flag: --linux, arch: arm64, runner: ubuntu-22.04-arm }
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Package
+        shell: bash
+        run: >
+          pnpm exec electron-builder --dir ${{ matrix.flag }} --${{ matrix.arch }}
+          -c.directories.output=release/${{ matrix.platform }}-${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: neoOMSI-Launcher-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            release/${{ matrix.platform }}-${{ matrix.arch }}/*-unpacked
+            release/${{ matrix.platform }}-${{ matrix.arch }}/mac*
+          retention-days: ${{ github.ref == 'refs/heads/main' && 14 || 3 }}

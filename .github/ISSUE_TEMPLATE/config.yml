@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Problem in the game itself
+    url: https://github.com/neoOMSI/neoOMSI/issues/new/choose
+    about: Driving, maps, buses, rendering, or anything after the game window opened belongs to the neoOMSI repository.
+  - name: Questions and discussion
+    url: https://discord.gg/Gk7EngX6JK
+    about: Ask on the neoOMSI Discord server.

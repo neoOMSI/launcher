@@ -1,0 +1,21 @@
+name: Feature request
+description: Propose something new for the launcher
+labels: ['enhancement', 'status: untriaged']
+type: Feature
+
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve?
+      description: Explain what is difficult, missing, or unnecessarily limited in the launcher today. Start with the problem rather than a preferred implementation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired behavior
+      description: Describe what should become possible or visible in the launcher once this is implemented.
+    validations:
+      required: true
