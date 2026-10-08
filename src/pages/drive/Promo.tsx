@@ -128,6 +128,7 @@ export const PassengerPromo: React.FC = () => {
 
   if (notice === 'busy') {
     const share = p.total > 0 ? p.done / p.total : null;
+    const known = share !== null && p.state !== 'installing';
     return (
       <Card badge={t('drive.pax.badge')}>
         <Title>{t('drive.promo.title')}</Title>
@@ -141,12 +142,19 @@ export const PassengerPromo: React.FC = () => {
                   size: bytes(p.total),
                 })}
         </Text>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sunken">
+        <div
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-sunken"
+          role="progressbar"
+          aria-label={t('drive.promo.title')}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={known ? Math.round(share * 100) : undefined}
+        >
           <div
             className={`h-full rounded-full bg-brand transition-[width] duration-300 ${
-              share === null || p.state === 'installing' ? 'w-1/3 animate-pulse' : ''
+              known ? '' : 'w-1/3 animate-pulse'
             }`}
-            style={share !== null && p.state !== 'installing' ? { width: `${share * 100}%` } : {}}
+            style={known ? { width: `${share * 100}%` } : {}}
           />
         </div>
       </Card>

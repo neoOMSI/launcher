@@ -458,7 +458,6 @@ export interface Commands {
   clear_installs: { args: void; result: unknown };
   uninstall_mod: { args: { name: string }; result: { uninstalled: string[] } };
   option_presets: { args: void; result: OptionPreset[] };
-  open_game_launcher: { args: { page?: string }; result: { pid: number } };
 }
 
 export type EngineEvent =
@@ -521,5 +520,4 @@ export const COMMANDS: readonly Command[] = [
   'clear_installs',
   'uninstall_mod',
   'option_presets',
-  'open_game_launcher',
 ];

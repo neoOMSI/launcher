@@ -15,7 +15,6 @@ describe('Settings Fixture Regression', () => {
     expect(DEFAULT_SETTINGS_FIXTURE.audio['scenery-volume']).toBe(1.0);
     expect(DEFAULT_SETTINGS_FIXTURE.audio.doppler).toBe(true);
 
-    expect(DEFAULT_SETTINGS_FIXTURE.gameplay['drive-keys']).toBe('simple');
     expect(DEFAULT_SETTINGS_FIXTURE.gameplay.collision_vehicles).toBe(true);
     expect(DEFAULT_SETTINGS_FIXTURE.gameplay.collision_objects).toBe(true);
     expect(DEFAULT_SETTINGS_FIXTURE.gameplay.collision_pedestrians).toBe(true);

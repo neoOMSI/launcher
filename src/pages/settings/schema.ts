@@ -431,19 +431,7 @@ export const TABS: readonly Tab[] = [
       },
       {
         id: 'keyboard',
-        rows: [
-          select(
-            'drive_keys',
-            [
-              ['omsi', 'opt.keysOmsi'],
-              ['simple', 'opt.keysSimple'],
-              ['wasd', 'opt.keysWasd'],
-              ['arrows', 'opt.keysArrows'],
-            ],
-            { hint: true },
-          ),
-          custom('keys', 'keys', { hint: true }),
-        ],
+        rows: [custom('keys', 'keys', { hint: true })],
       },
       {
         id: 'controllers',

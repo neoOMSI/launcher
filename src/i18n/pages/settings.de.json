@@ -111,7 +111,6 @@
     "auto_shift": "Automatisch schalten",
     "auto_ibis": "IBIS automatisch ausfüllen",
     "momentary_gears": "Gangtasten halten",
-    "drive_keys": "Fahrtasten",
     "keys": "Tastenbelegung",
     "wheel_range": "Lenkradumdrehung",
     "wheel_lock": "Volleinschlag bei",
@@ -225,7 +224,6 @@
     "auto_shift": "Schaltet ein Schaltgetriebe nach der Motordrehzahl.",
     "auto_ibis": "Gibt deine Route für dich ins IBIS ein.",
     "momentary_gears": "Loslassen schaltet in den Leerlauf.",
-    "drive_keys": "Mit welchen Tasten der Bus fährt.",
     "keys": "Jede Taste für Bus und Spiel.",
     "wheel_range": "Passend zum Bereich deines Lenkrads.",
     "wheel_lock": "Wo die Räder des Busses anschlagen.",
@@ -324,11 +322,7 @@
     "imperial": "Imperial",
     "windowed": "Fenster",
     "borderless": "Randloses Fenster",
-    "fullscreen": "Vollbild",
-    "keysOmsi": "Eigene Tasten",
-    "keysSimple": "W A S D + Pfeiltasten",
-    "keysWasd": "Nur W A S D",
-    "keysArrows": "Nur Pfeiltasten"
+    "fullscreen": "Vollbild"
   },
   "fmt": {
     "atMost": "bis {n}",
@@ -400,7 +394,7 @@
     "open": "Ordner öffnen"
   },
   "updates": {
-    "available": "neoOMSI {version} ist da",
+    "available": "neoOMSI {version} ist verfügbar",
     "check": "Jetzt prüfen",
     "checking": "Wird geprüft…",
     "current": "Du hast {version}",

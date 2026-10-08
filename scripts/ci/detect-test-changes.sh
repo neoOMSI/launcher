@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Detect whether changes between commits/refs require running the tests and packaging.
 set -euo pipefail
 
 EVENT_NAME="${EVENT_NAME:-}"
@@ -18,7 +17,7 @@ fi
 if [ "$EVENT_NAME" = "pull_request" ]; then
   range="$PR_BASE...$PR_HEAD"
 elif [ "$EVENT_NAME" = "push" ]; then
-  if [ -z "$PUSH_BEFORE" ] || [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+  if [ -z "$PUSH_BEFORE" ] || [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]     || ! git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
     echo "run-tests=true" >> "$GITHUB_OUTPUT"
     echo "No usable previous revision: tests required."
     exit 0

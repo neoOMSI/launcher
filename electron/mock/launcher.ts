@@ -319,8 +319,6 @@ export class MockLauncher {
       }
       case 'option_presets':
         return [];
-      case 'open_game_launcher':
-        throw new Error('The mock engine has no game window.');
       case 'controllers':
         return this.controllers;
       case 'save_controllers':

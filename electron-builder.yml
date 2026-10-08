@@ -9,6 +9,7 @@ files:
   - package.json
 npmRebuild: false
 electronLanguages:
+  - en
   - en-US
   - de
 extraResources:

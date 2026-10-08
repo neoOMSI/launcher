@@ -246,6 +246,8 @@
       "installing": "Installing…",
       "updateTitle": "New passengers: version {version}",
       "updateText": "A new version of the realistic passengers is out.",
+      "outdatedTitle": "Your realistic passengers are out of date",
+      "outdatedText": "neoOMSI needs a newer pack. Its release could not be looked up just now; Update tries again.",
       "update": "Update",
       "whatsNew": "What's new",
       "hideChanges": "Hide changes"
@@ -265,7 +267,7 @@
   },
   "update": {
     "available": "neoOMSI {version} is available",
-    "prerelease": "Nightly",
+    "prerelease": "Pre-release",
     "whatsNew": "What's new",
     "hide": "Hide changes",
     "download": "Download",

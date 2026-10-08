@@ -30,7 +30,7 @@ The launcher is an Electron and React app. It contains no simulation code: it st
 
 - **Engine-owned data:** Everything the launcher shows comes from the engine, so the launcher and the game's built-in launcher always agree.
 - **Protocol:** Length-prefixed JSON frames, specified in [LAUNCHER_PROTOCOL.md](https://github.com/neoOMSI/neoOMSI/blob/main/docs/LAUNCHER_PROTOCOL.md) in the neoOMSI repository. Launcher and engine check each other's protocol version at the handshake.
-- **Shipping:** neoOMSI's release CI builds this repository's `main` branch into every neoOMSI release (`launcher/` beside the game; inside `neoOMSI.app` on macOS).
+- **Shipping:** neoOMSI's release CI builds the launcher commit pinned in neoOMSI's [`scripts/launcher-ref`](https://github.com/neoOMSI/neoOMSI/blob/main/scripts/launcher-ref) into every release (`launcher/` beside the game; inside `neoOMSI.app` on macOS). A launcher change reaches players once that pin is moved to it.
 
 ## Documentation
 

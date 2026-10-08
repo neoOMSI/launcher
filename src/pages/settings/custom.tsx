@@ -208,7 +208,6 @@ const MetarStation: React.FC<CustomProps> = ({ ctx }) => {
     <input
       className="input w-32 font-mono uppercase"
       aria-label={tr('rows.metar_station')}
-      maxLength={4}
       placeholder={tr('opt.automatic')}
       value={draft}
       onChange={(e) => set(e.target.value)}

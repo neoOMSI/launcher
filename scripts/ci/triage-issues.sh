@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Classify newly opened/reopened issues and close inactive needs-info issues.
 set -euo pipefail
 
 MODE="${1:-classify}"
 REPO="${REPO:-${GITHUB_REPOSITORY:-}}"
 
 if [ "$MODE" = "classify" ]; then
-  ISSUE="${ISSUE:-${1:-}}"
+  ISSUE="${ISSUE:-${2:-}}"
   if [ -z "$ISSUE" ]; then
     echo "::error::Missing ISSUE number for classify mode."
     exit 1
@@ -18,6 +17,7 @@ if [ "$MODE" = "classify" ]; then
     exit 0
   fi
 
+  gh label create "status: untriaged" --repo "$REPO" >/dev/null 2>&1 || true
   gh issue edit "$ISSUE" --repo "$REPO" --add-label "status: untriaged"
   echo "Added status: untriaged to #$ISSUE."
 

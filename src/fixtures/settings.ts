@@ -1,7 +1,6 @@
 // Keep in sync with crates/config/src/default_settings.rs.
 export const DEFAULT_SETTINGS_FIXTURE = {
   gameplay: {
-    'drive-keys': 'simple',
     boarding: 'auto',
     pax_prefer_seats: false,
     pax_rear_entry: true,
@@ -208,7 +207,6 @@ export const PAGE_SETTINGS: readonly (readonly [string, string, string, Kind])[]
   ['name_tags', 'ui', 'name_tags', bool],
   ['language', 'ui', 'language', { kind: 'language' }],
   ['units', 'ui', 'units', choice('metric', 'uk', 'imperial')],
-  ['drive_keys', 'gameplay', 'drive-keys', text],
   ['boarding', 'gameplay', 'boarding', text],
   ['pax_prefer_seats', 'gameplay', 'pax_prefer_seats', bool],
   ['pax_rear_entry', 'gameplay', 'pax_rear_entry', bool],

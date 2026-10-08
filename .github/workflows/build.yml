@@ -1,7 +1,7 @@
 name: Build
 
-# neoOMSI's release CI packs the launcher from main into every release: a launcher that no
-# longer packages breaks those builds, so every platform is packaged here first.
+# neoOMSI's release CI packs a pinned commit of this repo into every release: a launcher that
+# no longer packages would break the next pin bump, so every platform is packaged here first.
 on:
   pull_request:
   push:
@@ -60,7 +60,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm

@@ -245,6 +245,8 @@
       "installing": "Wird installiert…",
       "updateTitle": "Neue Fahrgäste: Version {version}",
       "updateText": "Eine neue Version der realistischen Fahrgäste ist da.",
+      "outdatedTitle": "Deine realistischen Fahrgäste sind veraltet",
+      "outdatedText": "neoOMSI braucht ein neueres Paket. Die Version konnte gerade nicht abgefragt werden; Aktualisieren versucht es erneut.",
       "update": "Aktualisieren",
       "whatsNew": "Was ist neu",
       "hideChanges": "Änderungen ausblenden"
@@ -264,7 +266,7 @@
   },
   "update": {
     "available": "neoOMSI {version} ist verfügbar",
-    "prerelease": "Nightly",
+    "prerelease": "Vorabversion",
     "whatsNew": "Was ist neu",
     "hide": "Änderungen ausblenden",
     "download": "Herunterladen",

@@ -42,17 +42,14 @@ function developmentEngine(): string | undefined {
   return existsSync(candidate) ? candidate : undefined;
 }
 
+// As neoOMSI's scripts/ci/build-launcher.sh lays the release out.
 function bundledEngine(): string | undefined {
-  let dir = dirname(process.execPath);
-  for (let up = 0; up < 8; up++) {
-    for (const candidate of [join(dir, ENGINE), join(dir, 'Contents', 'MacOS', ENGINE)]) {
-      if (existsSync(candidate)) return candidate;
-    }
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return undefined;
+  const dir = dirname(process.execPath);
+  const candidate =
+    process.platform === 'darwin'
+      ? resolve(dir, '../../../../../MacOS', ENGINE)
+      : resolve(dir, '..', ENGINE);
+  return existsSync(candidate) ? candidate : undefined;
 }
 
 function initializeEngineClient(): EngineClient {

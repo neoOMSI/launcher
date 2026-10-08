@@ -80,4 +80,11 @@ describe('the passenger card', () => {
     });
     expect(paxNotice(true, v3, false, '2')).toBe('update');
   });
+
+  it('keeps an outdated pack in view when its newest release is unknown', () => {
+    const unknown = pack({ state: 'outdated', latest: null });
+    expect(paxNotice(true, unknown, false, null)).toBe('update');
+    expect(paxNotice(true, unknown, false, '2')).toBe('update');
+    expect(paxNotice(true, unknown, false, '')).toBe('update');
+  });
 });

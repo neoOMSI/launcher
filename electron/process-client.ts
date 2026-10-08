@@ -17,6 +17,7 @@ const SLOW: Record<string, number> = {
   launch: 60_000,
   stop: 30_000,
   servers: 30_000,
+  update_check: 90_000,
 };
 
 export interface ProcessEngineClientOptions {

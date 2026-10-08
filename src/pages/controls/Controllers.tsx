@@ -55,21 +55,25 @@ const percent = (v: number, lang: SupportedLanguage) => {
   return lang === 'de' ? `${text} %` : `${text}%`;
 };
 
-function useClock(running: boolean) {
-  const [time, setTime] = useState(0);
+function useLiveAxes(running: boolean) {
+  const [live, setLive] = useState<Map<string, number[]>>(() => new Map());
   useEffect(() => {
-    if (!running || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    const start = performance.now();
-    const timer = setInterval(() => setTime((performance.now() - start) / 1000), 60);
-    return () => clearInterval(timer);
+    if (!running) return;
+    let stopped = false;
+    void (async () => {
+      while (!stopped) {
+        try {
+          const list = await call('controllers');
+          if (!stopped) setLive(new Map(list.map((c) => [c.name, c.axes.map((a) => a.value)])));
+        } catch {}
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    })();
+    return () => {
+      stopped = true;
+    };
   }, [running]);
-  return time;
-}
-
-function wobble(base: number, time: number, seed: number) {
-  if (!time) return base;
-  const w = 0.05 * Math.sin(time * 1.1 + seed * 1.7) + 0.025 * Math.sin(time * 2.9 + seed);
-  return Math.abs(base) > 0.9 ? base - Math.sign(base) * Math.abs(w) : base + w;
+  return live;
 }
 
 export function useControllers() {
@@ -133,16 +137,10 @@ export function Controllers({
   keys: KeyBindings | undefined;
   lang: SupportedLanguage;
 }) {
-  const toast = useToast();
   const { go } = useNav();
-  const time = useClock(true);
   const actions = useMemo(() => buttonActions(keys, lang), [keys, lang]);
   const { current } = pads;
-
-  const setUp = () =>
-    call('open_game_launcher', { page: 'controls:1' }).catch((err) =>
-      toast(t('controls.controllers.setUpFailed', { error: errorText(err) }), 'caution'),
-    );
+  const live = useLiveAxes(!!current?.some((c) => c.connected && c.enabled));
 
   let body: ReactNode;
   if (!current) {
@@ -180,8 +178,7 @@ export function Controllers({
           <ControllerView
             key={`${c.name}-${index}`}
             controller={c}
-            seed={index}
-            time={c.connected && c.enabled ? time : 0}
+            live={c.connected ? live.get(c.name) : undefined}
             lang={lang}
             actions={actions}
             onChange={(patch) => pads.update(index, patch)}
@@ -195,12 +192,6 @@ export function Controllers({
     <>
       {body}
       <ListGroup title={t('controls.controllers.setUpGroup')}>
-        <ListRow label={t('controls.controllers.setUp')} hint={t('controls.controllers.setUpHint')}>
-          <button type="button" className="btn-quiet h-10 gap-2 rounded-full px-5" onClick={setUp}>
-            <Icon name="open_in_new" size={18} />
-            {t('controls.controllers.open')}
-          </button>
-        </ListRow>
         <button type="button" className="list-row" onClick={() => go('settings', 'driving')}>
           <div className="min-w-0 flex-1">
             <div className="text-ink">{t('controls.controllers.settingsLink')}</div>
@@ -227,15 +218,13 @@ function Heading({ children, className = 'mt-10' }: { children: ReactNode; class
 
 function ControllerView({
   controller: c,
-  seed,
-  time,
+  live,
   lang,
   actions,
   onChange,
 }: {
   controller: Controller;
-  seed: number;
-  time: number;
+  live: number[] | undefined;
   lang: SupportedLanguage;
   actions: (readonly [string, string])[];
   onChange: (patch: Partial<Controller>) => void;
@@ -300,7 +289,7 @@ function ControllerView({
               <AxisRow
                 key={i}
                 axis={axis}
-                raw={wobble(axis.value, time, seed * 8 + i)}
+                raw={live?.[i] ?? axis.value}
                 deadzone={c.deadzone}
                 lang={lang}
                 onChange={(patch) => setAxis(i, patch)}
