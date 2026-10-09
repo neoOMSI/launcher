@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { SearchField } from '../../components/Screen';
 import { Notice } from '../../components/ui';
 import { t } from '../../i18n';
 import { useEngine } from '../../lib/engine';
 import { useToast } from '../../lib/nav';
+import { filterBy, LONG_LIST } from '../../lib/search';
 import type { EngineConnectionState } from '../../types/scaffold';
 import { tr } from './schema';
 
@@ -30,13 +32,15 @@ export const DiagnosticsTab: React.FC = () => {
   const { status, logs, clearLogs, connect, disconnect } = useEngine();
   const toast = useToast();
   const body = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState('');
+  const shown = filterBy(logs, query, (line) => [line]);
   const state = status.connectionState;
   const busy = state === 'starting' || state === 'handshaking';
 
   useEffect(() => {
     const el = body.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [logs.length]);
+  }, [logs.length, query]);
 
   const copy = () =>
     navigator.clipboard
@@ -116,6 +120,14 @@ export const DiagnosticsTab: React.FC = () => {
             </span>
           </span>
           <span className="flex items-center gap-1">
+            {logs.length > LONG_LIST && (
+              <SearchField
+                className="mr-1 h-8 w-48 gap-1.5 px-3 text-[14px]"
+                value={query}
+                onChange={setQuery}
+                placeholder={t('common.filter')}
+              />
+            )}
             <button
               type="button"
               className="code-action"
@@ -142,8 +154,10 @@ export const DiagnosticsTab: React.FC = () => {
         >
           {logs.length === 0 ? (
             <p className="text-muted">{tr('diagnostics.noLogs')}</p>
+          ) : shown.length === 0 ? (
+            <p className="text-muted">{t('common.noMatch', { query: query.trim() })}</p>
           ) : (
-            logs.map((line, i) => (
+            shown.map((line, i) => (
               <div key={i} className="break-all whitespace-pre-wrap">
                 {line}
               </div>

@@ -57,6 +57,7 @@
     "cancel": "Cancel",
     "search": "Search",
     "filter": "Filter…",
+    "noMatch": "Nothing matches “{query}”",
     "on": "On",
     "off": "Off",
     "automatic": "Automatic",

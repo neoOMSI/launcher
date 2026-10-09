@@ -1,8 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { SearchField } from '../../components/Screen';
 import { t } from '../../i18n';
 import { call, errorText } from '../../lib/engine';
 import { contentName } from '../../lib/format';
+import { filterBy, LONG_LIST } from '../../lib/search';
 import type { Instance } from '../../types/launcher';
 
 const tone = (line: string) =>
@@ -15,9 +17,11 @@ export const LogView: React.FC<{ instance: Instance; onClose: () => void }> = ({
   const [lines, setLines] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [query, setQuery] = useState('');
   const body = useRef<HTMLPreElement>(null);
   const pinned = useRef(true);
   const { pid, running } = instance;
+  const shown = filterBy(lines ?? [], query, (line) => [line]);
 
   useEffect(() => {
     let live = true;
@@ -40,7 +44,7 @@ export const LogView: React.FC<{ instance: Instance; onClose: () => void }> = ({
   useLayoutEffect(() => {
     const el = body.current;
     if (el && pinned.current) el.scrollTop = el.scrollHeight;
-  }, [lines]);
+  }, [lines, query]);
 
   const copy = () => {
     if (!lines) return;
@@ -58,6 +62,14 @@ export const LogView: React.FC<{ instance: Instance; onClose: () => void }> = ({
       <div className="code-bar">
         <span className="truncate">{contentName(instance.log ?? '')}</span>
         <div className="flex shrink-0 items-center gap-0.5">
+          {(lines?.length ?? 0) > LONG_LIST && (
+            <SearchField
+              className="mr-1 h-7 w-44 gap-1.5 px-3 font-sans text-[13.5px]"
+              value={query}
+              onChange={setQuery}
+              placeholder={t('common.filter')}
+            />
+          )}
           <button type="button" className="code-action" onClick={copy} disabled={!lines?.length}>
             <Icon name={copied ? 'check' : 'content_copy'} size={15} />
             {copied ? t('common.copied') : t('common.copy')}
@@ -87,8 +99,10 @@ export const LogView: React.FC<{ instance: Instance; onClose: () => void }> = ({
           <span className="text-muted">{t('sessions.readingLog')}</span>
         ) : lines.length === 0 ? (
           <span className="text-muted">{t('sessions.emptyLog')}</span>
+        ) : shown.length === 0 ? (
+          <span className="text-muted">{t('common.noMatch', { query: query.trim() })}</span>
         ) : (
-          lines.map((line, k) => (
+          shown.map((line, k) => (
             <span key={k} className={`block ${tone(line)}`}>
               {line || ' '}
             </span>

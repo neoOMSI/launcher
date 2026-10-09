@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { ListGroup, ListRow } from '../../components/List';
+import { SearchField } from '../../components/Screen';
 import { t } from '../../i18n';
 import { bytes, number } from '../../lib/format';
+import { filterBy, LONG_LIST } from '../../lib/search';
 import type { Mods } from './logic';
 import { Title } from './Title';
 
@@ -12,10 +14,24 @@ export const Folders: React.FC<{ mods: Mods; onOpen: (path: string) => void }> =
 }) => {
   const filled = mods.folders.filter((f) => f.entries > 0n);
   const empty = mods.folders.filter((f) => f.entries === 0n).map((f) => f.folder);
+  const [query, setQuery] = useState('');
+  const inbox = filterBy(mods.inboxItems, query, (item) => [item]);
+  const waiting = filterBy(mods.waiting, query, (w) => [w]);
+  const archives = filterBy(mods.archives, query, (a) => [a.name]);
+  const total = mods.inboxItems.length + mods.waiting.length + mods.archives.length;
+  const matches = inbox.length + waiting.length + archives.length;
 
   return (
     <>
-      <Title>{t('mods.sections.folders')}</Title>
+      <Title
+        action={
+          total > LONG_LIST && (
+            <SearchField value={query} onChange={setQuery} placeholder={t('common.filter')} />
+          )
+        }
+      >
+        {t('mods.sections.folders')}
+      </Title>
 
       <ListGroup title={t('mods.inbox.title')} hint={t('mods.inbox.hint')}>
         <ListRow
@@ -32,22 +48,28 @@ export const Folders: React.FC<{ mods: Mods; onOpen: (path: string) => void }> =
             {t('mods.open')}
           </button>
         </ListRow>
-        {mods.inboxItems.map((item) => (
+        {inbox.map((item) => (
           <ItemRow key={item} icon="hourglass_top" label={item} hint={t('mods.inbox.settling')} />
         ))}
       </ListGroup>
 
-      {mods.waiting.length > 0 && (
+      {total > 0 && matches === 0 && (
+        <ListGroup>
+          <ListRow label={t('common.noMatch', { query: query.trim() })} />
+        </ListGroup>
+      )}
+
+      {waiting.length > 0 && (
         <ListGroup title={t('mods.waiting.title')} hint={t('mods.waiting.hint')}>
-          {mods.waiting.map((w) => (
+          {waiting.map((w) => (
             <ItemRow key={w} icon="directions_bus" label={w} />
           ))}
         </ListGroup>
       )}
 
-      {mods.archives.length > 0 && (
+      {archives.length > 0 && (
         <ListGroup title={t('mods.archives')}>
-          {mods.archives.map(({ name, bytes: size }) => (
+          {archives.map(({ name, bytes: size }) => (
             <ItemRow key={name} icon="folder_zip" label={name} value={bytes(size)} />
           ))}
         </ListGroup>

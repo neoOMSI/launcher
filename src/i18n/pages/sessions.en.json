@@ -53,6 +53,7 @@
     "title": "History",
     "driver": "Driver",
     "allDrivers": "All drivers",
+    "search": "Search runs",
     "loading": "Reading the runs…",
     "failed": "Could not read the runs",
     "none": "No runs yet",
