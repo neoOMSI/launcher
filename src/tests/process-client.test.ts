@@ -32,7 +32,7 @@ const handshake = (to: Frame, supportedCapabilities: string[], commands = ALL_CO
         case: 'handshake',
         value: {
           status: { code: StatusCode.OK, message: 'OK' },
-          protocolVersion: '2',
+          protocolVersion: '3',
           engineVersion: '0.5.0',
           supportedCapabilities,
           commands,
@@ -556,7 +556,7 @@ describe('ProcessEngineClient', () => {
     await client.start();
     const connectedStatus = client.getStatus();
     expect(connectedStatus.connectionState).toBe('connected');
-    expect(connectedStatus.protocolVersion).toBe('2');
+    expect(connectedStatus.protocolVersion).toBe('3');
     expect(connectedStatus.engineVersion).toBe('0.5.0');
     expect(connectedStatus.capabilities).toEqual(['content.discovery', 'settings.read_write']);
 
