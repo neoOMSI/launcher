@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  ssr: { noExternal: true },
   build: {
     outDir: 'dist-electron',
     emptyOutDir: true,
