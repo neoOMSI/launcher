@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icon';
 import { ListRow } from '../../components/List';
 import { Segmented, Select, Slider, Switch } from '../../components/ui';
 import { useSettings } from '../../lib/settings';
-import type { Settings } from '../../types/launcher';
+import type { SettingKey } from '../../types/launcher';
 import { CUSTOM } from './custom';
 import { LAUNCHER_CUSTOM } from './launcher';
 import {
@@ -125,12 +125,9 @@ function ControlView({
   label: string;
 }) {
   const { update } = useSettings();
-  const value = ctx.s[row.key];
-  const set = (v: Value) => {
-    const patch: Settings = { [row.key]: v };
-    if (row.key === 'graphics') patch.enhanced = v === 'enhanced';
-    update(patch);
-  };
+  const key = row.key as SettingKey;
+  const value = ctx.s[key];
+  const set = (v: Value) => update({ [key]: v });
 
   switch (c.kind) {
     case 'toggle':

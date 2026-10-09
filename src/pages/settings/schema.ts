@@ -1,7 +1,7 @@
 import { pageDefaults } from '../../fixtures/settings';
 import { t } from '../../i18n';
 import { bytes, number } from '../../lib/format';
-import type { Settings } from '../../types/launcher';
+import type { SettingKey, Settings } from '../../types/launcher';
 
 export type TabId =
   'graphics' | 'driving' | 'camera' | 'sound' | 'gameplay' | 'interface' | 'launcher';
@@ -51,10 +51,24 @@ export type Control =
       fallback?: (v: Value) => string;
     }
   | { kind: 'segmented'; options: readonly Option[] }
-  | { kind: 'custom'; id: CustomId; wide?: boolean; writes?: readonly string[] };
+  | { kind: 'custom'; id: CustomId; wide?: boolean; writes?: readonly SettingKey[] };
+
+export type LauncherRowKey =
+  | 'about'
+  | 'check_updates'
+  | 'keys'
+  | 'omsi_folder'
+  | 'on_launch'
+  | 'pax_pack'
+  | 'preset'
+  | 'restore_on_exit'
+  | 'seat'
+  | 'theme'
+  | 'vr_keys'
+  | 'wheel';
 
 export interface Row {
-  key: string;
+  key: SettingKey | LauncherRowKey;
   control: Control;
   hint?: boolean;
   visible?: (ctx: Ctx) => boolean;
@@ -92,14 +106,14 @@ const cm = (v: number) => {
   return tr('fmt.cm', { n: n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0' });
 };
 
-const toggle = (key: string, extra: Partial<Row> = {}): Row => ({
+const toggle = (key: SettingKey, extra: Partial<Row> = {}): Row => ({
   key,
   control: { kind: 'toggle' },
   ...extra,
 });
 
 const slider = (
-  key: string,
+  key: SettingKey,
   min: number,
   max: number,
   step: number,
@@ -110,16 +124,16 @@ const slider = (
   return { key, control: { kind: 'slider', min, max, step, format, store }, ...rest };
 };
 
-const select = (key: string, options: readonly Option[], extra: Partial<Row> = {}): Row => ({
+const select = (key: SettingKey, options: readonly Option[], extra: Partial<Row> = {}): Row => ({
   key,
   control: { kind: 'select', options },
   ...extra,
 });
 
 const custom = (
-  key: string,
+  key: SettingKey | LauncherRowKey,
   id: CustomId,
-  extra: Partial<Row> & { wide?: boolean; writes?: readonly string[] } = {},
+  extra: Partial<Row> & { wide?: boolean; writes?: readonly SettingKey[] } = {},
 ): Row => {
   const { wide, writes, ...rest } = extra;
   return { key, control: { kind: 'custom', id, wide, writes }, ...rest };
@@ -132,7 +146,7 @@ const ns = (label: string, values: readonly number[]): Option[] =>
 
 const enhancedOnly = ({ s }: Ctx) => s.graphics !== 'vanilla';
 const on =
-  (key: string) =>
+  (key: SettingKey) =>
   ({ s }: Ctx) =>
     s[key] === true;
 
@@ -218,8 +232,9 @@ export function same(a: Value | undefined, b: Value | undefined): boolean {
 
 export function presetOf(s: Settings): PresetId | 'custom' {
   return (
-    PRESET_IDS.find((id) => Object.entries(PRESETS[id]).every(([k, v]) => same(s[k], v))) ??
-    'custom'
+    PRESET_IDS.find((id) =>
+      (Object.entries(PRESETS[id]) as [SettingKey, Value][]).every(([k, v]) => same(s[k], v)),
+    ) ?? 'custom'
   );
 }
 
@@ -649,7 +664,7 @@ export const TABS: readonly Tab[] = [
             hint: true,
             writes: ['metar_station'],
           }),
-          select('time_speed', [['1', 'opt.realTime'], ...ns('fmt.speed', [2, 4, 8, 15, 30])], {
+          select('time_speed', [[1, 'opt.realTime'], ...n('fmt.speed', [2, 4, 8, 15, 30])], {
             hint: true,
           }),
         ],
@@ -751,9 +766,11 @@ export const isTab = (id: string | undefined): id is TabId =>
 export const optionsOf = (control: Extract<Control, { kind: 'select' }>, ctx: Ctx) =>
   typeof control.options === 'function' ? control.options(ctx) : control.options;
 
-export function settingKeys(tab: Tab): string[] {
+export function settingKeys(tab: Tab): SettingKey[] {
   return tab.groups.flatMap((g) =>
-    g.rows.flatMap((r) => (r.control.kind === 'custom' ? [...(r.control.writes ?? [])] : [r.key])),
+    g.rows.flatMap((r) =>
+      r.control.kind === 'custom' ? [...(r.control.writes ?? [])] : [r.key as SettingKey],
+    ),
   );
 }
 
@@ -764,7 +781,6 @@ export function resetPatch(tab: Tab): Settings {
   for (const key of settingKeys(tab)) {
     if (key !== 'language' && key in DEFAULTS) patch[key] = DEFAULTS[key];
   }
-  if (tab.id === 'graphics') patch.enhanced = DEFAULTS.graphics === 'enhanced';
   return patch;
 }
 
