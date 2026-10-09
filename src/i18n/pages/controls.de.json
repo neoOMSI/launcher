@@ -61,6 +61,7 @@
     "function": "Funktion von {axis}",
     "curve": "Kennlinie von {axis}",
     "reversed": "Umgekehrt",
+    "button": "Taste {n}",
     "buttonAction": "Aktion von {button}"
   },
   "function": {

@@ -150,7 +150,7 @@ export function useKeyboard() {
     const all = GROUPS.flatMap((group) => {
       const list = current[group] ?? [];
       return actionRows(list).map((row): Row => {
-        const bound = row.entries.filter((i) => list[i].scan_code);
+        const bound = row.entries.filter((i) => list[i].scanCode);
         return {
           ...row,
           group,
@@ -170,7 +170,7 @@ export function useKeyboard() {
   const save = async () => {
     if (!draft) return true;
     try {
-      setStored(await call('save_keybindings', draft));
+      setStored(await call('saveKeybindings', draft));
       setDraft(null);
       return true;
     } catch (err) {
@@ -184,7 +184,7 @@ export function useKeyboard() {
     const list = current?.[row.group] ?? [];
     return row.bound.some((i) => {
       const b = list[i];
-      return `${keyLabel(b.scan_code, b.modifier, lang, layout)} ${keyAlias(b.scan_code)}`
+      return `${keyLabel(b.scanCode, b.modifier, lang, layout)} ${keyAlias(b.scanCode)}`
         .toLowerCase()
         .includes(q);
     });
@@ -294,7 +294,7 @@ function ActionRow({ row, kb }: { row: Row; kb: KeyboardState }) {
           ) : (
             <KeyCap
               key={index}
-              caps={keyCaps(list[index].scan_code, list[index].modifier, lang, layout)}
+              caps={keyCaps(list[index].scanCode, list[index].modifier, lang, layout)}
               clash={kb.shared[row.group].has(keyId(list[index]))}
               onChange={() => setCapture({ group: row.group, action: row.action, index })}
               onRemove={() => kb.remove(row.group, index)}

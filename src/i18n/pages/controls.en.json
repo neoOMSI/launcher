@@ -61,6 +61,7 @@
     "function": "Function of {axis}",
     "curve": "Response of {axis}",
     "reversed": "Reversed",
+    "button": "Button {n}",
     "buttonAction": "Action of {button}"
   },
   "function": {

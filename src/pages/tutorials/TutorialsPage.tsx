@@ -47,7 +47,7 @@ export const TutorialsPage: React.FC = () => {
     }
   };
 
-  const list = [...(tutorials.data ?? [])].sort((a, b) => a.number - b.number);
+  const list = [...(tutorials.data?.tutorials ?? [])].sort((a, b) => a.number - b.number);
   const next = nextLesson(list, starts) ?? list[0];
   const current = list.find((x) => String(x.number) === route.section) ?? next;
 

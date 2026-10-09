@@ -1,10 +1,16 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { encodeFrame, FrameDecoder, type ProtocolMessage } from './protocol';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import { encodeFrame, FrameDecoder } from './protocol';
 import type { EngineClient } from './client';
-import type { EngineStatus, HandshakeResponse } from '../src/types/scaffold';
-import { PROTOCOL_VERSION, StatusCode } from '../src/types/scaffold';
-import { ENGINE_EVENTS, type EngineEvent } from '../src/types/launcher';
+import { PROTOCOL_VERSION, type EngineStatus } from '../src/types/scaffold';
+import {
+  FrameSchema,
+  RequestSchema,
+  StatusCode,
+  type Frame,
+  type HandshakeResponse,
+} from '../src/types/launcher';
 
 // A big installation's bus list takes minutes the first time the engine reads it.
 const SLOW: Record<string, number> = {
@@ -17,7 +23,7 @@ const SLOW: Record<string, number> = {
   launch: 60_000,
   stop: 30_000,
   servers: 30_000,
-  update_check: 90_000,
+  updateCheck: 90_000,
 };
 
 export interface ProcessEngineClientOptions {
@@ -34,6 +40,7 @@ export interface ProcessEngineClientOptions {
 }
 
 interface PendingRequest {
+  command: string;
   resolve: (value: unknown) => void;
   reject: (reason: Error) => void;
   timer: NodeJS.Timeout;
@@ -171,17 +178,17 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
         clientPlatform: process.platform,
       });
 
-      if (handshake.status.code === StatusCode.STATUS_OK) {
+      if (handshake.status?.code === StatusCode.OK) {
         this.updateStatus({
           connectionState: 'connected',
           protocolVersion: handshake.protocolVersion,
           engineVersion: handshake.engineVersion,
           capabilities: [...handshake.supportedCapabilities],
-          commands: handshake.commands ? [...handshake.commands] : undefined,
+          commands: [...handshake.commands],
           lastError: undefined,
         });
       } else {
-        throw new Error(`Handshake failed: ${handshake.status.message}`);
+        throw new Error(`Handshake failed: ${handshake.status?.message ?? 'no status'}`);
       }
 
       return this.getStatus();
@@ -316,8 +323,9 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
       throw new Error(`Cannot send request '${type}': engine is ${this.status.connectionState}`);
     }
 
+    const field = RequestSchema.oneofs[0].fields.find((f) => f.localName === type);
     const commands = this.status.commands;
-    if (type !== 'handshake' && commands && !commands.includes(type)) {
+    if (!field || (type !== 'handshake' && commands && !commands.includes(field.name))) {
       throw new Error(`This engine (${this.status.engineVersion}) has no command '${type}'`);
     }
 
@@ -331,13 +339,19 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
       }, timeoutMs);
 
       this.pendingRequests.set(requestId, {
+        command: type,
         resolve: resolve as (val: unknown) => void,
         reject,
         timer,
       });
 
       try {
-        const frame = encodeFrame({ type, payload, requestId });
+        const command = { case: type, value: payload } as MessageInitShape<
+          typeof RequestSchema
+        >['command'];
+        const frame = encodeFrame(
+          create(FrameSchema, { requestId, body: { case: 'request', value: { command } } }),
+        );
         const proc = this.process;
         if (!proc) {
           throw new Error('Engine process is not running');
@@ -358,22 +372,27 @@ export class ProcessEngineClient extends EventEmitter implements EngineClient {
     });
   }
 
-  private handleIncoming(msg: ProtocolMessage): void {
-    if (msg.requestId && this.pendingRequests.has(msg.requestId)) {
-      const pending = this.pendingRequests.get(msg.requestId)!;
-      this.pendingRequests.delete(msg.requestId);
+  private handleIncoming(frame: Frame): void {
+    const pending = frame.requestId ? this.pendingRequests.get(frame.requestId) : undefined;
+    if (pending) {
+      this.pendingRequests.delete(frame.requestId);
       clearTimeout(pending.timer);
 
-      if (msg.error) {
-        pending.reject(new Error(msg.error));
+      const answer = frame.body.case === 'response' ? frame.body.value.answer : undefined;
+      if (frame.error) {
+        pending.reject(new Error(frame.error));
+      } else if (answer?.case !== pending.command) {
+        pending.reject(
+          new Error(`The engine answered '${pending.command}' with '${answer?.case}'`),
+        );
       } else {
-        pending.resolve(msg.payload);
+        pending.resolve(answer.value);
       }
       return;
     }
 
-    if (!msg.requestId && (ENGINE_EVENTS as readonly string[]).includes(msg.type)) {
-      this.emit('event', { type: msg.type, payload: msg.payload } as EngineEvent);
+    if (frame.body.case === 'event' && frame.body.value.event.case) {
+      this.emit('event', frame.body.value.event);
     }
   }
 

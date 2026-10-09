@@ -153,13 +153,13 @@ export const ModsPage: React.FC = () => {
               <div className="shrink-0 px-4 pt-2 pb-4">
                 <p className="flex items-center gap-2 px-3 text-[14px] text-muted">
                   <Icon name="hard_drive" size={16} />
-                  {t('mods.free', { size: bytes(data.free_bytes) })}
+                  {t('mods.free', { size: bytes(data.freeBytes) })}
                 </p>
                 <button
                   type="button"
                   className="mt-1 flex h-10 w-full items-center gap-2 rounded-full px-3 text-[14.5px] text-muted transition-colors hover:bg-sunken hover:text-ink"
-                  disabled={!data.content_dir}
-                  onClick={() => open(data.content_dir)}
+                  disabled={!data.contentDir}
+                  onClick={() => open(data.contentDir)}
                 >
                   <Icon name="folder_open" size={18} />
                   {t('mods.openContent')}

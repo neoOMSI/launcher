@@ -1,11 +1,6 @@
 import { Buffer } from 'node:buffer';
-
-export interface ProtocolMessage<T = unknown> {
-  type: string;
-  payload: T;
-  requestId?: string;
-  error?: string;
-}
+import { fromBinary, toBinary } from '@bufbuild/protobuf';
+import { FrameSchema, type Frame } from '../src/types/launcher';
 
 export const DEFAULT_MAX_FRAME_SIZE_BYTES = 16 * 1024 * 1024; // 16 MB
 
@@ -17,11 +12,10 @@ export class ProtocolError extends Error {
 }
 
 export function encodeFrame(
-  message: ProtocolMessage,
+  frame: Frame,
   maxSizeBytes: number = DEFAULT_MAX_FRAME_SIZE_BYTES,
 ): Buffer {
-  const jsonStr = JSON.stringify(message);
-  const data = Buffer.from(jsonStr, 'utf-8');
+  const data = toBinary(FrameSchema, frame);
 
   if (data.length > maxSizeBytes) {
     throw new ProtocolError(
@@ -29,10 +23,10 @@ export function encodeFrame(
     );
   }
 
-  const frame = Buffer.alloc(4 + data.length);
-  frame.writeUInt32BE(data.length, 0);
-  data.copy(frame, 4);
-  return frame;
+  const out = Buffer.alloc(4 + data.length);
+  out.writeUInt32BE(data.length, 0);
+  out.set(data, 4);
+  return out;
 }
 
 export class FrameDecoder {
@@ -43,9 +37,9 @@ export class FrameDecoder {
     this.maxSizeBytes = maxSizeBytes;
   }
 
-  public push(chunk: Buffer): ProtocolMessage[] {
+  public push(chunk: Buffer): Frame[] {
     this.buffer = Buffer.concat([this.buffer, chunk]);
-    const messages: ProtocolMessage[] = [];
+    const frames: Frame[] = [];
 
     while (this.buffer.length >= 4) {
       const length = this.buffer.readUInt32BE(0);
@@ -62,31 +56,19 @@ export class FrameDecoder {
         break;
       }
 
-      const raw = this.buffer.subarray(4, 4 + length).toString('utf-8');
+      const data = this.buffer.subarray(4, 4 + length);
       this.buffer = this.buffer.subarray(4 + length);
 
-      let parsed: unknown;
       try {
-        parsed = JSON.parse(raw);
+        frames.push(fromBinary(FrameSchema, data));
       } catch (err: unknown) {
         this.buffer = Buffer.alloc(0);
         const detail = err instanceof Error ? err.message : String(err);
-        throw new ProtocolError(`Failed to parse frame JSON payload: ${detail}`);
+        throw new ProtocolError(`Failed to decode a frame: ${detail}`);
       }
-
-      if (
-        typeof parsed !== 'object' ||
-        parsed === null ||
-        typeof (parsed as Record<string, unknown>).type !== 'string'
-      ) {
-        this.buffer = Buffer.alloc(0);
-        throw new ProtocolError('Invalid protocol frame: missing "type" string property');
-      }
-
-      messages.push(parsed as ProtocolMessage);
     }
 
-    return messages;
+    return frames;
   }
 
   public clear(): void {

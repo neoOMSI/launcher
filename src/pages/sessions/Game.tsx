@@ -7,7 +7,7 @@ import { t } from '../../i18n';
 import { call, errorText, useEngine } from '../../lib/engine';
 import { ago, duration, lineLabel } from '../../lib/format';
 import { useToast } from '../../lib/nav';
-import type { Instance } from '../../types/launcher';
+import { GameLinkState, LanRole, type Instance } from '../../types/launcher';
 import { useNames } from '../profile/names';
 import { clock, exitCodeText, exitState } from './clock';
 import { LogView } from './LogView';
@@ -39,8 +39,9 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
   const toast = useToast();
   const names = useNames();
   const reported = i.running ? i.link?.state : undefined;
-  const state = (stopping || reported === 'stopping') && i.running ? 'stopping' : exitState(i);
-  const lan = i.lan_status;
+  const state =
+    (stopping || reported === GameLinkState.STOPPING) && i.running ? 'stopping' : exitState(i);
+  const lan = i.lanStatus;
 
   const stop = async () => {
     setConfirm(false);
@@ -48,8 +49,8 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
     try {
       const result = await call('stop', { pid: i.pid });
       toast(
-        result.ended_by_itself ? t('sessions.stop.saved') : t('sessions.stop.forced'),
-        result.ended_by_itself ? 'tip' : 'note',
+        result.endedByItself ? t('sessions.stop.saved') : t('sessions.stop.forced'),
+        result.endedByItself ? 'tip' : 'note',
       );
     } catch (err) {
       toast(errorText(err), 'caution');
@@ -60,9 +61,9 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
   };
 
   const status =
-    state === 'running' && reported === 'starting' ? (
+    state === 'running' && reported === GameLinkState.STARTING ? (
       <span className="text-muted">{t('sessions.state.starting')}</span>
-    ) : state === 'running' && reported === 'loading' ? (
+    ) : state === 'running' && reported === GameLinkState.LOADING ? (
       <span className="tabular-nums">
         {t('sessions.state.loading', {
           percent: Math.round((i.link?.progress ?? 0) * 100),
@@ -71,7 +72,7 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
     ) : state === 'running' ? (
       <span className="inline-flex items-center gap-1.5 tabular-nums">
         <span className="size-2 rounded-full bg-ok" />
-        {clock(now - i.started)}
+        {clock(now - Number(i.started))}
       </span>
     ) : state === 'stopping' ? (
       <span className="text-warn">{t('sessions.state.stopping')}</span>
@@ -79,13 +80,13 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
       <>
         <span className={state === 'killed' || state === 'crashed' ? 'text-danger' : ''}>
           {state === 'crashed'
-            ? t('sessions.state.crashed', { code: exitCodeText(i.exit_code ?? 0) })
+            ? t('sessions.state.crashed', { code: exitCodeText(i.exitCode ?? 0) })
             : t(`sessions.state.${state}`)}
         </span>
         {' · '}
         {t('sessions.endedAgo', {
           ago: ago(i.ended ?? now),
-          ran: duration((i.ended ?? now) - i.started),
+          ran: duration(Number(i.ended ?? now) - Number(i.started)),
         })}
       </>
     );
@@ -104,16 +105,16 @@ export const Game: React.FC<{ instance: Instance; now: number }> = ({ instance: 
             </span>
             {i.running && lan && (
               <Badge color="#4c8dff">
-                {lan.role === 'host' ? t('sessions.lan.hosting') : t('sessions.lan.joined')}
+                {lan.role === LanRole.HOST ? t('sessions.lan.hosting') : t('sessions.lan.joined')}
               </Badge>
             )}
           </p>
           <p className="truncate text-[14.5px] text-muted">
             {i.profile} · {duty(i.line, i.tour)} · {status}
           </p>
-          {i.running && i.last_line && (
+          {i.running && i.lastLine && (
             <p className="mt-0.5 truncate font-mono text-[13px] text-muted select-text">
-              {i.last_line}
+              {i.lastLine}
             </p>
           )}
         </div>

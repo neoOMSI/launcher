@@ -23,7 +23,7 @@ import {
   type EngineEvent,
   type Instance,
   type Launched,
-  type MapInfo,
+  type MapList,
 } from '../src/types/launcher';
 import packageJson from '../package.json' with { type: 'json' };
 
@@ -82,7 +82,7 @@ function setupEngineClient(): void {
     });
     engine.on('event', (event: EngineEvent) => {
       mainWindow?.webContents.send('engine:event', event);
-      if (event.type === 'instances_changed') watchGames(event.payload);
+      if (event.case === 'instancesChanged') watchGames(event.value.instances);
     });
     engine.on('diagnostic', (log: string) => {
       mainWindow?.webContents.send('engine:diagnostic-log', log);
@@ -265,9 +265,9 @@ registerIpcHandler('engine:map-picture', async (_, mapFile: string) => {
   const client = requireEngine();
   const [config, maps] = await Promise.all([
     client.sendRequest<Config>('config', {}),
-    client.sendRequest<MapInfo[]>('maps', {}),
+    client.sendRequest<MapList>('maps', {}),
   ]);
-  const map = maps.find((m) => m.file === mapFile);
+  const map = maps.maps.find((m) => m.file === mapFile);
   if (!map || !config.root) return null;
   const root = resolve(config.root);
   const picture = resolve(root, dirname(map.file), 'picture.jpg');

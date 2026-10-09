@@ -18,39 +18,50 @@ import {
   toursServing,
   tripSeconds,
 } from '../pages/timetables/timetable';
-import type { LineInfo, TourInfo, TripInfo } from '../types/launcher';
+import { create } from '@bufbuild/protobuf';
+import {
+  LineInfoSchema,
+  StopInfoSchema,
+  TourInfoSchema,
+  TripInfoSchema,
+  type TripInfo,
+} from '../types/launcher';
 
-const trip = (index: number, departure: number, names: string[]): TripInfo => ({
-  name: `t${index}`,
-  index,
-  line: '24',
-  from: names[0],
-  terminus: names[names.length - 1],
-  departure,
-  arrival: departure + (names.length - 1) * 180,
-  km: 6.4,
-  stops: names.map((name, i) => ({
-    name,
-    arr: i === 0 ? -1 : departure + i * 180,
-    dep: i === names.length - 1 ? -1 : departure + i * 180,
-  })),
-});
+const stop = (name: string, arr: number, dep: number) => create(StopInfoSchema, { name, arr, dep });
 
-const tour = (number: string, runs: boolean, trips: TripInfo[]): TourInfo => ({
-  number,
-  ai_group: `24-${number}`,
-  first: trips[0]?.departure ?? 0,
-  last: trips[trips.length - 1]?.arrival ?? 0,
-  days: 'Mon-Fri',
-  runs,
-  next_run: runs ? null : '2026-10-12',
-  trips,
-});
+const trip = (index: number, departure: number, names: string[]) =>
+  create(TripInfoSchema, {
+    name: `t${index}`,
+    index,
+    line: '24',
+    from: names[0],
+    terminus: names[names.length - 1],
+    departure,
+    arrival: departure + (names.length - 1) * 180,
+    km: 6.4,
+    stops: names.map((name, i) => ({
+      name,
+      arr: i === 0 ? -1 : departure + i * 180,
+      dep: i === names.length - 1 ? -1 : departure + i * 180,
+    })),
+  });
 
-const LINES: LineInfo[] = [
-  {
+const tour = (number: string, runs: boolean, trips: TripInfo[]) =>
+  create(TourInfoSchema, {
+    number,
+    aiGroup: `24-${number}`,
+    first: trips[0]?.departure ?? 0,
+    last: trips[trips.length - 1]?.arrival ?? 0,
+    days: 'Mon-Fri',
+    runs,
+    nextRun: runs ? undefined : '2026-10-12',
+    trips,
+  });
+
+const LINES = [
+  create(LineInfoSchema, {
     name: '24',
-    user_allowed: true,
+    userAllowed: true,
     termini: ['Hauptbahnhof', 'Rathaus'],
     tours: [
       tour('1', false, [trip(0, 5 * 3600, ['Hauptbahnhof', 'Lindenallee', 'Rathaus'])]),
@@ -59,15 +70,15 @@ const LINES: LineInfo[] = [
         trip(1, 7 * 3600, ['Rathaus', 'Lindenallee', 'Hauptbahnhof']),
       ]),
     ],
-  },
-  {
+  }),
+  create(LineInfoSchema, {
     name: 'N7',
-    user_allowed: false,
+    userAllowed: false,
     termini: ['Bahnhof', 'Siedlung'],
     tours: [
       tour('1', true, [trip(0, 23 * 3600 + 50 * 60, ['Bahnhof', 'Gewerbegebiet', 'Siedlung'])]),
     ],
-  },
+  }),
 ];
 
 describe('departure board', () => {
@@ -164,16 +175,16 @@ describe('timetable time math', () => {
   });
 
   it('shows the departure and the arrival only when they differ', () => {
-    expect(stopClock({ name: 'A', arr: -1, dep: 3600 })).toEqual({ time: '01:00', arrival: null });
-    expect(stopClock({ name: 'B', arr: 3600, dep: 3620 })).toEqual({
+    expect(stopClock(stop('A', -1, 3600))).toEqual({ time: '01:00', arrival: null });
+    expect(stopClock(stop('B', 3600, 3620))).toEqual({
       time: '01:00',
       arrival: null,
     });
-    expect(stopClock({ name: 'C', arr: 3600, dep: 3780 })).toEqual({
+    expect(stopClock(stop('C', 3600, 3780))).toEqual({
       time: '01:03',
       arrival: '01:00',
     });
-    expect(stopClock({ name: 'D', arr: 3900, dep: -1 })).toEqual({ time: '01:05', arrival: null });
+    expect(stopClock(stop('D', 3900, -1))).toEqual({ time: '01:05', arrival: null });
   });
 
   it('formats today as a local ISO date', () => {

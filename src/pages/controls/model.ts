@@ -1,22 +1,24 @@
-import type {
+import { create } from '@bufbuild/protobuf';
+import {
   AxisFunction,
-  Controller,
-  ControllerAxis,
-  KeyBinding,
-  KeyBindings,
+  AxisShape,
+  KeyBindingSchema,
+  type Controller,
+  type ControllerAxis,
+  type KeyBinding,
+  type KeyBindings,
 } from '../../types/launcher';
 import { CHORD, KEY_HOLD } from './keys';
 
-export type Group = keyof KeyBindings;
-export type AxisShape = ControllerAxis['shape'];
+export type Group = 'vehicles' | 'game';
 
 export interface ActionRow {
   action: string;
   entries: number[];
 }
 
-export const keyId = (b: Pick<KeyBinding, 'scan_code' | 'modifier'>) =>
-  `${b.scan_code}:${b.modifier & CHORD}`;
+export const keyId = (b: Pick<KeyBinding, 'scanCode' | 'modifier'>) =>
+  `${b.scanCode}:${b.modifier & CHORD}`;
 
 export function actionRows(list: KeyBinding[]): ActionRow[] {
   const rows = new Map<string, ActionRow>();
@@ -31,7 +33,7 @@ export function actionRows(list: KeyBinding[]): ActionRow[] {
 export function conflicts(list: KeyBinding[]): Map<string, string[]> {
   const byKey = new Map<string, string[]>();
   for (const b of list) {
-    if (!b.scan_code) continue;
+    if (!b.scanCode) continue;
     const id = keyId(b);
     const actions = byKey.get(id) ?? [];
     if (!actions.includes(b.action)) actions.push(b.action);
@@ -46,19 +48,17 @@ const holdOf = (list: KeyBinding[], action: string) =>
 
 export function setKey(list: KeyBinding[], index: number, scan: number, chord: number) {
   return list.map((b, i) =>
-    i === index
-      ? { ...b, scan_code: scan, modifier: (chord & CHORD) | (b.modifier & KEY_HOLD) }
-      : b,
+    i === index ? { ...b, scanCode: scan, modifier: (chord & CHORD) | (b.modifier & KEY_HOLD) } : b,
   );
 }
 
 export function addKey(list: KeyBinding[], action: string, scan: number, chord: number) {
   const last = list.findLastIndex((b) => b.action === action);
-  const entry = {
+  const entry = create(KeyBindingSchema, {
     action,
-    scan_code: scan,
+    scanCode: scan,
     modifier: (chord & CHORD) | (holdOf(list, action) & KEY_HOLD),
-  };
+  });
   const at = last < 0 ? list.length : last + 1;
   return [...list.slice(0, at), entry, ...list.slice(at)];
 }
@@ -76,7 +76,7 @@ const signature = (list: KeyBinding[]) => {
   for (const row of actionRows(list)) {
     const keys = row.entries
       .map((i) => list[i])
-      .filter((b) => b.scan_code)
+      .filter((b) => b.scanCode)
       .map(keyId)
       .sort();
     out.set(row.action, keys.join(','));
@@ -96,17 +96,33 @@ export function countChanges(before: KeyBindings, after: KeyBindings): number {
   return n;
 }
 
-const BIPOLAR = new Set<AxisFunction>(['', 'steering', 'throttle_brake', 'look_x', 'look_y']);
+const BIPOLAR = new Set<AxisFunction>([
+  AxisFunction.NONE,
+  AxisFunction.STEERING,
+  AxisFunction.THROTTLE_BRAKE,
+  AxisFunction.LOOK_X,
+  AxisFunction.LOOK_Y,
+]);
 
 export const isBipolar = (f: AxisFunction) => BIPOLAR.has(f);
 
-const bend = (shape: string, x: number) =>
-  shape === 'progressive' ? x * x : shape === 'degressive' ? 1 - (1 - x) * (1 - x) : x;
+const SIDES: Partial<Record<AxisShape, AxisShape>> = {
+  [AxisShape.BI_PROGRESSIVE]: AxisShape.PROGRESSIVE,
+  [AxisShape.BI_DEGRESSIVE]: AxisShape.DEGRESSIVE,
+};
+
+const bend = (shape: AxisShape, x: number) =>
+  shape === AxisShape.PROGRESSIVE
+    ? x * x
+    : shape === AxisShape.DEGRESSIVE
+      ? 1 - (1 - x) * (1 - x)
+      : x;
 
 export function curve(shape: AxisShape, x: number): number {
-  if (!shape.startsWith('bi-')) return bend(shape, x);
+  const side = SIDES[shape];
+  if (side === undefined) return bend(shape, x);
   const t = 2 * x - 1;
-  return (Math.sign(t) * bend(shape.slice(3), Math.abs(t)) + 1) / 2;
+  return (Math.sign(t) * bend(side, Math.abs(t)) + 1) / 2;
 }
 
 export function axisOutput(
@@ -118,7 +134,7 @@ export function axisOutput(
   if (isBipolar(axis.function)) {
     const m = Math.abs(v);
     if (m <= deadzone) return 0;
-    const shape = axis.shape.startsWith('bi-') ? axis.shape.slice(3) : axis.shape;
+    const shape = SIDES[axis.shape] ?? axis.shape;
     return Math.sign(v) * bend(shape, (m - deadzone) / (1 - deadzone));
   }
   const x = (v + 1) / 2;
@@ -133,15 +149,15 @@ export function controllerChanges(before: Controller[], after: Controller[]): nu
     if (!o) return void n++;
     n += Number(o.enabled !== c.enabled);
     n += Number(o.deadzone !== c.deadzone);
-    n += Number(o.force_feedback !== c.force_feedback);
+    n += Number(o.forceFeedback !== c.forceFeedback);
     c.axes.forEach((a, j) => {
       const b = o.axes[j];
       n += Number(
         !b || b.function !== a.function || b.reversed !== a.reversed || b.shape !== a.shape,
       );
     });
-    c.buttons.forEach(([, f], j) => {
-      n += Number(o.buttons[j]?.[1] !== f);
+    c.buttons.forEach((b, j) => {
+      n += Number(o.buttons[j]?.action !== b.action);
     });
   });
   return n;

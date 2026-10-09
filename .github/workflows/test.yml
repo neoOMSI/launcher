@@ -55,6 +55,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Generated protocol types are current
+        run: pnpm proto && git diff --exit-code -- src/types/launcher_pb.ts
+
       - name: Formatting
         run: pnpm format:check
 

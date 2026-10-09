@@ -24,7 +24,7 @@ export const Installed: React.FC<{ mods: InstalledMod[]; cleaned: string[] }> = 
   const uninstall = async (mod: InstalledMod) => {
     setRemoving(null);
     try {
-      await call('uninstall_mod', { name: mod.name });
+      await call('uninstallMod', { name: mod.name });
       toast(t('mods.uninstall.done', { name: mod.name }), 'tip');
     } catch (err) {
       toast(errorText(err), 'caution');

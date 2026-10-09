@@ -25,7 +25,7 @@ export const LogView: React.FC<{ instance: Instance; onClose: () => void }> = ({
       call('log', { pid, lines: 200 })
         .then((l) => {
           if (!live) return;
-          setLines(l ?? []);
+          setLines(l.lines);
           setError(null);
         })
         .catch((err) => live && setError(errorText(err)));

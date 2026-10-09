@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { blocks, changes } from '../components/Changelog';
 import { paxNotice } from '../pages/drive/Promo';
-import type { PaxPack } from '../types/launcher';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import { PaxPackSchema, PaxReleaseSchema, PaxState } from '../types/launcher';
 
 const NOTES = [
   '> **Early development build.** Expect bugs.',
@@ -46,15 +47,10 @@ describe('release notes', () => {
   });
 });
 
-const pack = (patch: Partial<PaxPack>): PaxPack => ({
-  state: 'installed',
-  done: 0,
-  total: 0,
-  message: '',
-  installed: 1,
-  latest: { version: 2, notes: '', page: '', published: '' },
-  ...patch,
-});
+const pack = (
+  state: PaxState,
+  latest: MessageInitShape<typeof PaxReleaseSchema> | null = { version: 2n },
+) => create(PaxPackSchema, { state, latest: latest ?? undefined });
 
 describe('the passenger card', () => {
   it('advertises the passengers until they are on or the advert is hidden', () => {
@@ -63,26 +59,21 @@ describe('the passenger card', () => {
   });
 
   it('follows the pack once they are on', () => {
-    expect(paxNotice(true, pack({ state: 'missing', installed: null }), false, null)).toBe(
-      'missing',
-    );
-    expect(paxNotice(true, pack({ state: 'failed' }), false, null)).toBe('missing');
-    expect(paxNotice(true, pack({ state: 'downloading' }), false, null)).toBe('busy');
-    expect(paxNotice(true, pack({ state: 'installed' }), false, null)).toBeNull();
+    expect(paxNotice(true, pack(PaxState.MISSING), false, null)).toBe('missing');
+    expect(paxNotice(true, pack(PaxState.FAILED), false, null)).toBe('missing');
+    expect(paxNotice(true, pack(PaxState.DOWNLOADING), false, null)).toBe('busy');
+    expect(paxNotice(true, pack(PaxState.INSTALLED), false, null)).toBeNull();
   });
 
   it('announces each new pack release once', () => {
-    expect(paxNotice(true, pack({ state: 'outdated' }), false, null)).toBe('update');
-    expect(paxNotice(true, pack({ state: 'outdated' }), false, '2')).toBeNull();
-    const v3 = pack({
-      state: 'outdated',
-      latest: { version: 3, notes: '', page: '', published: '' },
-    });
+    expect(paxNotice(true, pack(PaxState.OUTDATED), false, null)).toBe('update');
+    expect(paxNotice(true, pack(PaxState.OUTDATED), false, '2')).toBeNull();
+    const v3 = pack(PaxState.OUTDATED, { version: 3n });
     expect(paxNotice(true, v3, false, '2')).toBe('update');
   });
 
   it('keeps an outdated pack in view when its newest release is unknown', () => {
-    const unknown = pack({ state: 'outdated', latest: null });
+    const unknown = pack(PaxState.OUTDATED, null);
     expect(paxNotice(true, unknown, false, null)).toBe('update');
     expect(paxNotice(true, unknown, false, '2')).toBe('update');
     expect(paxNotice(true, unknown, false, '')).toBe('update');

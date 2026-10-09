@@ -55,7 +55,7 @@ function DriverCard() {
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-ink">{name || t('rail.noDriver')}</span>
         <span className="block text-[13.5px] text-muted">
-          {profile.data ? t('rail.level', { level: profile.data.level }) : t('nav.profile')}
+          {profile.data ? t('rail.level', { level: Number(profile.data.level) }) : t('nav.profile')}
         </span>
       </span>
     </button>

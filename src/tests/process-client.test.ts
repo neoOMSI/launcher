@@ -1,10 +1,48 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { ProcessEngineClient } from '../../electron/process-client';
 import { encodeFrame, FrameDecoder } from '../../electron/protocol';
-import { StatusCode } from '../types/scaffold';
+import {
+  EngineVersionSchema,
+  FrameSchema,
+  RequestSchema,
+  StatusCode,
+  type Frame,
+  type Response,
+} from '../types/launcher';
+
+const commandOf = (f: Frame) => (f.body.case === 'request' ? f.body.value.command.case : undefined);
+
+const reply = (to: Frame, answer: MessageInitShape<typeof FrameSchema>['body']) =>
+  encodeFrame(create(FrameSchema, { requestId: to.requestId, body: answer }));
+
+const answer = (to: Frame, value: Response['answer']) =>
+  reply(to, { case: 'response', value: { answer: value } });
+
+const ALL_COMMANDS = RequestSchema.oneofs[0].fields.map((f) => f.name);
+
+const handshake = (to: Frame, supportedCapabilities: string[], commands = ALL_COMMANDS) =>
+  reply(to, {
+    case: 'response',
+    value: {
+      answer: {
+        case: 'handshake',
+        value: {
+          status: { code: StatusCode.OK, message: 'OK' },
+          protocolVersion: '2',
+          engineVersion: '0.5.0',
+          supportedCapabilities,
+          commands,
+        },
+      },
+    },
+  });
+
+const failure = (to: Frame, error: string) =>
+  encodeFrame(create(FrameSchema, { requestId: to.requestId, error }));
 
 interface MockChild extends EventEmitter {
   pid: number;
@@ -55,17 +93,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          const responseFrame = encodeFrame({
-            type: 'handshake_response',
-            requestId: msg.requestId,
-            payload: {
-              status: { code: StatusCode.STATUS_OK, message: 'OK' },
-              protocolVersion: '1.0',
-              engineVersion: '0.5.0',
-              supportedCapabilities: ['content.discovery'],
-            },
-          });
+        if (commandOf(msg) === 'handshake') {
+          const responseFrame = handshake(msg, ['content.discovery']);
           streams.stdout.write(responseFrame);
         }
       }
@@ -91,19 +120,8 @@ describe('ProcessEngineClient', () => {
           streams.stdin.on('data', (chunk: Buffer) => {
             const messages = decoder.push(chunk);
             for (const msg of messages) {
-              if (msg.type === 'handshake') {
-                streams.stdout.write(
-                  encodeFrame({
-                    type: 'handshake_response',
-                    requestId: msg.requestId,
-                    payload: {
-                      status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                      protocolVersion: '1.0',
-                      engineVersion: '0.5.0',
-                      supportedCapabilities: [],
-                    },
-                  }),
-                );
+              if (commandOf(msg) === 'handshake') {
+                streams.stdout.write(handshake(msg, []));
               }
             }
           });
@@ -132,26 +150,15 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
         }
       }
     });
 
     await client.start();
 
-    await expect(client.sendRequest('get_maps', {})).rejects.toThrow(/timed out after 50ms/);
+    await expect(client.sendRequest('config', {})).rejects.toThrow(/timed out after 50ms/);
   });
 
   it('rejects pending requests when the process terminates', async () => {
@@ -166,26 +173,15 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
         }
       }
     });
 
     await client.start();
 
-    const requestPromise = client.sendRequest('get_maps', {});
+    const requestPromise = client.sendRequest('maps', {});
     streams.emit('close', 1, null);
 
     await expect(requestPromise).rejects.toThrow('Process exited with code 1');
@@ -204,37 +200,17 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
-        } else if (msg.type === 'failing_action') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'failing_action_response',
-              requestId: msg.requestId,
-              payload: null,
-              error: 'Explicit engine failure',
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
+        } else if (commandOf(msg) === 'version') {
+          streams.stdout.write(failure(msg, 'Explicit engine failure'));
         }
       }
     });
 
     await client.start();
 
-    await expect(client.sendRequest('failing_action', {})).rejects.toThrow(
-      'Explicit engine failure',
-    );
+    await expect(client.sendRequest('version', {})).rejects.toThrow('Explicit engine failure');
   });
 
   it('rejects pending requests upon calling stop()', async () => {
@@ -249,26 +225,15 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
         }
       }
     });
 
     await client.start();
 
-    const pendingReq = client.sendRequest('long_running', {});
+    const pendingReq = client.sendRequest('servers', {});
     await client.stop();
 
     await expect(pendingReq).rejects.toThrow('Engine client stopped');
@@ -287,19 +252,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
         }
       }
     });
@@ -317,7 +271,7 @@ describe('ProcessEngineClient', () => {
       return originalWrite(chunk as Parameters<typeof originalWrite>[0]);
     });
 
-    await expect(client.sendRequest('get_maps', {})).rejects.toThrow(/EPIPE: broken pipe/);
+    await expect(client.sendRequest('maps', {})).rejects.toThrow(/EPIPE: broken pipe/);
     expect(client.getStatus().connectionState).toBe('disconnected');
   });
 
@@ -333,19 +287,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
         }
       }
     });
@@ -376,19 +319,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
         }
       }
     });
@@ -424,19 +356,8 @@ describe('ProcessEngineClient', () => {
           streamsB.stdin.on('data', (chunk: Buffer) => {
             const messages = decoder.push(chunk);
             for (const msg of messages) {
-              if (msg.type === 'handshake') {
-                streamsB.stdout.write(
-                  encodeFrame({
-                    type: 'handshake_response',
-                    requestId: msg.requestId,
-                    payload: {
-                      status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                      protocolVersion: '1.0',
-                      engineVersion: '0.5.0',
-                      supportedCapabilities: ['content.discovery'],
-                    },
-                  }),
-                );
+              if (commandOf(msg) === 'handshake') {
+                streamsB.stdout.write(handshake(msg, ['content.discovery']));
               }
             }
           });
@@ -472,20 +393,9 @@ describe('ProcessEngineClient', () => {
         streams.stdin.on('data', (chunk: Buffer) => {
           const messages = decoder.push(chunk);
           for (const msg of messages) {
-            if (msg.type === 'handshake') {
+            if (commandOf(msg) === 'handshake') {
               setTimeout(() => {
-                streams.stdout.write(
-                  encodeFrame({
-                    type: 'handshake_response',
-                    requestId: msg.requestId,
-                    payload: {
-                      status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                      protocolVersion: '1.0',
-                      engineVersion: '0.5.0',
-                      supportedCapabilities: [],
-                    },
-                  }),
-                );
+                streams.stdout.write(handshake(msg, []));
               }, 20);
             }
           }
@@ -514,19 +424,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const messages = decoder.push(chunk);
       for (const msg of messages) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: [],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, []));
         }
       }
     });
@@ -589,19 +488,8 @@ describe('ProcessEngineClient', () => {
           streamsA.stdin.on('data', (chunk: Buffer) => {
             const msgs = decoder.push(chunk);
             for (const msg of msgs) {
-              if (msg.type === 'handshake') {
-                streamsA.stdout.write(
-                  encodeFrame({
-                    type: 'handshake_response',
-                    requestId: msg.requestId,
-                    payload: {
-                      status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                      protocolVersion: '1.0',
-                      engineVersion: '0.5.0',
-                      supportedCapabilities: [],
-                    },
-                  }),
-                );
+              if (commandOf(msg) === 'handshake') {
+                streamsA.stdout.write(handshake(msg, []));
               }
             }
           });
@@ -622,19 +510,8 @@ describe('ProcessEngineClient', () => {
           streamsB.stdin.on('data', (chunk: Buffer) => {
             const msgs = decoder.push(chunk);
             for (const msg of msgs) {
-              if (msg.type === 'handshake') {
-                streamsB.stdout.write(
-                  encodeFrame({
-                    type: 'handshake_response',
-                    requestId: msg.requestId,
-                    payload: {
-                      status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                      protocolVersion: '1.0',
-                      engineVersion: '0.5.0',
-                      supportedCapabilities: ['content.discovery'],
-                    },
-                  }),
-                );
+              if (commandOf(msg) === 'handshake') {
+                streamsB.stdout.write(handshake(msg, ['content.discovery']));
               }
             }
           });
@@ -670,19 +547,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoder.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery', 'settings.read_write'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, ['content.discovery', 'settings.read_write']));
         }
       }
     });
@@ -690,7 +556,7 @@ describe('ProcessEngineClient', () => {
     await client.start();
     const connectedStatus = client.getStatus();
     expect(connectedStatus.connectionState).toBe('connected');
-    expect(connectedStatus.protocolVersion).toBe('1.0');
+    expect(connectedStatus.protocolVersion).toBe('2');
     expect(connectedStatus.engineVersion).toBe('0.5.0');
     expect(connectedStatus.capabilities).toEqual(['content.discovery', 'settings.read_write']);
 
@@ -715,19 +581,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoder.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, ['content.discovery']));
         }
       }
     });
@@ -760,19 +615,8 @@ describe('ProcessEngineClient', () => {
           streams.stdin.on('data', (chunk: Buffer) => {
             const msgs = decoder.push(chunk);
             for (const msg of msgs) {
-              if (msg.type === 'handshake') {
-                streams.stdout.write(
-                  encodeFrame({
-                    type: 'handshake_response',
-                    requestId: msg.requestId,
-                    payload: {
-                      status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                      protocolVersion: '1.0',
-                      engineVersion: '0.5.0',
-                      supportedCapabilities: ['content.discovery'],
-                    },
-                  }),
-                );
+              if (commandOf(msg) === 'handshake') {
+                streams.stdout.write(handshake(msg, ['content.discovery']));
               }
             }
           });
@@ -808,19 +652,8 @@ describe('ProcessEngineClient', () => {
     streams.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoder.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          streams.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streams.stdout.write(handshake(msg, ['content.discovery']));
         }
       }
     });
@@ -864,19 +697,8 @@ describe('ProcessEngineClient', () => {
     streamsB.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoderB.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          streamsB.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streamsB.stdout.write(handshake(msg, ['content.discovery']));
         }
       }
     });
@@ -939,19 +761,8 @@ describe('ProcessEngineClient', () => {
     childA.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoderA.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          childA.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          childA.stdout.write(handshake(msg, ['content.discovery']));
         }
       }
     });
@@ -962,19 +773,8 @@ describe('ProcessEngineClient', () => {
     streamsB.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoderB.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          streamsB.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streamsB.stdout.write(handshake(msg, ['content.discovery']));
         }
       }
     });
@@ -1042,19 +842,8 @@ describe('ProcessEngineClient', () => {
     child.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoder.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          child.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          child.stdout.write(handshake(msg, ['content.discovery']));
         }
       }
     });
@@ -1122,19 +911,8 @@ describe('ProcessEngineClient', () => {
     streamsB.stdin.on('data', (chunk: Buffer) => {
       const msgs = decoderB.push(chunk);
       for (const msg of msgs) {
-        if (msg.type === 'handshake') {
-          streamsB.stdout.write(
-            encodeFrame({
-              type: 'handshake_response',
-              requestId: msg.requestId,
-              payload: {
-                status: { code: StatusCode.STATUS_OK, message: 'OK' },
-                protocolVersion: '1.0',
-                engineVersion: '0.5.0',
-                supportedCapabilities: ['content.discovery'],
-              },
-            }),
-          );
+        if (commandOf(msg) === 'handshake') {
+          streamsB.stdout.write(handshake(msg, ['content.discovery']));
         }
       }
     });
@@ -1173,4 +951,65 @@ describe('ProcessEngineClient', () => {
     expect(spawnCount).toBe(2);
     expect(status.connectionState).toBe('connected');
   }, 10000);
+
+  async function connected(
+    onRequest: (msg: Frame, write: (b: Buffer) => void) => void,
+    commands = ALL_COMMANDS,
+  ) {
+    const client = new ProcessEngineClient({
+      enginePath: 'neoomsi-engine',
+      requestTimeoutMs: 500,
+      spawner: () => mockChild,
+    });
+    const streams = getMockStreams(mockChild);
+    const decoder = new FrameDecoder();
+    const write = (b: Buffer) => streams.stdout.write(b);
+    streams.stdin.on('data', (chunk: Buffer) => {
+      for (const msg of decoder.push(chunk)) {
+        if (commandOf(msg) === 'handshake') write(handshake(msg, [], commands));
+        else onRequest(msg, write);
+      }
+    });
+    await client.start();
+    return { client, write };
+  }
+
+  it('answers a request with its own command only', async () => {
+    const { client } = await connected((msg, write) => {
+      if (commandOf(msg) === 'version') {
+        write(
+          answer(msg, { case: 'version', value: create(EngineVersionSchema, { protocol: 2 }) }),
+        );
+      } else {
+        write(answer(msg, { case: 'version', value: create(EngineVersionSchema) }));
+      }
+    });
+    await expect(client.sendRequest('version', {})).resolves.toMatchObject({ protocol: 2 });
+    await expect(client.sendRequest('maps', {})).rejects.toThrow("answered 'maps' with 'version'");
+  });
+
+  it('passes events on as they are typed', async () => {
+    const { client, write } = await connected(() => {});
+    const events: unknown[] = [];
+    client.on('event', (e) => events.push(e));
+    write(
+      encodeFrame(
+        create(FrameSchema, {
+          body: {
+            case: 'event',
+            value: { event: { case: 'contentChanged', value: { stamp: 's2' } } },
+          },
+        }),
+      ),
+    );
+    expect(events).toMatchObject([{ case: 'contentChanged', value: { stamp: 's2' } }]);
+  });
+
+  it('refuses a command the engine did not list without sending it', async () => {
+    const seen: (string | undefined)[] = [];
+    const { client } = await connected((msg) => seen.push(commandOf(msg)), ['maps']);
+    await expect(client.sendRequest('servers', {})).rejects.toThrow("has no command 'servers'");
+    await expect(client.sendRequest('teleport', {})).rejects.toThrow("has no command 'teleport'");
+    expect(seen).toEqual([]);
+  });
 });

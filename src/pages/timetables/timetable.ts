@@ -136,7 +136,7 @@ export function dutyPatch(
     line: pick.line.name,
     tour: pick.tour.number,
     trip: pick.trip ? String(pick.trip.index) : '',
-    date: pick.tour.runs ? pick.date : (pick.tour.next_run ?? pick.date),
+    date: pick.tour.runs ? pick.date : (pick.tour.nextRun ?? pick.date),
     season: 'auto',
     entry: -1,
     stop: null,

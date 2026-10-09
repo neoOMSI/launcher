@@ -5,26 +5,32 @@ import { Notice, Select, Slider, Spinner, Switch } from '../../components/ui';
 import { t, type SupportedLanguage } from '../../i18n';
 import { call, errorText, useCommand } from '../../lib/engine';
 import { useNav, useToast } from '../../lib/nav';
-import type { AxisFunction, Controller, ControllerAxis, KeyBindings } from '../../types/launcher';
+import {
+  AxisFunction,
+  AxisShape,
+  type Controller,
+  type ControllerAxis,
+  type KeyBindings,
+} from '../../types/launcher';
 import { actionName } from './actions';
-import { axisOutput, controllerChanges, curve, isBipolar, type AxisShape } from './model';
+import { axisOutput, controllerChanges, curve, isBipolar } from './model';
 
-const FUNCTIONS: AxisFunction[] = [
-  '',
-  'steering',
-  'throttle',
-  'brake',
-  'clutch',
-  'throttle_brake',
-  'look_x',
-  'look_y',
+const FUNCTIONS: readonly (readonly [AxisFunction, string])[] = [
+  [AxisFunction.NONE, 'none'],
+  [AxisFunction.STEERING, 'steering'],
+  [AxisFunction.THROTTLE, 'throttle'],
+  [AxisFunction.BRAKE, 'brake'],
+  [AxisFunction.CLUTCH, 'clutch'],
+  [AxisFunction.THROTTLE_BRAKE, 'throttle_brake'],
+  [AxisFunction.LOOK_X, 'look_x'],
+  [AxisFunction.LOOK_Y, 'look_y'],
 ];
-const SHAPES: AxisShape[] = [
-  'linear',
-  'progressive',
-  'degressive',
-  'bi-progressive',
-  'bi-degressive',
+const SHAPES: readonly (readonly [AxisShape, string])[] = [
+  [AxisShape.LINEAR, 'linear'],
+  [AxisShape.PROGRESSIVE, 'progressive'],
+  [AxisShape.DEGRESSIVE, 'degressive'],
+  [AxisShape.BI_PROGRESSIVE, 'bi-progressive'],
+  [AxisShape.BI_DEGRESSIVE, 'bi-degressive'],
 ];
 
 const EXTRA_ACTIONS = [
@@ -63,8 +69,10 @@ function useLiveAxes(running: boolean) {
     void (async () => {
       while (!stopped) {
         try {
-          const list = await call('controllers');
-          if (!stopped) setLive(new Map(list.map((c) => [c.name, c.axes.map((a) => a.value)])));
+          const { controllers } = await call('controllers');
+          if (!stopped) {
+            setLive(new Map(controllers.map((c) => [c.name, c.axes.map((a) => a.value)])));
+          }
         } catch {}
         await new Promise((r) => setTimeout(r, 100));
       }
@@ -83,7 +91,7 @@ export function useControllers() {
   const [draft, setDraft] = useState<Controller[] | null>(null);
 
   useEffect(() => setStored(undefined), [data]);
-  const saved = stored ?? data;
+  const saved = stored ?? data?.controllers;
   const current = draft ?? saved;
   const changes = useMemo(
     () => (draft && saved ? controllerChanges(saved, draft) : 0),
@@ -93,7 +101,7 @@ export function useControllers() {
   const save = async () => {
     if (!draft) return true;
     try {
-      setStored(await call('save_controllers', { controllers: draft }));
+      setStored((await call('saveControllers', { controllers: draft })).controllers);
       setDraft(null);
       reload();
       return true;
@@ -232,7 +240,7 @@ function ControllerView({
   const setAxis = (i: number, patch: Partial<ControllerAxis>) =>
     onChange({ axes: c.axes.map((a, j) => (j === i ? { ...a, ...patch } : a)) });
   const setButton = (i: number, action: string) =>
-    onChange({ buttons: c.buttons.map((b, j) => (j === i ? [b[0], action] : b)) });
+    onChange({ buttons: c.buttons.map((b, j) => (j === i ? { ...b, action } : b)) });
   const axes = c.axes ?? [];
   const buttons = c.buttons ?? [];
 
@@ -280,9 +288,9 @@ function ControllerView({
             </ListRow>
             <ListRow label={t('controls.controllers.ffb')}>
               <Switch
-                checked={c.force_feedback}
+                checked={c.forceFeedback}
                 label={t('controls.controllers.ffb')}
-                onChange={(force_feedback) => onChange({ force_feedback })}
+                onChange={(forceFeedback) => onChange({ forceFeedback })}
               />
             </ListRow>
             {axes.map((axis, i) => (
@@ -307,11 +315,13 @@ function ControllerView({
           </Heading>
           <div className="list">
             {buttons.length ? (
-              buttons.map(([button, action], i) => (
-                <ListRow key={i} label={button}>
+              buttons.map(({ action }, i) => (
+                <ListRow key={i} label={t('controls.controllers.button', { n: i + 1 })}>
                   <Select
                     className="w-64"
-                    label={t('controls.controllers.buttonAction', { button })}
+                    label={t('controls.controllers.buttonAction', {
+                      button: t('controls.controllers.button', { n: i + 1 }),
+                    })}
                     value={action}
                     options={[
                       ['', t('controls.function.none')] as const,
@@ -347,7 +357,7 @@ function AxisRow({
   lang: SupportedLanguage;
   onChange: (patch: Partial<ControllerAxis>) => void;
 }) {
-  const used = axis.function !== '';
+  const used = axis.function !== AxisFunction.NONE;
   const out = axisOutput(raw, axis, deadzone);
   const bipolar = isBipolar(axis.function);
   return (
@@ -378,7 +388,7 @@ function AxisRow({
           className="w-52"
           label={t('controls.controllers.function', { axis: axis.name })}
           value={axis.function}
-          options={FUNCTIONS.map((f) => [f, t(`controls.function.${f || 'none'}`)] as const)}
+          options={FUNCTIONS.map(([f, key]) => [f, t(`controls.function.${key}`)] as const)}
           onChange={(f) => onChange({ function: f })}
         />
         {used && (
@@ -392,7 +402,8 @@ function AxisRow({
               label={t('controls.controllers.curve', { axis: axis.name })}
               value={axis.shape}
               options={SHAPES.map(
-                (s) => [s, t(`controls.shape.${s}`), <CurveIcon key={s} shape={s} />] as const,
+                ([s, key]) =>
+                  [s, t(`controls.shape.${key}`), <CurveIcon key={s} shape={s} />] as const,
               )}
               onChange={(shape) => onChange({ shape })}
             />

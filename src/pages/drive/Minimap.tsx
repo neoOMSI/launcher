@@ -35,7 +35,7 @@ function fitTo(box: Box, aspect: number): Box {
 function pathOf(roads: MinimapData['roads'], main: boolean) {
   return roads
     .filter((r) => r.main === main)
-    .map((r) => r.points.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${-y}`).join(''))
+    .map((r) => r.points.map(({ x, y }, i) => `${i ? 'L' : 'M'}${x} ${-y}`).join(''))
     .join('');
 }
 
@@ -88,7 +88,7 @@ export const Minimap: React.FC<{
 
   const home = useMemo<Box>(() => {
     const focus = [...routeStops.map((s) => [s.x, s.y] as [number, number]), ...path.points];
-    const all = data.roads.flatMap((r) => r.points);
+    const all = data.roads.flatMap((r) => r.points.map(({ x, y }) => [x, y] as [number, number]));
     return (
       bounds(focus.length > 1 ? focus : all, focus.length > 1 ? 260 : 60) ?? [
         -500, -500, 1000, 1000,
@@ -150,7 +150,8 @@ export const Minimap: React.FC<{
     return !d?.moved;
   };
 
-  const chosenStop = pick.kind === 'stop' ? data.stops.find((s) => s.id === pick.id) : undefined;
+  const chosenStop =
+    pick.kind === 'stop' ? data.stops.find((s) => Number(s.id) === pick.id) : undefined;
   const chosenEntry =
     pick.kind === 'entry' ? data.entries.find((e) => e.index === pick.index) : undefined;
   const marker = chosenStop ? spawnPoint(chosenStop) : chosenEntry ? spawnPoint(chosenEntry) : null;

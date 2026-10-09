@@ -9,15 +9,12 @@ export function punctuality(stops: number, early: number, late: number): number 
 }
 
 // The engine's levels grow with the square root of the XP: level n starts at (n-1)² × 250.
-export function levelProgress({
-  xp,
-  level,
-  next_level_xp,
-}: Pick<Profile, 'xp' | 'level' | 'next_level_xp'>) {
+export function levelProgress(p: Pick<Profile, 'xp' | 'level' | 'nextLevelXp'>) {
+  const [xp, level, next] = [Number(p.xp), Number(p.level), Number(p.nextLevelXp)];
   const from = (level - 1) ** 2 * 250;
   return {
-    fraction: clamp((xp - from) / Math.max(1, next_level_xp - from)),
-    toNext: Math.max(0, next_level_xp - xp),
+    fraction: clamp((xp - from) / Math.max(1, next - from)),
+    toNext: Math.max(0, next - xp),
   };
 }
 

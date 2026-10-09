@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { Duty, ServerInfo } from '../types/launcher';
+import type { CommandArgs, ServerInfo } from '../types/launcher';
 
 export type Season = 'auto' | 'spring' | 'summer' | 'autumn' | 'winter';
 
@@ -181,8 +181,12 @@ export function encodeCustom(c: CustomWeather): string {
   ].join(';');
 }
 
-export function toDuty(choice: Choice, profile: string, server: ServerInfo | null): Duty {
-  const duty: Duty = {
+export function toDuty(
+  choice: Choice,
+  profile: string,
+  server: ServerInfo | null,
+): CommandArgs<'launch'> {
+  const duty: CommandArgs<'launch'> = {
     map: choice.map,
     bus: choice.bus,
     paint: choice.paint || undefined,
@@ -190,14 +194,13 @@ export function toDuty(choice: Choice, profile: string, server: ServerInfo | nul
     number: choice.number || undefined,
     plate: choice.plate || undefined,
     entry: choice.entry,
-    spawn: choice.stop?.spawn,
     time: choice.time,
     date: choice.date,
     traffic: choice.traffic,
     passengers: choice.passengers,
     schedule: choice.schedule,
     autostart: choice.autostart,
-    on_foot: choice.onFoot,
+    onFoot: choice.onFoot,
     profile,
     season: choice.season === 'auto' ? undefined : choice.season,
     weather:

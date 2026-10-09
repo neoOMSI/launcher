@@ -88,7 +88,7 @@ function Showroom({
         <div className={`absolute inset-0 ${hidden ? 'invisible' : ''}`}>
           <BusViewer
             bus={p.bus.file}
-            paint={choice.paint || p.bus.default_paint}
+            paint={choice.paint || p.bus.defaultPaint}
             paused={hidden}
             {...frame}
           />
@@ -128,24 +128,27 @@ export const DrivePage: React.FC = () => {
   const vehicles = useCommand('vehicles');
   const weather = useCommand('weather');
   const lines = useCommand('lines', choice.map ? { map: choice.map, date: choice.date } : null);
+  const mapList = maps.data?.maps;
+  const busList = vehicles.data?.vehicles;
+  const lineList = lines.data?.lines;
 
   useEffect(() => {
-    if (!vehicles.data?.length || !maps.data?.length) return;
+    if (!busList?.length || !mapList?.length) return;
     const patch: Partial<Choice> = {};
-    const bus = vehicles.data.find((v) => v.file === choice.bus) ?? vehicles.data[0];
-    if (bus.file !== choice.bus) Object.assign(patch, { bus: bus.file, paint: bus.default_paint });
-    if (!maps.data.some((m) => m.file === choice.map)) {
-      Object.assign(patch, { map: maps.data[0].file, line: '', tour: '', trip: '', stop: null });
+    const bus = busList.find((v) => v.file === choice.bus) ?? busList[0];
+    if (bus.file !== choice.bus) Object.assign(patch, { bus: bus.file, paint: bus.defaultPaint });
+    if (!mapList.some((m) => m.file === choice.map)) {
+      Object.assign(patch, { map: mapList[0].file, line: '', tour: '', trip: '', stop: null });
     }
     if (Object.keys(patch).length) update(patch);
-  }, [vehicles.data, maps.data]);
+  }, [busList, mapList]);
 
   useEffect(() => {
-    if (choice.free || choice.line || !lines.data?.length) return;
-    const line = lines.data.find((l) => l.user_allowed && l.tours.some((tr) => tr.runs));
+    if (choice.free || choice.line || !lineList?.length) return;
+    const line = lineList.find((l) => l.userAllowed && l.tours.some((tr) => tr.runs));
     const tour = line?.tours.find((tr) => tr.runs);
     if (line && tour) update({ line: line.name, tour: tour.number, trip: '' });
-  }, [lines.data, choice.free]);
+  }, [lineList, choice.free]);
 
   useEffect(() => {
     if (view === 'overview') return;
@@ -156,8 +159,8 @@ export const DrivePage: React.FC = () => {
 
   const error = maps.error || vehicles.error || weather.error;
   const data: DriveData | null =
-    maps.data && vehicles.data && weather.data
-      ? { maps: maps.data, vehicles: vehicles.data, weather: weather.data, lines: lines.data }
+    mapList && busList && weather.data
+      ? { maps: mapList, vehicles: busList, weather: weather.data.weather, lines: lineList }
       : null;
 
   return (
@@ -236,7 +239,7 @@ function Home({
   const p = picked(data, choice);
   const rows: [Step, string, string][] = [
     ['route', p.map?.friendly ?? '–', dutyLabel(choice, data, p)],
-    ['bus', p.bus?.name ?? t('drive.summary.noBus'), choice.paint || p.bus?.default_paint || ''],
+    ['bus', p.bus?.name ?? t('drive.summary.noBus'), choice.paint || p.bus?.defaultPaint || ''],
     [
       'time',
       server ? t('drive.summary.serverClock') : `${choice.time} · ${longDate(choice.date)}`,
@@ -257,12 +260,12 @@ function Home({
       </div>
 
       <div ref={plan} className="absolute bottom-8 left-9 w-[min(40rem,calc(100%-24rem))]">
-        {p.bus && p.bus.missing_packs.length > 0 && (
+        {p.bus && p.bus.missingPacks.length > 0 && (
           <p className="mb-3 flex items-center gap-2.5 text-[15px]">
             <Icon name="warning" size={20} style={{ color: 'var(--color-warn)', flexShrink: 0 }} />
             <span className="truncate">
               <span className="font-semibold text-heading">{t('drive.bus.partsMissing')}</span>
-              <span className="text-muted"> · {p.bus.missing_packs.join(', ')}</span>
+              <span className="text-muted"> · {p.bus.missingPacks.join(', ')}</span>
             </span>
           </p>
         )}
@@ -434,7 +437,7 @@ function BusHeader({ p, ref }: { p: Picked; ref?: React.Ref<HTMLDivElement> }) {
             <Icon name="chevron_left" size={20} />
           </button>
         )}
-        <span className="truncate">{choice.paint || p.bus?.default_paint}</span>
+        <span className="truncate">{choice.paint || p.bus?.defaultPaint}</span>
         {paints.length > 1 && (
           <button
             type="button"
@@ -515,7 +518,7 @@ function RouteVisual({ data, p }: { data: DriveData; p: Picked }) {
   const start = choice.stop
     ? t('drive.route.stopStart', { name: choice.stop.name })
     : choice.entry >= 0
-      ? (p.map?.entry_points.find((e) => e.index === choice.entry)?.name ?? '')
+      ? (p.map?.entryPoints.find((e) => e.index === choice.entry)?.name ?? '')
       : choice.free
         ? t('drive.route.autoFirst')
         : t('drive.route.autoNearest');
@@ -531,7 +534,7 @@ function RouteVisual({ data, p }: { data: DriveData; p: Picked }) {
             pick={pick}
             inset={{ top: 140, right: 32, bottom: 48, left: 48 }}
             onPickStop={(s) =>
-              update({ stop: { id: s.id, name: s.name, spawn: s.spawn }, entry: -1 })
+              update({ stop: { id: Number(s.id), name: s.name, spawn: s.spawn }, entry: -1 })
             }
             onPickEntry={(e) => update({ entry: e.index, stop: null })}
           />
@@ -603,11 +606,11 @@ function Launch({ data }: { data: DriveData }) {
 
   return (
     <>
-      {situations.data && situations.data.length > 0 && (
+      {situations.data && situations.data.situations.length > 0 && (
         <button
           type="button"
           className="mb-2 flex items-center justify-center gap-2 py-1.5 text-[15px] font-medium text-muted transition-colors hover:text-ink"
-          onClick={() => launch(situations.data![0].file)}
+          onClick={() => launch(situations.data!.situations[0].file)}
         >
           <Icon name="history" size={18} />
           {t('drive.start.continue')}

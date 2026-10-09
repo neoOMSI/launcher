@@ -35,8 +35,8 @@ export const UpdateBanner: React.FC = () => {
     if (!ready || !enabled) return;
     let live = true;
     const check = () =>
-      call('update_check')
-        .then((r) => live && setRelease(r))
+      call('updateCheck')
+        .then((r) => live && setRelease(r.release ?? null))
         .catch(() => {});
     check();
     const timer = setInterval(check, RECHECK_MS);

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
+import { create } from '@bufbuild/protobuf';
 import { blocks, excerpt, markStarted, nextLesson, readStarts } from '../pages/tutorials/lessons';
+import { TutorialSchema } from '../types/launcher';
 
 const TEXT = 'Intro paragraph.\n• First step\n• Second step\n\nClosing words.';
 
@@ -23,7 +25,7 @@ describe('tutorial text', () => {
 describe('tutorial progress', () => {
   beforeEach(() => localStorage.clear());
 
-  const list = [3, 1, 2].map((number) => ({ number, title: `T${number}`, text: '' }));
+  const list = [3, 1, 2].map((number) => create(TutorialSchema, { number, title: `T${number}` }));
 
   it('remembers started lessons and suggests the next one', () => {
     expect(readStarts()).toEqual({});

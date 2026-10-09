@@ -4,3 +4,4 @@ dist-electron
 release
 pnpm-lock.yaml
 *.tsbuildinfo
+src/types/launcher_pb.ts

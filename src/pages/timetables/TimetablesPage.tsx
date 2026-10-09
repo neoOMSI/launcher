@@ -56,7 +56,7 @@ function useMapsWithLines(maps: MapInfo[] | undefined) {
     Promise.all(
       maps.map((m) =>
         call('lines', { map: m.file, date })
-          .then((l) => [m.file, (l ?? []).length > 0] as const)
+          .then((l) => [m.file, l.lines.length > 0] as const)
           .catch(() => [m.file, true] as const),
       ),
     ).then((entries) => live && setHas(Object.fromEntries(entries)));
@@ -85,7 +85,7 @@ export const TimetablesPage: React.FC = () => {
   const { choice } = useDuty();
   const { go } = useNav();
   const maps = useCommand('maps');
-  const has = useMapsWithLines(maps.data);
+  const has = useMapsWithLines(maps.data?.maps);
   const [map, setMap] = useState(choice.map);
   const [date, setDate] = useState(choice.date || todayIso());
   const [stop, setStop] = useState('');
@@ -93,10 +93,10 @@ export const TimetablesPage: React.FC = () => {
   const [view, setView] = useState<View>('departures');
   const dateInput = useRef<HTMLInputElement>(null);
 
-  const usable = (maps.data ?? []).filter((m) => has[m.file] !== false);
+  const usable = (maps.data?.maps ?? []).filter((m) => has[m.file] !== false);
   const current = usable.find((m) => m.file === map) ?? usable[0];
   const lines = useCommand('lines', current ? { map: current.file, date } : null);
-  const all = lines.data ?? [];
+  const all = lines.data?.lines ?? [];
   const lineFilter = all.some((l) => l.name === line) ? line : '';
 
   let body: React.ReactNode;
@@ -269,7 +269,7 @@ export const TimetablesPage: React.FC = () => {
                   >
                     <LineBadge line={l.name} size="sm" />
                     <span className="min-w-0 flex-1 truncate">{(l.termini ?? []).join(' – ')}</span>
-                    {!l.user_allowed && (
+                    {!l.userAllowed && (
                       <span className="shrink-0 text-[13px] text-muted">{t('timetables.ai')}</span>
                     )}
                   </button>
@@ -411,7 +411,7 @@ function DepartureRow({
   onToggle: () => void;
   onDrive: (whole: boolean) => void;
 }) {
-  const drivable = d.line.user_allowed;
+  const drivable = d.line.userAllowed;
   const facts = [
     t('timetables.from', { stop: d.stop ?? d.trip.from }),
     t('timetables.tourN', { n: d.tour.number }),
@@ -514,7 +514,7 @@ function TripDetail({
           );
         })}
       </ol>
-      {line.user_allowed && (
+      {line.userAllowed && (
         <div className="flex shrink-0 flex-col items-stretch gap-2">
           <button
             type="button"
@@ -587,7 +587,7 @@ function Tours({
             <h3 className="min-w-0 flex-1 truncate font-sans text-[15px] font-semibold text-muted">
               {(l.termini ?? []).join(' – ')}
             </h3>
-            {!l.user_allowed && (
+            {!l.userAllowed && (
               <span className="text-[14px] text-muted">{t('timetables.aiOnly')}</span>
             )}
           </div>
@@ -628,7 +628,7 @@ function TourRow({
   onToggle: () => void;
   onDrive: (trip?: TripInfo) => void;
 }) {
-  const drivable = line.user_allowed;
+  const drivable = line.userAllowed;
   return (
     <div>
       <div
@@ -659,8 +659,8 @@ function TourRow({
                 <span className="size-1.5 shrink-0 rounded-full bg-ok" />
                 {t('timetables.runs')}
               </>
-            ) : tour.next_run ? (
-              t('timetables.nextRun', { date: longDate(tour.next_run) })
+            ) : tour.nextRun ? (
+              t('timetables.nextRun', { date: longDate(tour.nextRun) })
             ) : (
               t('timetables.notRunning')
             )}

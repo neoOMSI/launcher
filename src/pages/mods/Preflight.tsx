@@ -6,10 +6,10 @@ import { t } from '../../i18n';
 import { call, errorText, useCommand } from '../../lib/engine';
 import { bytes, number } from '../../lib/format';
 import { useToast } from '../../lib/nav';
-import type { InstallMode, SourceInfo } from '../../types/launcher';
-import { autoTakes, canInstall, fileName } from './logic';
+import { InstallMode, type SourceInfo } from '../../types/launcher';
+import { autoTakes, canInstall, fileName, modeKey } from './logic';
 
-const MODES: readonly InstallMode[] = ['auto', 'extract', 'inplace'];
+const MODES = [InstallMode.AUTO, InstallMode.EXTRACT, InstallMode.IN_PLACE];
 
 export const Preflight: React.FC<{
   path: string;
@@ -20,14 +20,14 @@ export const Preflight: React.FC<{
 }> = ({ path, position, total, onStarted, onDone }) => {
   const info = useCommand('modinfo', { path });
   const toast = useToast();
-  const [mode, setMode] = useState<InstallMode>('auto');
+  const [mode, setMode] = useState(InstallMode.AUTO);
   const [busy, setBusy] = useState(false);
   const name = fileName(path);
 
   const install = async () => {
     setBusy(true);
     try {
-      await call('start_install', { path, mode: info.data?.is_archive ? mode : 'auto' });
+      await call('startInstall', { path, mode: info.data?.isArchive ? mode : InstallMode.AUTO });
       toast(t('mods.sheet.started', { name }), 'tip');
       onStarted();
       onDone();
@@ -81,24 +81,24 @@ function Facts({
   mode: InstallMode;
   onMode: (mode: InstallMode) => void;
 }) {
-  if (!info.is_archive) return <p className="text-[15.5px] text-muted">{t('mods.sheet.folder')}</p>;
+  if (!info.isArchive) return <p className="text-[15.5px] text-muted">{t('mods.sheet.folder')}</p>;
 
   const facts: [string, string][] = [
-    [t('mods.sheet.archive'), bytes(info.archive_bytes)],
-    [t('mods.sheet.unpacked'), bytes(info.unpacked_bytes)],
+    [t('mods.sheet.archive'), bytes(info.archiveBytes)],
+    [t('mods.sheet.unpacked'), bytes(info.unpackedBytes)],
     [t('mods.sheet.files'), number(info.files)],
-    [t('mods.sheet.free'), bytes(info.free_bytes)],
+    [t('mods.sheet.free'), bytes(info.freeBytes)],
   ];
-  const room = { needed: bytes(info.needed_bytes), free: bytes(info.free_bytes) };
+  const room = { needed: bytes(info.neededBytes), free: bytes(info.freeBytes) };
   const hint = !canInstall(info, mode)
-    ? mode === 'inplace'
-      ? info.is_zip
-        ? t('mods.mode.inplaceNo', { reason: info.in_place })
+    ? mode === InstallMode.IN_PLACE
+      ? info.isZip
+        ? t('mods.mode.inplaceNo', { reason: info.inPlace })
         : t('mods.mode.inplaceZipOnly')
       : t('mods.mode.noSpace')
-    : mode === 'auto'
-      ? t(`mods.mode.autoWill.${autoTakes(info)}`)
-      : t(`mods.mode.${mode}Hint`);
+    : mode === InstallMode.AUTO
+      ? t(`mods.mode.autoWill.${modeKey(autoTakes(info))}`)
+      : t(`mods.mode.${modeKey(mode)}Hint`);
 
   return (
     <>
@@ -121,7 +121,7 @@ function Facts({
         fill
         label={t('mods.sheet.mode')}
         value={mode}
-        options={MODES.map((m) => [m, t(`mods.mode.${m}`)] as const)}
+        options={MODES.map((m) => [m, t(`mods.mode.${modeKey(m)}`)] as const)}
         onChange={onMode}
       />
       <p

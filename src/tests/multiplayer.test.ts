@@ -14,7 +14,8 @@ import {
   serverTitle,
 } from '../pages/multiplayer/servers';
 import type { Choice } from '../lib/duty';
-import type { MapInfo, ServerInfo } from '../types/launcher';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import { ServerInfoSchema, type MapInfo } from '../types/launcher';
 
 const MAPS = [
   { name: 'Grundorf', friendly: 'Grundorf', file: 'maps/Grundorf/global.cfg' },
@@ -25,19 +26,8 @@ const MAPS = [
   },
 ] as MapInfo[];
 
-const server = (s: Partial<ServerInfo>): ServerInfo => ({
-  address: 'a',
-  name: '',
-  official: false,
-  motd: '',
-  map: '',
-  time: '',
-  weather: '',
-  players: 0,
-  max_players: 0,
-  error: null,
-  ...s,
-});
+const server = (s: MessageInitShape<typeof ServerInfoSchema>) =>
+  create(ServerInfoSchema, { address: 'a', ...s });
 
 const SERVERS = [
   server({
@@ -79,10 +69,10 @@ describe('server list', () => {
   });
 
   it('fills the player bar', () => {
-    expect(fill({ players: 4, max_players: 12 })).toBeCloseTo(1 / 3);
-    expect(fill({ players: 0, max_players: 0 })).toBe(0);
-    expect(isFull({ players: 10, max_players: 10 })).toBe(true);
-    expect(isFull({ players: 0, max_players: 0 })).toBe(false);
+    expect(fill({ players: 4, maxPlayers: 12 })).toBeCloseTo(1 / 3);
+    expect(fill({ players: 0, maxPlayers: 0 })).toBe(0);
+    expect(isFull({ players: 10, maxPlayers: 10 })).toBe(true);
+    expect(isFull({ players: 0, maxPlayers: 0 })).toBe(false);
   });
 
   it('saves only the player’s own servers', () => {
@@ -110,8 +100,8 @@ describe('joining and hosting', () => {
     expect(target).toMatchObject({
       address: 'OMSI-7KQ2-M4XD',
       name: 'OMSI-7KQ2-M4XD',
-      error: null,
     });
+    expect(target.error).toBeUndefined();
   });
 
   it('reads and writes the hosting flag on the duty', () => {

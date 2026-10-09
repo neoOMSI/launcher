@@ -7,14 +7,15 @@ export function useNames() {
   const vehicles = useCommand('vehicles');
   return {
     map: (map: string) =>
-      maps.data?.find((m) => m.file === map || m.friendly === map || m.name === map)?.friendly ??
-      contentName(map),
+      maps.data?.maps.find((m) => m.file === map || m.friendly === map || m.name === map)
+        ?.friendly ?? contentName(map),
     bus: (bus: string) =>
-      vehicles.data?.find((v) => v.file === bus || v.name === bus)?.name ?? contentName(bus),
+      vehicles.data?.vehicles.find((v) => v.file === bus || v.name === bus)?.name ??
+      contentName(bus),
   };
 }
 
-export function dutyName(line: string | null, tour: string | null) {
+export function dutyName(line?: string, tour?: string) {
   if (!line) return t('profile.freeDrive');
   return tour ? t('profile.lineTour', { line: lineLabel(line), tour }) : lineLabel(line);
 }

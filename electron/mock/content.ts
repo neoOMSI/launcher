@@ -1,23 +1,38 @@
-import type {
-  Controller,
-  IbisInfo,
-  KeyBindings,
-  LineInfo,
-  MapInfo,
-  Minimap,
-  ModsStatus,
-  Profile,
-  ServerInfo,
-  Session,
-  Settings,
-  StopInfo,
-  TourInfo,
-  TripInfo,
-  Tutorial,
-  VehicleInfo,
-  WeatherInfo,
+import { create, type DescMessage, type MessageInitShape } from '@bufbuild/protobuf';
+import {
+  AxisFunction,
+  AxisShape,
+  ControllerSchema,
+  IbisInfoSchema,
+  InstallMode,
+  InstallState,
+  KeyBindingsSchema,
+  LineInfoSchema,
+  MapInfoSchema,
+  MinimapRoadSchema,
+  MinimapSchema,
+  MinimapStopSchema,
+  ModsStatusSchema,
+  ProfileSchema,
+  ServerInfoSchema,
+  SessionSchema,
+  TripInfoSchema,
+  TutorialSchema,
+  VehicleInfoSchema,
+  WeatherInfoSchema,
+  type IbisInfo,
+  type LineInfo,
+  type Minimap,
+  type ModsStatus,
+  type Profile,
+  type Session,
+  type Settings,
+  type TripInfo,
 } from '../../src/types/launcher';
 import { pageDefaults } from '../../src/fixtures/settings';
+
+const list = <D extends DescMessage>(schema: D, items: MessageInitShape<D>[]) =>
+  items.map((item) => create(schema, item));
 
 export const CONFIG = {
   root: 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\OMSI 2',
@@ -25,14 +40,14 @@ export const CONFIG = {
   profile: 'Jakob Weber',
 };
 
-export const MAPS: MapInfo[] = [
+export const MAPS = list(MapInfoSchema, [
   {
     name: 'Grundorf',
     friendly: 'Grundorf',
     file: 'maps/Grundorf/global.cfg',
     description:
       'A small fictional town for learning the ropes: three lines, a station and a market square.',
-    entry_points: [
+    entryPoints: [
       { index: 0, name: 'Depot' },
       { index: 1, name: 'Hauptbahnhof' },
       { index: 2, name: 'Marktplatz' },
@@ -46,7 +61,7 @@ export const MAPS: MapInfo[] = [
     file: 'maps/Berlin-Spandau/global.cfg',
     description:
       'West Berlin in 1989: the double-decker lines around the Spandau old town, with real timetables.',
-    entry_points: [
+    entryPoints: [
       { index: 0, name: 'Betriebshof Spandau' },
       { index: 1, name: 'Rathaus Spandau' },
     ],
@@ -58,85 +73,87 @@ export const MAPS: MapInfo[] = [
     friendly: 'Neuhausen',
     file: 'maps/Neuhausen/global.cfg',
     description: 'A community map of a southern German town with regional lines.',
-    entry_points: [{ index: 0, name: 'ZOB' }],
+    entryPoints: [{ index: 0, name: 'ZOB' }],
     hof: 'Neuhausen.hof',
     installed: true,
   },
-];
+]);
 
-const vehicle = (v: Partial<VehicleInfo> & Pick<VehicleInfo, 'name' | 'manufacturer'>) =>
-  ({
-    type_name: v.name,
+const vehicle = (
+  v: MessageInitShape<typeof VehicleInfoSchema> & { name: string; manufacturer: string },
+) =>
+  create(VehicleInfoSchema, {
+    typeName: v.name,
     file: `Vehicles/${v.manufacturer}/${v.name}.bus`,
     folder: v.manufacturer,
     description: '',
-    default_paint: 'Default paint',
+    defaultPaint: 'Default paint',
     paints: ['Default paint'],
     hofs: ['Grundorf.hof', 'Spandau 1989.hof'],
     installed: false,
-    missing_packs: [],
+    missingPacks: [],
     numbers: [],
     ...v,
-  }) satisfies VehicleInfo;
+  });
 
-export const VEHICLES: VehicleInfo[] = [
+export const VEHICLES = [
   vehicle({
     name: 'MAN SD200 (SD80)',
     manufacturer: 'MAN',
-    type_name: 'SD200 (SD80)',
+    typeName: 'SD200 (SD80)',
     description: 'The Berlin double-decker of the late 1970s: two doors, 4-speed automatic.',
-    default_paint: 'BVG beige',
+    defaultPaint: 'BVG beige',
     paints: ['BVG beige', 'BVG beige (advert "Pop")', 'Grundorf white', 'Spandau jubilee'],
     numbers: [
-      ['2401', 'B-V 2401'],
-      ['2417', 'B-V 2417'],
-      ['2452', 'B-V 2452'],
+      { number: '2401', plate: 'B-V 2401' },
+      { number: '2417', plate: 'B-V 2417' },
+      { number: '2452', plate: 'B-V 2452' },
     ],
   }),
   vehicle({
     name: 'MAN SD202 (D92)',
     manufacturer: 'MAN',
-    type_name: 'SD202 (D92)',
+    typeName: 'SD202 (D92)',
     description: 'The 1985 successor with a lower floor and the new BVG livery.',
-    default_paint: 'BVG beige',
+    defaultPaint: 'BVG beige',
     paints: ['BVG beige', 'BVG corporate'],
     numbers: [
-      ['3001', 'B-V 3001'],
-      ['3018', 'B-V 3018'],
+      { number: '3001', plate: 'B-V 3001' },
+      { number: '3018', plate: 'B-V 3018' },
     ],
   }),
   vehicle({
     name: 'MAN SL200',
     manufacturer: 'MAN',
-    type_name: 'SL200',
+    typeName: 'SL200',
     description: 'The standard city single-decker, manual or automatic gearbox.',
-    default_paint: 'Grundorf white',
+    defaultPaint: 'Grundorf white',
     paints: ['Grundorf white', 'VÖV green', 'Hamburg red'],
   }),
   vehicle({
     name: 'MAN NL202',
     manufacturer: 'MAN',
-    type_name: 'NL202 (2-door)',
+    typeName: 'NL202 (2-door)',
     description: 'Low-floor single-decker of the early 1990s.',
-    default_paint: 'Grundorf white',
+    defaultPaint: 'Grundorf white',
     paints: ['Grundorf white', 'Neuhausen yellow', 'Regional blue', 'Plain white', 'Red', 'Advert'],
   }),
   vehicle({
     name: 'Mercedes-Benz O 530',
     manufacturer: 'Mercedes-Benz',
-    type_name: 'O 530 Citaro',
+    typeName: 'O 530 Citaro',
     file: 'Vehicles/O530/O530.bus',
     folder: 'O530',
     description: 'A community repaint pack of the first Citaro generation.',
     installed: true,
-    default_paint: 'Factory white',
+    defaultPaint: 'Factory white',
     paints: ['Factory white', 'Neuhausen yellow'],
-    missing_packs: ['Citaro sound pack 2.1'],
+    missingPacks: ['Citaro sound pack 2.1'],
   }),
   vehicle({
     name: 'Neoplan N 4016',
     manufacturer: 'Neoplan',
-    type_name: 'N 4016',
+    typeName: 'N 4016',
     file: 'Vehicles/N4016/N4016.bus',
     folder: 'N4016',
     description: 'Centroliner predecessor with the characteristic big windscreen.',
@@ -146,7 +163,7 @@ export const VEHICLES: VehicleInfo[] = [
   vehicle({
     name: 'Volvo 7700',
     manufacturer: 'Volvo',
-    type_name: '7700',
+    typeName: '7700',
     file: 'Vehicles/Volvo7700/7700.bus',
     folder: 'Volvo7700',
     description: 'Swedish low-floor single-decker.',
@@ -154,12 +171,12 @@ export const VEHICLES: VehicleInfo[] = [
   }),
 ];
 
-export const WEATHER: WeatherInfo[] = [
+export const WEATHER = list(WeatherInfoSchema, [
   {
     name: 'Clear summer morning',
     file: 'weather\\clear_summer.owt',
     description: '',
-    fog_m: 50000,
+    fogM: 50000,
     temp: 21,
     clouds: 'none',
     precip: 'dry',
@@ -170,7 +187,7 @@ export const WEATHER: WeatherInfo[] = [
     name: 'Overcast',
     file: 'weather\\overcast.owt',
     description: '',
-    fog_m: 12000,
+    fogM: 12000,
     temp: 14,
     clouds: 'overcast',
     precip: 'dry',
@@ -181,7 +198,7 @@ export const WEATHER: WeatherInfo[] = [
     name: 'Autumn rain',
     file: 'weather\\autumn_rain.owt',
     description: '',
-    fog_m: 4000,
+    fogM: 4000,
     temp: 9,
     clouds: 'overcast',
     precip: 'rain',
@@ -192,7 +209,7 @@ export const WEATHER: WeatherInfo[] = [
     name: 'Morning fog',
     file: 'weather\\fog.owt',
     description: '',
-    fog_m: 300,
+    fogM: 300,
     temp: 6,
     clouds: 'stratus',
     precip: 'dry',
@@ -203,14 +220,14 @@ export const WEATHER: WeatherInfo[] = [
     name: 'Winter snowfall',
     file: 'weather\\snowfall.owt',
     description: '',
-    fog_m: 1500,
+    fogM: 1500,
     temp: -3,
     clouds: 'overcast',
     precip: 'snow',
     snow: true,
     installed: true,
   },
-];
+]);
 
 interface LineDef {
   name: string;
@@ -339,22 +356,22 @@ function runsOn(days: string, date: Date): boolean {
   return DAY[d] === days;
 }
 
-function nextRun(days: string, date: Date): string | null {
+function nextRun(days: string, date: Date): string | undefined {
   for (let i = 1; i <= 7; i++) {
     const next = new Date(date);
     next.setDate(date.getDate() + i);
     if (runsOn(days, next)) return next.toISOString().slice(0, 10);
   }
-  return null;
+  return undefined;
 }
 
 function trip(def: LineDef, index: number, departure: number, reverse: boolean): TripInfo {
   const stops = reverse ? [...def.stops].reverse() : def.stops;
-  const times: StopInfo[] = stops.map((name, i) => {
+  const times = stops.map((name, i) => {
     const t = departure + i * def.minutes * 60;
     return { name, arr: i === 0 ? -1 : t, dep: i === stops.length - 1 ? -1 : t + 20 };
   });
-  return {
+  return create(TripInfoSchema, {
     name: `${def.name}_${reverse ? 'B' : 'A'}`,
     index,
     line: def.name,
@@ -364,7 +381,7 @@ function trip(def: LineDef, index: number, departure: number, reverse: boolean):
     arrival: departure + (stops.length - 1) * def.minutes * 60,
     stops: times,
     km: def.km,
-  };
+  });
 }
 
 export function lines(map: string, date: string): LineInfo[] {
@@ -372,7 +389,7 @@ export function lines(map: string, date: string): LineInfo[] {
   const name = MAPS.find((m) => m.file === map)?.name ?? map;
   return (LINE_DEFS[name] ?? []).map((def) => {
     const run = (def.stops.length - 1) * def.minutes * 60;
-    const tours: TourInfo[] = Array.from({ length: def.tours }, (_, t) => {
+    const tours = Array.from({ length: def.tours }, (_, t) => {
       const start = def.firstDeparture + t * def.headway * 60;
       const trips = Array.from({ length: def.trips ?? 6 }, (_, i) =>
         trip(def, i, start + i * (run + 6 * 60), i % 2 === 1),
@@ -380,91 +397,91 @@ export function lines(map: string, date: string): LineInfo[] {
       const runs = runsOn(def.days, day);
       return {
         number: String(t + 1),
-        ai_group: `${def.name}-${t + 1}`,
+        aiGroup: `${def.name}-${t + 1}`,
         first: trips[0].departure,
         last: trips[trips.length - 1].arrival,
         days: def.days,
         runs,
-        next_run: runs ? null : nextRun(def.days, day),
+        nextRun: runs ? undefined : nextRun(def.days, day),
         trips,
       };
     });
-    return {
+    return create(LineInfoSchema, {
       name: def.name,
-      user_allowed: !def.aiOnly,
+      userAllowed: !def.aiOnly,
       termini: [def.stops[0], def.stops[def.stops.length - 1]],
       tours,
-    };
+    });
   });
 }
 
 export function minimap(mapFile: string): Minimap {
   const map = MAPS.find((m) => m.file === mapFile);
   const defs = LINE_DEFS[map?.name ?? ''] ?? [];
-  const roads: Minimap['roads'] = [];
+  const roads: MessageInitShape<typeof MinimapRoadSchema>[] = [];
   for (let i = -3; i <= 3; i++) {
     roads.push({
       main: i === 0,
       width: 6,
       points: [
-        [-900, i * 260],
-        [900, i * 260 + 40],
+        { x: -900, y: i * 260 },
+        { x: 900, y: i * 260 + 40 },
       ],
     });
     roads.push({
       main: false,
       width: 5,
       points: [
-        [i * 280, -900],
-        [i * 280 + 30, 900],
+        { x: i * 280, y: -900 },
+        { x: i * 280 + 30, y: 900 },
       ],
     });
   }
-  const stops: Minimap['stops'] = [];
+  const stops: MessageInitShape<typeof MinimapStopSchema>[] = [];
   defs.forEach((def, l) => {
     def.stops.forEach((name, k) => {
       if (stops.some((s) => s.name === name)) return;
       const x = -780 + k * 280 + l * 30;
       const y = (l - 1) * 260 + k * 7;
-      stops.push({ id: stops.length + 1, name, x, y, spawn: `${x - 14},${y},90,0` });
+      stops.push({ id: BigInt(stops.length + 1), name, x, y, spawn: `${x - 14},${y},90,0` });
     });
   });
-  const entries = (map?.entry_points ?? []).map((e, k) => ({
+  const entries = (map?.entryPoints ?? []).map((e, k) => ({
     index: e.index,
     name: e.name,
     x: -860 + k * 140,
     y: -700,
     spawn: `${-860 + k * 140},-700,0,0`,
   }));
-  return { map: mapFile, roads, stops, entries };
+  return create(MinimapSchema, { map: mapFile, roads, stops, entries });
 }
 
 export function ibis(line: string, hof: string): IbisInfo {
   const def = Object.values(LINE_DEFS)
     .flat()
     .find((d) => d.name === line);
-  if (!def) return { hof, line_code: '', routes: [] };
+  if (!def) return create(IbisInfoSchema, { hof });
   const code = line.replace(/\D/g, '').padStart(3, '0');
-  return {
+  return create(IbisInfoSchema, {
     hof,
-    line_code: code,
+    lineCode: code,
     routes: [
       {
         code: '01',
         route: `${code}01`,
         name: `${def.stops[0]} → ${def.stops[def.stops.length - 1]}`,
-        terminus_code: 11,
+        terminusCode: 11,
         terminus: def.stops[def.stops.length - 1],
       },
       {
         code: '02',
         route: `${code}02`,
         name: `${def.stops[def.stops.length - 1]} → ${def.stops[0]}`,
-        terminus_code: 12,
+        terminusCode: 12,
         terminus: def.stops[0],
       },
     ],
-  };
+  });
 }
 
 const HOUR = 3600;
@@ -474,18 +491,18 @@ function run(
   ago: number,
   map: string,
   bus: string,
-  line: string | null,
+  line: string | undefined,
   km: number,
   minutes: number,
-  extra: Partial<Session> = {},
+  extra: MessageInitShape<typeof SessionSchema> = {},
 ): Session {
-  return {
-    time: now() - ago,
+  return create(SessionSchema, {
+    time: BigInt(now() - ago),
     driver: CONFIG.profile,
     map,
     bus,
     line,
-    tour: line ? '2' : null,
+    tour: line ? '2' : undefined,
     seconds: minutes * 60,
     metres: km * 1000,
     stops: Math.round(km * 3),
@@ -500,7 +517,7 @@ function run(
     comfort: 79,
     ticketing: 93,
     ...extra,
-  };
+  });
 }
 
 export const PROFILES = ['Jakob Weber', 'Testfahrer'];
@@ -515,7 +532,7 @@ const RUNS: Record<string, () => Session[]> = {
   'Jakob Weber': () => [
     run(2 * HOUR, SPANDAU, SD200, '92', 31.4, 96, { early: 0, late: 4, tour: '3' }),
     run(26 * HOUR, 'Grundorf', NL202, '24', 12.8, 44, { crashes: 1, driving: 71, jolts: 9 }),
-    run(50 * HOUR, 'Grundorf', SL200, null, 6.1, 22, {
+    run(50 * HOUR, 'Grundorf', SL200, undefined, 6.1, 22, {
       stops: 0,
       early: 0,
       late: 0,
@@ -533,7 +550,7 @@ const RUNS: Record<string, () => Session[]> = {
     run(195 * HOUR, SPANDAU, SD202, '13N', 24.9, 77, { tour: '1', comfort: 92, driving: 91 }),
     run(242 * HOUR, 'Grundorf', SL200, '24', 13.1, 47),
     run(290 * HOUR, SPANDAU, SD200, '137', 21.6, 69, { late: 5, jolts: 6 }),
-    run(338 * HOUR, 'Neuhausen', 'Vehicles/N4016/N4016.bus', null, 4.3, 15, {
+    run(338 * HOUR, 'Neuhausen', 'Vehicles/N4016/N4016.bus', undefined, 4.3, 15, {
       stops: 0,
       early: 0,
       late: 0,
@@ -549,7 +566,7 @@ const RUNS: Record<string, () => Session[]> = {
       driving: 62,
       crashes: 2,
     }),
-    run(220 * HOUR, 'Grundorf', SL200, null, 3.2, 12, {
+    run(220 * HOUR, 'Grundorf', SL200, undefined, 3.2, 12, {
       driver: 'Testfahrer',
       stops: 0,
       early: 0,
@@ -564,14 +581,14 @@ export function profile(name: string): Profile {
   if (name !== CONFIG.profile) {
     const sessions = RUNS[name]?.() ?? [];
     const sum = (f: (s: Session) => number) => sessions.reduce((n, s) => n + f(s), 0);
-    return {
+    return create(ProfileSchema, {
       name,
       file: `Drivers\\${name}.odr`,
       hours: sum((s) => s.seconds) / 3600,
       km: sum((s) => s.metres) / 1000,
-      xp: sessions.length ? 140 : 0,
-      level: 1,
-      next_level_xp: 250,
+      xp: sessions.length ? 140n : 0n,
+      level: 1n,
+      nextLevelXp: 250n,
       stops: sum((s) => s.stops),
       early: sum((s) => s.early),
       late: sum((s) => s.late),
@@ -579,21 +596,21 @@ export function profile(name: string): Profile {
       cash: sum((s) => s.cash),
       crashes: sum((s) => s.crashes),
       hurt: sum((s) => s.hurt),
-      rating_driving: sessions.length ? 62 : 100,
-      rating_comfort: 100,
-      rating_tickets: 100,
+      ratingDriving: sessions.length ? 62 : 100,
+      ratingComfort: 100,
+      ratingTickets: 100,
       sessions,
       exists: true,
-    };
+    });
   }
-  return {
+  return create(ProfileSchema, {
     name,
     file: `Drivers\\${name}.odr`,
     hours: 41.6,
     km: 1284.3,
-    xp: 5810,
-    level: 5,
-    next_level_xp: 6250,
+    xp: 5810n,
+    level: 5n,
+    nextLevelXp: 6250n,
     stops: 3912,
     early: 214,
     late: 388,
@@ -601,125 +618,126 @@ export function profile(name: string): Profile {
     cash: 8044.5,
     crashes: 7,
     hurt: 1,
-    rating_driving: 84,
-    rating_comfort: 77,
-    rating_tickets: 91,
+    ratingDriving: 84,
+    ratingComfort: 77,
+    ratingTickets: 91,
     sessions: RUNS[name](),
     exists: true,
-  };
+  });
 }
 
 export const MODS: ModsStatus = {
-  content_dir: 'C:\\Users\\jakob\\.neoomsi\\content',
-  folders: [
-    ['Vehicles', 7],
-    ['maps', 3],
-    ['Sceneryobjects', 1243],
-    ['Splines', 318],
-    ['Texture', 96],
-    ['Fonts', 22],
-    ['Plugins', 0],
-    ['TicketPacks', 2],
-    ['Drivers', 4],
-    ['Weather', 0],
-    ['Announcements', 11],
-    ['Humans', 38],
-    ['Money', 1],
-    ['Scripts', 0],
-    ['Trains', 0],
-    ['Situations', 0],
-    ['Inputs', 0],
-    ['Sound', 54],
-  ],
-  inbox: 'C:\\Users\\jakob\\.neoomsi\\content\\Mods',
-  inbox_items: ['Ruhrbania_Busse_v2.zip'],
-  waiting: ['BVG_GN_Repaints'],
-  archives: [['Neuhausen_v1.4.zip', 812_000_000]],
-  free_bytes: 214_000_000_000,
-  cleaned: [
-    'removed 1.4 GB of partial files of an interrupted install (C:\\Users\\jakob\\.neoomsi\\content\\.install-staging\\18044-2)',
-  ],
-  jobs: [
-    {
-      id: 3,
-      source: 'C:\\Users\\jakob\\Downloads\\MAN_Lion_City_G_2020.zip',
-      name: 'MAN_Lion_City_G_2020',
-      state: 'unpacking',
-      mode: 'auto',
-      files_done: 142,
-      files_total: 530,
-      bytes_done: 412_000_000,
-      bytes_total: 1_380_000_000,
-      free_bytes: 214_000_000_000,
-      needed_bytes: 1_917_000_000,
-      message: '530 files, 1.4 GB',
-      report: [
-        'MAN_Lion_City_G_2020/Vehicles/MAN_LCG_2020 -> Vehicles/MAN_LCG_2020/ (488 files, 1.3 GB) - a bus',
-        'MAN_Lion_City_G_2020/Fonts -> Fonts/ (42 files, 18 MB)',
-        'left out: 3 read-mes and screenshots',
-      ],
-      warnings: [],
-      installed: [],
-      kept_aside: [],
-      from_inbox: false,
-      started: now() - 20,
-      finished: null,
-    },
-    {
-      id: 2,
-      source: 'C:\\Users\\jakob\\Downloads\\Haltestellenschilder_Pack.rar',
-      name: 'Haltestellenschilder_Pack',
-      state: 'failed',
-      mode: 'extract',
-      files_done: 0,
-      files_total: 0,
-      bytes_done: 0,
-      bytes_total: 0,
-      free_bytes: 214_000_000_000,
-      needed_bytes: 0,
-      message:
-        'could not tell what C:\\Users\\jakob\\Downloads\\Haltestellenschilder_Pack.rar is: no Vehicles / maps / Sceneryobjects ... folders and no .bus / .sco / .sli / global.cfg files in it',
-      report: [
-        'failed: could not tell what C:\\Users\\jakob\\Downloads\\Haltestellenschilder_Pack.rar is',
-      ],
-      warnings: [
-        "2 file(s) whose names cannot be installed safely (a '..', '\\' or ':' in them) were left out",
-        'Bilder/Vorschau.psd: not an OMSI file, left out',
-      ],
-      installed: [],
-      kept_aside: [],
-      from_inbox: false,
-      started: now() - HOUR,
-      finished: now() - HOUR + 4,
-    },
-    {
-      id: 1,
-      source: 'C:\\Users\\jakob\\Downloads\\O530_Repaints.zip',
-      name: 'O530_Repaints',
-      state: 'done',
-      mode: 'extract',
-      files_done: 184,
-      files_total: 184,
-      bytes_done: 96_000_000,
-      bytes_total: 96_000_000,
-      free_bytes: 214_000_000_000,
-      needed_bytes: 96_000_000,
-      message: 'installed Vehicles/MB_O530_Citaro_FL; kept aside: BVG_GN_Repaints',
-      report: [
-        'O530_Repaints/Citaro FL -> Vehicles/MB_O530_Citaro_FL/ (152 files, 81 MB) - paints',
-        'O530_Repaints/BVG GN -> Mods/waiting/O530_Repaints/Vehicles/MAN_GN/ (32 files, 15 MB) - paints',
-        'installed Vehicles/MB_O530_Citaro_FL; kept aside: BVG_GN_Repaints',
-      ],
-      warnings: [
-        'MAN_GN: only paints or textures for a bus that is not installed (Vehicles/MAN_GN) - kept aside in Mods/waiting and installed by itself once that bus is installed',
-      ],
-      installed: ['Vehicles/MB_O530_Citaro_FL'],
-      kept_aside: ['BVG_GN_Repaints'],
-      from_inbox: false,
-      started: now() - 3 * HOUR,
-      finished: now() - 3 * HOUR + 40,
-    },
-  ],
+  ...create(ModsStatusSchema, {
+    contentDir: 'C:\\Users\\jakob\\.neoomsi\\content',
+    folders: [
+      { folder: 'Vehicles', entries: 7n },
+      { folder: 'maps', entries: 3n },
+      { folder: 'Sceneryobjects', entries: 1243n },
+      { folder: 'Splines', entries: 318n },
+      { folder: 'Texture', entries: 96n },
+      { folder: 'Fonts', entries: 22n },
+      { folder: 'Plugins', entries: 0n },
+      { folder: 'TicketPacks', entries: 2n },
+      { folder: 'Drivers', entries: 4n },
+      { folder: 'Weather', entries: 0n },
+      { folder: 'Announcements', entries: 11n },
+      { folder: 'Humans', entries: 38n },
+      { folder: 'Money', entries: 1n },
+      { folder: 'Scripts', entries: 0n },
+      { folder: 'Trains', entries: 0n },
+      { folder: 'Situations', entries: 0n },
+      { folder: 'Inputs', entries: 0n },
+      { folder: 'Sound', entries: 54n },
+    ],
+    inbox: 'C:\\Users\\jakob\\.neoomsi\\content\\Mods',
+    inboxItems: ['Ruhrbania_Busse_v2.zip'],
+    waiting: ['BVG_GN_Repaints'],
+    archives: [{ name: 'Neuhausen_v1.4.zip', bytes: 812_000_000n }],
+    freeBytes: 214_000_000_000n,
+    cleaned: [
+      'removed 1.4 GB of partial files of an interrupted install (C:\\Users\\jakob\\.neoomsi\\content\\.install-staging\\18044-2)',
+    ],
+    jobs: [
+      {
+        id: 3n,
+        source: 'C:\\Users\\jakob\\Downloads\\MAN_Lion_City_G_2020.zip',
+        name: 'MAN_Lion_City_G_2020',
+        state: InstallState.UNPACKING,
+        mode: InstallMode.AUTO,
+        filesDone: 142n,
+        filesTotal: 530n,
+        bytesDone: 412_000_000n,
+        bytesTotal: 1_380_000_000n,
+        freeBytes: 214_000_000_000n,
+        neededBytes: 1_917_000_000n,
+        message: '530 files, 1.4 GB',
+        report: [
+          'MAN_Lion_City_G_2020/Vehicles/MAN_LCG_2020 -> Vehicles/MAN_LCG_2020/ (488 files, 1.3 GB) - a bus',
+          'MAN_Lion_City_G_2020/Fonts -> Fonts/ (42 files, 18 MB)',
+          'left out: 3 read-mes and screenshots',
+        ],
+        warnings: [],
+        installed: [],
+        keptAside: [],
+        fromInbox: false,
+        started: BigInt(now() - 20),
+      },
+      {
+        id: 2n,
+        source: 'C:\\Users\\jakob\\Downloads\\Haltestellenschilder_Pack.rar',
+        name: 'Haltestellenschilder_Pack',
+        state: InstallState.FAILED,
+        mode: InstallMode.EXTRACT,
+        filesDone: 0n,
+        filesTotal: 0n,
+        bytesDone: 0n,
+        bytesTotal: 0n,
+        freeBytes: 214_000_000_000n,
+        neededBytes: 0n,
+        message:
+          'could not tell what C:\\Users\\jakob\\Downloads\\Haltestellenschilder_Pack.rar is: no Vehicles / maps / Sceneryobjects ... folders and no .bus / .sco / .sli / global.cfg files in it',
+        report: [
+          'failed: could not tell what C:\\Users\\jakob\\Downloads\\Haltestellenschilder_Pack.rar is',
+        ],
+        warnings: [
+          "2 file(s) whose names cannot be installed safely (a '..', '\\' or ':' in them) were left out",
+          'Bilder/Vorschau.psd: not an OMSI file, left out',
+        ],
+        installed: [],
+        keptAside: [],
+        fromInbox: false,
+        started: BigInt(now() - HOUR),
+        finished: BigInt(now() - HOUR + 4),
+      },
+      {
+        id: 1n,
+        source: 'C:\\Users\\jakob\\Downloads\\O530_Repaints.zip',
+        name: 'O530_Repaints',
+        state: InstallState.DONE,
+        mode: InstallMode.EXTRACT,
+        filesDone: 184n,
+        filesTotal: 184n,
+        bytesDone: 96_000_000n,
+        bytesTotal: 96_000_000n,
+        freeBytes: 214_000_000_000n,
+        neededBytes: 96_000_000n,
+        message: 'installed Vehicles/MB_O530_Citaro_FL; kept aside: BVG_GN_Repaints',
+        report: [
+          'O530_Repaints/Citaro FL -> Vehicles/MB_O530_Citaro_FL/ (152 files, 81 MB) - paints',
+          'O530_Repaints/BVG GN -> Mods/waiting/O530_Repaints/Vehicles/MAN_GN/ (32 files, 15 MB) - paints',
+          'installed Vehicles/MB_O530_Citaro_FL; kept aside: BVG_GN_Repaints',
+        ],
+        warnings: [
+          'MAN_GN: only paints or textures for a bus that is not installed (Vehicles/MAN_GN) - kept aside in Mods/waiting and installed by itself once that bus is installed',
+        ],
+        installed: ['Vehicles/MB_O530_Citaro_FL'],
+        keptAside: ['BVG_GN_Repaints'],
+        fromInbox: false,
+        started: BigInt(now() - 3 * HOUR),
+        finished: BigInt(now() - 3 * HOUR + 40),
+      },
+    ],
+  }),
   installed: [
     {
       name: 'MB_O530_Citaro_Facelift',
@@ -771,7 +789,7 @@ export const MODS: ModsStatus = {
   ],
 };
 
-export const TUTORIALS: Tutorial[] = [
+export const TUTORIALS = list(TutorialSchema, [
   {
     number: 1,
     title: 'Starting the bus',
@@ -792,9 +810,9 @@ export const TUTORIALS: Tutorial[] = [
     title: 'Special situations',
     text: 'Not every day goes to plan. In this last lesson you deal with what happens on the road.\n• A passenger in a wheelchair: kneel the bus and fold out the ramp.\n• A blocked lane: wait, or pass carefully with the hazard lights on.\n• Running late: keep to the speed limit, the timetable can wait.\nAfter this lesson you are ready for your first real duty.',
   },
-];
+]);
 
-export const SERVERS: ServerInfo[] = [
+export const SERVERS = list(ServerInfoSchema, [
   {
     address: 'play.neoomsi.org',
     name: 'neoOMSI Official',
@@ -804,8 +822,7 @@ export const SERVERS: ServerInfo[] = [
     time: '07:42',
     weather: 'Overcast',
     players: 18,
-    max_players: 32,
-    error: null,
+    maxPlayers: 32,
   },
   {
     address: '85.214.20.17:7777',
@@ -816,8 +833,7 @@ export const SERVERS: ServerInfo[] = [
     time: '21:10',
     weather: 'Clear',
     players: 4,
-    max_players: 12,
-    error: null,
+    maxPlayers: 12,
   },
   {
     address: 'https://grundorf-rush.trycloudflare.com',
@@ -828,8 +844,7 @@ export const SERVERS: ServerInfo[] = [
     time: '16:55',
     weather: '',
     players: 10,
-    max_players: 10,
-    error: null,
+    maxPlayers: 10,
   },
   {
     address: 'hh-bus.de:7777',
@@ -840,8 +855,7 @@ export const SERVERS: ServerInfo[] = [
     time: '23:48',
     weather: 'Light rain',
     players: 2,
-    max_players: 16,
-    error: null,
+    maxPlayers: 16,
   },
   {
     address: 'omsi.example.net',
@@ -852,41 +866,65 @@ export const SERVERS: ServerInfo[] = [
     time: '',
     weather: '',
     players: 0,
-    max_players: 0,
+    maxPlayers: 0,
     error: 'connection refused',
   },
-];
+]);
 
-export const CONTROLLERS: Controller[] = [
+export const CONTROLLERS = list(ControllerSchema, [
   {
     name: 'Logitech G923 Racing Wheel',
     connected: true,
     enabled: true,
     deadzone: 0.02,
-    force_feedback: true,
+    forceFeedback: true,
     axes: [
-      { name: 'X axis', value: 0.18, function: 'steering', reversed: false, shape: 'linear' },
-      { name: 'Y axis', value: 1, function: '', reversed: false, shape: 'linear' },
-      { name: 'Z axis', value: 1, function: '', reversed: false, shape: 'linear' },
-      { name: 'Z rotation', value: 1, function: '', reversed: false, shape: 'linear' },
+      {
+        name: 'X axis',
+        value: 0.18,
+        function: AxisFunction.STEERING,
+        reversed: false,
+        shape: AxisShape.LINEAR,
+      },
+      {
+        name: 'Y axis',
+        value: 1,
+        function: AxisFunction.NONE,
+        reversed: false,
+        shape: AxisShape.LINEAR,
+      },
+      {
+        name: 'Z axis',
+        value: 1,
+        function: AxisFunction.NONE,
+        reversed: false,
+        shape: AxisShape.LINEAR,
+      },
+      {
+        name: 'Z rotation',
+        value: 1,
+        function: AxisFunction.NONE,
+        reversed: false,
+        shape: AxisShape.LINEAR,
+      },
     ],
     buttons: [
-      ['Button 1', 'bus_doorfront0'],
-      ['Button 2', 'bus_doorfront1'],
-      ['Button 3', 'bus_dooraft'],
-      ['Button 4', 'kw_fernlicht_toggle'],
-      ['Button 5', 'blinker_right_set'],
-      ['Button 6', 'blinker_left_set'],
-      ['Button 7', 'horn'],
-      ['Button 8', 'parking_brake_toggle'],
-      ['Button 9', 'view_interiorcam_plus'],
-      ['Button 10', 'view_interiorcam_minus'],
-      ['Button 11', ''],
-      ['Button 12', ''],
-      ['Hat 1 up', 'automatic_D'],
-      ['Hat 1 right', 'automatic_N'],
-      ['Hat 1 down', 'automatic_R'],
-      ['Hat 1 left', 'blinker_off'],
+      { action: 'bus_doorfront0', number: '0' },
+      { action: 'bus_doorfront1', number: '0' },
+      { action: 'bus_dooraft', number: '0' },
+      { action: 'kw_fernlicht_toggle', number: '0' },
+      { action: 'blinker_right_set', number: '0' },
+      { action: 'blinker_left_set', number: '0' },
+      { action: 'horn', number: '0' },
+      { action: 'parking_brake_toggle', number: '0' },
+      { action: 'view_interiorcam_plus', number: '0' },
+      { action: 'view_interiorcam_minus', number: '0' },
+      { action: '', number: '0' },
+      { action: '', number: '0' },
+      { action: 'automatic_D', number: '0' },
+      { action: 'automatic_N', number: '0' },
+      { action: 'automatic_R', number: '0' },
+      { action: 'blinker_off', number: '0' },
     ],
   },
   {
@@ -894,11 +932,29 @@ export const CONTROLLERS: Controller[] = [
     connected: true,
     enabled: true,
     deadzone: 0.04,
-    force_feedback: false,
+    forceFeedback: false,
     axes: [
-      { name: 'X axis', value: 0.62, function: 'throttle', reversed: true, shape: 'linear' },
-      { name: 'Y axis', value: 1, function: 'brake', reversed: true, shape: 'progressive' },
-      { name: 'Z axis', value: 1, function: 'clutch', reversed: true, shape: 'degressive' },
+      {
+        name: 'X axis',
+        value: 0.62,
+        function: AxisFunction.THROTTLE,
+        reversed: true,
+        shape: AxisShape.LINEAR,
+      },
+      {
+        name: 'Y axis',
+        value: 1,
+        function: AxisFunction.BRAKE,
+        reversed: true,
+        shape: AxisShape.PROGRESSIVE,
+      },
+      {
+        name: 'Z axis',
+        value: 1,
+        function: AxisFunction.CLUTCH,
+        reversed: true,
+        shape: AxisShape.DEGRESSIVE,
+      },
     ],
     buttons: [],
   },
@@ -907,36 +963,60 @@ export const CONTROLLERS: Controller[] = [
     connected: true,
     enabled: false,
     deadzone: 0.12,
-    force_feedback: true,
+    forceFeedback: true,
     axes: [
       {
         name: 'Left stick X',
         value: -0.04,
-        function: 'steering',
+        function: AxisFunction.STEERING,
         reversed: false,
-        shape: 'bi-progressive',
+        shape: AxisShape.BI_PROGRESSIVE,
       },
-      { name: 'Left stick Y', value: 0.02, function: '', reversed: false, shape: 'linear' },
-      { name: 'Left trigger', value: -1, function: 'brake', reversed: false, shape: 'linear' },
+      {
+        name: 'Left stick Y',
+        value: 0.02,
+        function: AxisFunction.NONE,
+        reversed: false,
+        shape: AxisShape.LINEAR,
+      },
+      {
+        name: 'Left trigger',
+        value: -1,
+        function: AxisFunction.BRAKE,
+        reversed: false,
+        shape: AxisShape.LINEAR,
+      },
       {
         name: 'Right stick X',
         value: 0,
-        function: 'look_x',
+        function: AxisFunction.LOOK_X,
         reversed: false,
-        shape: 'bi-degressive',
+        shape: AxisShape.BI_DEGRESSIVE,
       },
-      { name: 'Right stick Y', value: 0, function: 'look_y', reversed: true, shape: 'linear' },
-      { name: 'Right trigger', value: -1, function: 'throttle', reversed: false, shape: 'linear' },
+      {
+        name: 'Right stick Y',
+        value: 0,
+        function: AxisFunction.LOOK_Y,
+        reversed: true,
+        shape: AxisShape.LINEAR,
+      },
+      {
+        name: 'Right trigger',
+        value: -1,
+        function: AxisFunction.THROTTLE,
+        reversed: false,
+        shape: AxisShape.LINEAR,
+      },
     ],
     buttons: [
-      ['A', 'bus_doorfront0'],
-      ['B', 'bus_dooraft'],
-      ['X', 'kw_m_enginestart'],
-      ['Y', 'view_toggle_viewpoint'],
-      ['LB', 'blinker_left_set'],
-      ['RB', 'blinker_right_set'],
-      ['View', 'parking_brake_toggle'],
-      ['Menu', 'sim_pause'],
+      { action: 'bus_doorfront0', number: '0' },
+      { action: 'bus_dooraft', number: '0' },
+      { action: 'kw_m_enginestart', number: '0' },
+      { action: 'view_toggle_viewpoint', number: '0' },
+      { action: 'blinker_left_set', number: '0' },
+      { action: 'blinker_right_set', number: '0' },
+      { action: 'parking_brake_toggle', number: '0' },
+      { action: 'sim_pause', number: '0' },
     ],
   },
   {
@@ -944,23 +1024,23 @@ export const CONTROLLERS: Controller[] = [
     connected: false,
     enabled: true,
     deadzone: 0,
-    force_feedback: false,
+    forceFeedback: false,
     axes: [],
     buttons: [
-      ['Button 1', 'kw_s_1_fest'],
-      ['Button 2', 'kw_s_2_fest'],
-      ['Button 3', 'kw_s_3_fest'],
-      ['Button 4', 'kw_s_4_fest'],
-      ['Button 5', 'kw_s_5_fest'],
-      ['Button 6', 'kw_s_6_fest'],
-      ['Button 7', 'kw_s_R_fest'],
+      { action: 'kw_s_1_fest', number: '0' },
+      { action: 'kw_s_2_fest', number: '0' },
+      { action: 'kw_s_3_fest', number: '0' },
+      { action: 'kw_s_4_fest', number: '0' },
+      { action: 'kw_s_5_fest', number: '0' },
+      { action: 'kw_s_6_fest', number: '0' },
+      { action: 'kw_s_R_fest', number: '0' },
     ],
   },
-];
+]);
 
-const bind = (action: string, scan_code: number, modifier = 0) => ({ action, scan_code, modifier });
+const bind = (action: string, scanCode: number, modifier = 0) => ({ action, scanCode, modifier });
 
-export const KEYBINDINGS: KeyBindings = {
+export const KEYBINDINGS = create(KeyBindingsSchema, {
   vehicles: [
     bind('throttle', 17, 1),
     bind('throttle', 200, 1),
@@ -1063,7 +1143,7 @@ export const KEYBINDINGS: KeyBindings = {
     bind('scendes_new', 49),
     bind('scendes_delete', 211),
   ],
-};
+});
 
 export function defaultSettings(): Settings {
   return {

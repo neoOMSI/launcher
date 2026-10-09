@@ -1,197 +1,44 @@
-import type { SessionEvent } from './scaffold';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import {
+  RequestSchema,
+  SettingsSchema,
+  type Event,
+  type JoinCheck as EngineJoinCheck,
+  type Minimap as EngineMinimap,
+  type ModsStatus as EngineModsStatus,
+  type Request,
+  type Response,
+  type Settings as EngineSettings,
+} from './launcher_pb';
 
-// Shapes of neoOMSI's launcher commands (`neoomsi --control-protocol`), field names as serialized.
+export * from './launcher_pb';
 
-export interface Config {
-  root: string;
-  game: string;
-  profile: string;
+export type Settings = Record<string, string | number | boolean>;
+
+export function settingsFromEngine(s: EngineSettings): Settings {
+  const out: Settings = {};
+  for (const [key, { value }] of Object.entries(s.values)) {
+    if (value.case !== undefined) out[key] = value.value;
+  }
+  return out;
 }
 
-export interface EntryInfo {
-  index: number;
-  name: string;
+export function settingsForEngine(s: Settings): EngineSettings {
+  const values = Object.entries(s).map(([key, v]) => {
+    const value =
+      typeof v === 'boolean'
+        ? { case: 'flag' as const, value: v }
+        : typeof v === 'number'
+          ? { case: 'number' as const, value: v }
+          : { case: 'text' as const, value: v };
+    return [key, { value }];
+  });
+  return create(SettingsSchema, { values: Object.fromEntries(values) });
 }
 
-export interface MapInfo {
-  name: string;
-  friendly: string;
-  file: string;
-  description: string;
-  entry_points: EntryInfo[];
-  hof: string;
-  installed: boolean;
-}
+export type MinimapPlace = { name: string; x: number; y: number; spawn: string };
 
-export interface VehicleInfo {
-  name: string;
-  manufacturer: string;
-  type_name: string;
-  file: string;
-  folder: string;
-  description: string;
-  default_paint: string;
-  paints: string[];
-  hofs: string[];
-  installed: boolean;
-  missing_packs: string[];
-  numbers: [string, string][];
-}
-
-export interface WeatherInfo {
-  name: string;
-  file: string;
-  description: string;
-  fog_m: number;
-  temp: number;
-  clouds: string;
-  precip: string;
-  snow: boolean;
-  installed: boolean;
-}
-
-export interface StopInfo {
-  name: string;
-  arr: number;
-  dep: number;
-}
-
-export interface TripInfo {
-  name: string;
-  index: number;
-  line: string;
-  from: string;
-  terminus: string;
-  departure: number;
-  arrival: number;
-  stops: StopInfo[];
-  km: number;
-}
-
-export interface TourInfo {
-  number: string;
-  ai_group: string;
-  first: number;
-  last: number;
-  days: string;
-  runs: boolean;
-  next_run: string | null;
-  trips: TripInfo[];
-}
-
-export interface LineInfo {
-  name: string;
-  user_allowed: boolean;
-  termini: string[];
-  tours: TourInfo[];
-}
-
-export interface IbisRoute {
-  code: string;
-  route: string;
-  name: string;
-  terminus_code: number;
-  terminus: string;
-}
-
-export interface IbisInfo {
-  hof: string;
-  line_code: string;
-  routes: IbisRoute[];
-}
-
-export interface Session {
-  time: number;
-  driver: string;
-  map: string;
-  bus: string;
-  line: string | null;
-  tour: string | null;
-  seconds: number;
-  metres: number;
-  stops: number;
-  early: number;
-  late: number;
-  tickets: number;
-  cash: number;
-  crashes: number;
-  hurt: number;
-  jolts: number;
-  driving: number;
-  comfort: number;
-  ticketing: number;
-}
-
-export interface Profile {
-  name: string;
-  file: string;
-  hours: number;
-  km: number;
-  xp: number;
-  level: number;
-  next_level_xp: number;
-  stops: number;
-  early: number;
-  late: number;
-  tickets: number;
-  cash: number;
-  crashes: number;
-  hurt: number;
-  rating_driving: number;
-  rating_comfort: number;
-  rating_tickets: number;
-  sessions: Session[];
-  exists: boolean;
-}
-
-export type InstallMode = 'auto' | 'extract' | 'inplace';
-
-export type InstallState =
-  | 'queued'
-  | 'planning'
-  | 'checking'
-  | 'unpacking'
-  | 'copying'
-  | 'moving'
-  | 'done'
-  | 'failed'
-  | 'cancelled';
-
-export interface InstallProgress {
-  id: number;
-  source: string;
-  name: string;
-  state: InstallState;
-  mode: InstallMode;
-  files_done: number;
-  files_total: number;
-  bytes_done: number;
-  bytes_total: number;
-  free_bytes: number;
-  needed_bytes: number;
-  message: string;
-  report: string[];
-  warnings: string[];
-  installed: string[];
-  kept_aside: string[];
-  from_inbox: boolean;
-  started: number;
-  finished: number | null;
-}
-
-export interface ModsStatus {
-  content_dir: string;
-  folders: [string, number][];
-  inbox: string;
-  inbox_items: string[];
-  waiting: string[];
-  archives: [string, number][];
-  free_bytes: number;
-  cleaned: string[];
-  jobs: InstallProgress[];
-  installed?: InstalledMod[];
-}
-
+// Not in the engine's answers yet; the mock answers with some of them.
 export interface InstalledMod {
   name: string;
   installed: number;
@@ -199,325 +46,47 @@ export interface InstalledMod {
   size: number;
 }
 
-export interface LanPlayer {
-  name: string;
-  bus: string;
-  line: string;
-  destination: string;
-  passengers: number;
-  location: string;
-}
+export type ModsStatus = EngineModsStatus & { installed?: InstalledMod[] };
 
-export interface LanStatus {
-  role: 'host' | 'join';
-  code: string;
-  tunnel: boolean;
-  players: LanPlayer[];
-  chat: string[];
-  warnings: string[];
-  connected: boolean;
-  host_name: string;
-  rejected: string;
-}
+export type JoinCheck = EngineJoinCheck & { map?: string };
 
-export interface GameLink {
-  state: 'starting' | 'loading' | 'running' | 'stopping' | 'failed';
-  progress: number | null;
-  message: string;
-  window: boolean;
-}
-
-export interface Instance {
-  id: string;
-  pid: number;
-  process_started: number | null;
-  slot: number;
-  log: string;
-  started: number;
-  map: string;
-  bus: string;
-  entry: number | null;
-  line: string | null;
-  tour: string | null;
-  profile: string;
-  lan: string;
-  args: string[];
-  running: boolean;
-  ended: number | null;
-  exit_code: number | null;
-  stopping: number | null;
-  killed: boolean;
-  lan_status: LanStatus | null;
-  last_line: string;
-  link?: GameLink | null;
-}
-
-export interface Duty {
-  map: string;
-  bus: string;
-  paint?: string;
-  plate?: string;
-  number?: string;
-  hof?: string;
-  entry?: number;
-  spawn?: string;
-  line?: string;
-  tour?: string;
-  trip?: string;
-  whole_tour?: boolean;
-  time: string;
-  date?: string;
-  weather?: string;
-  traffic?: number;
-  passengers?: boolean;
-  schedule?: boolean;
-  autostart?: boolean;
-  on_foot?: boolean;
-  profile?: string;
-  lan?: string;
-  lan_name?: string;
-  season?: string;
-  tutorial?: number;
-  situation?: string;
-}
-
-export interface MinimapRoad {
-  main: boolean;
-  width: number;
-  points: [number, number][];
-}
-
-export interface MinimapPlace {
-  name: string;
-  x: number;
-  y: number;
-  spawn: string;
-}
-
-export interface Minimap {
-  map: string;
-  roads: MinimapRoad[];
-  stops: (MinimapPlace & { id: number })[];
-  entries: (MinimapPlace & { index: number })[];
+export type Minimap = EngineMinimap & {
   lanes?: [number, number][][];
   trips?: Record<string, number[]>;
+};
+
+interface LauncherOnly {
+  uninstallMod: { args: { name: string }; result: { uninstalled: string[] } };
 }
 
-export interface Launched {
-  pid: number;
-  log: string;
-  command: string;
-  others: number;
+interface Extended {
+  mods: ModsStatus;
+  join: JoinCheck;
+  minimap: Minimap;
 }
 
-export interface KeyBinding {
-  action: string;
-  scan_code: number;
-  modifier: number;
-}
+type EngineCommand = Exclude<Request['command']['case'], undefined | 'handshake' | 'shutdown'>;
+type Answer<C> = Extract<Response['answer'], { case: C }>['value'];
+type Init<C> = Extract<MessageInitShape<typeof RequestSchema>['command'], { case: C }>['value'];
 
-export interface KeyBindings {
-  vehicles: KeyBinding[];
-  game: KeyBinding[];
-}
+export type Command = EngineCommand | keyof LauncherOnly;
+export type CommandArgs<C extends Command> = C extends EngineCommand
+  ? Init<C>
+  : C extends keyof LauncherOnly
+    ? LauncherOnly[C]['args']
+    : never;
+export type CommandResult<C extends Command> = C extends keyof Extended
+  ? Extended[C]
+  : C extends EngineCommand
+    ? Answer<C>
+    : C extends keyof LauncherOnly
+      ? LauncherOnly[C]['result']
+      : never;
 
-export type Settings = Record<string, string | number | boolean>;
+export type EngineEvent = Exclude<Event['event'], { case: undefined }>;
 
-export interface Tutorial {
-  number: number;
-  title: string;
-  text: string;
-}
+export const ENGINE_COMMANDS = RequestSchema.oneofs[0].fields
+  .map((f) => f.localName)
+  .filter((c) => c !== 'handshake' && c !== 'shutdown') as EngineCommand[];
 
-export interface ServerInfo {
-  address: string;
-  name: string;
-  official: boolean;
-  motd: string;
-  map: string;
-  time: string;
-  weather: string;
-  players: number;
-  max_players: number;
-  error: string | null;
-}
-
-export type AxisFunction =
-  '' | 'steering' | 'throttle' | 'brake' | 'clutch' | 'throttle_brake' | 'look_x' | 'look_y';
-
-export interface ControllerAxis {
-  name: string;
-  value: number;
-  function: AxisFunction;
-  reversed: boolean;
-  shape: 'linear' | 'progressive' | 'degressive' | 'bi-progressive' | 'bi-degressive';
-}
-
-export interface Controller {
-  name: string;
-  connected: boolean;
-  enabled: boolean;
-  deadzone: number;
-  force_feedback: boolean;
-  axes: ControllerAxis[];
-  buttons: [string, string][];
-}
-
-export interface SavedSituation {
-  name: string;
-  file: string;
-  time: number;
-}
-
-export interface EngineVersion {
-  version: string;
-  protocol: number;
-}
-
-export interface SourceInfo {
-  is_archive: boolean;
-  is_zip: boolean;
-  files: number;
-  unpacked_bytes: number;
-  archive_bytes: number;
-  needed_bytes: number;
-  free_bytes: number;
-  fits: boolean;
-  in_place: string;
-  in_place_ok: boolean;
-  suggested: InstallMode;
-}
-
-export interface OptionPreset {
-  name: string;
-  values: Settings;
-}
-
-export interface PaxRelease {
-  version: number;
-  notes: string;
-  page: string;
-  published: string;
-}
-
-export interface PaxPack {
-  state: 'missing' | 'outdated' | 'downloading' | 'installing' | 'installed' | 'failed';
-  done: number;
-  total: number;
-  message: string;
-  installed: number | null;
-  latest: PaxRelease | null;
-}
-
-export interface GameRelease {
-  version: string;
-  page: string;
-  notes: string;
-  prerelease: boolean;
-  size: number;
-}
-
-export interface Commands {
-  config: { args: void; result: Config };
-  maps: { args: void; result: MapInfo[] };
-  vehicles: { args: void; result: VehicleInfo[] };
-  weather: { args: void; result: WeatherInfo[] };
-  lines: { args: { map: string; date: string }; result: LineInfo[] };
-  ibis: { args: { bus: string; hof: string; line: string }; result: IbisInfo };
-  profiles: { args: void; result: string[] };
-  profile: { args: { name: string }; result: Profile };
-  mods: { args: void; result: ModsStatus };
-  install: { args: { path: string; mode?: InstallMode }; result: InstallProgress };
-  instances: { args: void; result: Instance[] };
-  stop: { args: { pid: number }; result: { stopped: boolean; ended_by_itself: boolean } };
-  log: { args: { pid: number; lines?: number }; result: string[] };
-  join: { args: { text: string }; result: { ok: boolean; text: string; map?: string } };
-  settings: { args: void; result: Settings };
-  save_settings: { args: Settings; result: Settings };
-  pax_pack: { args: void; result: PaxPack };
-  install_pax_pack: { args: void; result: PaxPack };
-  update_check: { args: void; result: GameRelease | null };
-  keybindings: { args: void; result: KeyBindings };
-  launch: { args: Duty; result: Launched };
-  preview: { args: { bus: string; paint: string }; result: string };
-  minimap: { args: { map: string; date?: string }; result: Minimap };
-  tutorials: { args: void; result: Tutorial[] };
-  servers: { args: void; result: ServerInfo[] };
-  save_servers: { args: { servers: { name: string; address: string }[] }; result: unknown };
-  controllers: { args: void; result: Controller[] };
-  save_controllers: { args: { controllers: Controller[] }; result: Controller[] };
-  situations: { args: { map: string }; result: SavedSituation[] };
-  version: { args: void; result: EngineVersion };
-  save_config: { args: Partial<Config>; result: Config };
-  create_profile: { args: { name: string; sex?: string }; result: Profile };
-  delete_profile: { args: { name: string }; result: { deleted: boolean } };
-  save_keybindings: { args: KeyBindings; result: KeyBindings };
-  modinfo: { args: { path: string }; result: SourceInfo };
-  start_install: { args: { path: string; mode?: InstallMode }; result: InstallProgress };
-  cancel_install: { args: { id: number }; result: { cancelled: boolean } };
-  clear_installs: { args: void; result: unknown };
-  uninstall_mod: { args: { name: string }; result: { uninstalled: string[] } };
-  option_presets: { args: void; result: OptionPreset[] };
-}
-
-export type EngineEvent =
-  | { type: 'instances_changed'; payload: Instance[] }
-  | { type: 'installs_changed'; payload: InstallProgress[] }
-  | { type: 'content_changed'; payload: { stamp: string } }
-  | { type: 'session_event'; payload: SessionEvent }
-  | { type: 'pax_pack_changed'; payload: PaxPack };
-
-export const ENGINE_EVENTS: readonly EngineEvent['type'][] = [
-  'instances_changed',
-  'installs_changed',
-  'content_changed',
-  'session_event',
-  'pax_pack_changed',
-];
-
-export type Command = keyof Commands;
-export type CommandArgs<C extends Command> = Commands[C]['args'];
-export type CommandResult<C extends Command> = Commands[C]['result'];
-
-export const COMMANDS: readonly Command[] = [
-  'config',
-  'maps',
-  'vehicles',
-  'weather',
-  'lines',
-  'ibis',
-  'profiles',
-  'profile',
-  'mods',
-  'install',
-  'instances',
-  'stop',
-  'log',
-  'join',
-  'settings',
-  'save_settings',
-  'pax_pack',
-  'install_pax_pack',
-  'update_check',
-  'keybindings',
-  'launch',
-  'preview',
-  'minimap',
-  'tutorials',
-  'servers',
-  'controllers',
-  'save_controllers',
-  'situations',
-  'save_servers',
-  'version',
-  'save_config',
-  'create_profile',
-  'delete_profile',
-  'save_keybindings',
-  'modinfo',
-  'start_install',
-  'cancel_install',
-  'clear_installs',
-  'uninstall_mod',
-  'option_presets',
-];
+export const COMMANDS: readonly Command[] = [...ENGINE_COMMANDS, 'uninstallMod'];

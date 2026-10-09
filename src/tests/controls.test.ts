@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { categoryOf } from '../pages/controls/categories';
+import { create } from '@bufbuild/protobuf';
 import { addKey, conflicts, countChanges, unbind } from '../pages/controls/model';
+import { KeyBindingSchema, KeyBindingsSchema } from '../types/launcher';
 
-const bind = (action: string, scan_code: number, modifier = 0) => ({ action, scan_code, modifier });
+const bind = (action: string, scanCode: number, modifier = 0) =>
+  create(KeyBindingSchema, { action, scanCode, modifier });
 
 describe('controls categories', () => {
   it('sorts vehicle triggers into categories', () => {
@@ -37,7 +40,7 @@ describe('controls model', () => {
   });
 
   it('counts changed actions and unbinds the last key in place', () => {
-    const before = { vehicles: [bind('horn', 35)], game: [] };
+    const before = create(KeyBindingsSchema, { vehicles: [bind('horn', 35)] });
     const added = { ...before, vehicles: addKey(before.vehicles, 'horn', 36, 0) };
     expect(countChanges(before, added)).toBe(1);
     expect(unbind(before.vehicles, 0)).toEqual([bind('horn', 0)]);
