@@ -13,7 +13,9 @@ import {
   type KeyBindings,
 } from '../../types/launcher';
 import { actionName } from './actions';
+import { ControllerWizard, type WizardMode } from './ControllerWizard';
 import { axisOutput, controllerChanges, curve, isBipolar } from './model';
+import { calibrated } from './wizard';
 
 const FUNCTIONS: readonly (readonly [AxisFunction, string])[] = [
   [AxisFunction.NONE, 'none'],
@@ -243,9 +245,19 @@ function ControllerView({
     onChange({ buttons: c.buttons.map((b, j) => (j === i ? { ...b, action } : b)) });
   const axes = c.axes ?? [];
   const buttons = c.buttons ?? [];
+  const [wizard, setWizard] = useState<WizardMode>();
 
   return (
     <section className="mt-12 first:mt-0">
+      {wizard && (
+        <ControllerWizard
+          mode={wizard}
+          controller={c}
+          live={live}
+          onApply={onChange}
+          onClose={() => setWizard(undefined)}
+        />
+      )}
       <Heading className="">
         <span
           className={`size-2.5 shrink-0 rounded-full ${c.connected ? 'bg-ok' : 'bg-line-strong'}`}
@@ -293,12 +305,40 @@ function ControllerView({
                 onChange={(forceFeedback) => onChange({ forceFeedback })}
               />
             </ListRow>
+            {c.connected && (
+              <ListRow
+                label={t('controls.controllers.wizard.assist')}
+                hint={t('controls.controllers.wizard.assistHint')}
+              >
+                <button
+                  type="button"
+                  className="btn-quiet h-10 rounded-full px-5"
+                  onClick={() => setWizard('assist')}
+                >
+                  {t('controls.controllers.wizard.start')}
+                </button>
+              </ListRow>
+            )}
+            {c.connected && (
+              <ListRow
+                label={t('controls.controllers.wizard.calibrate')}
+                hint={t('controls.controllers.wizard.calibrateHint')}
+              >
+                <button
+                  type="button"
+                  className="btn-quiet h-10 rounded-full px-5"
+                  onClick={() => setWizard('calibrate')}
+                >
+                  {t('controls.controllers.wizard.start')}
+                </button>
+              </ListRow>
+            )}
             {axes.map((axis, i) => (
               <AxisRow
                 key={i}
                 axis={axis}
-                raw={live?.[i] ?? axis.value}
-                deadzone={c.deadzone}
+                raw={calibrated(axis.calibration, live?.[i] ?? axis.value)}
+                deadzone={axis.calibration?.deadzone ?? c.deadzone}
                 lang={lang}
                 onChange={(patch) => setAxis(i, patch)}
               />

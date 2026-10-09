@@ -62,7 +62,39 @@
     "curve": "Response of {axis}",
     "reversed": "Reversed",
     "button": "Button {n}",
-    "buttonAction": "Action of {button}"
+    "buttonAction": "Action of {button}",
+    "wizard": {
+      "assist": "Set-up assistant",
+      "assistHint": "Finds the steering axis and the pedals step by step",
+      "calibrate": "Calibrate the axes",
+      "calibrateHint": "Teaches the game how far each axis really goes and where its middle is",
+      "start": "Start",
+      "steps": {
+        "rest": "Let go of the **wheel** and the **pedals**",
+        "steering": "Turn the **wheel** fully **left** and hold it",
+        "throttle": "Press the **throttle** fully and hold it",
+        "brake": "Press the **brake** fully and hold it",
+        "clutch": "Press the **clutch** fully and hold it"
+      },
+      "next": "Next",
+      "skip": "Skip",
+      "finish": "Finish",
+      "apply": "Apply",
+      "noAxes": "No axis yet. Move everything a little, then let go.",
+      "notMoved": "Nothing moved far enough. Hold it all the way.",
+      "disconnected": "The device is not connected: plug it in.",
+      "feedback": {
+        "text": "Wheel pushes the **wrong way**? **Invert** it",
+        "invert": "Invert force feedback"
+      },
+      "calibrateText": "Move every axis to **both ends**, then **let go**",
+      "seen": "Seen {lo} to {hi}",
+      "notMovedYet": "Not moved yet",
+      "centre": ", centre {c}",
+      "setCentre": "Set centre",
+      "setCentreHint": "Let go of everything first",
+      "clear": "Start again"
+    }
   },
   "function": {
     "none": "Nothing",

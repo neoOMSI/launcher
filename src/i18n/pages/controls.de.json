@@ -62,7 +62,39 @@
     "curve": "Kennlinie von {axis}",
     "reversed": "Umgekehrt",
     "button": "Taste {n}",
-    "buttonAction": "Aktion von {button}"
+    "buttonAction": "Aktion von {button}",
+    "wizard": {
+      "assist": "Einrichtungsassistent",
+      "assistHint": "Findet Lenkachse und Pedale Schritt für Schritt",
+      "calibrate": "Achsen kalibrieren",
+      "calibrateHint": "Zeigt dem Spiel, wie weit jede Achse wirklich geht und wo ihre Mitte liegt",
+      "start": "Starten",
+      "steps": {
+        "rest": "**Lenkrad** und **Pedale** loslassen",
+        "steering": "**Lenkrad** ganz nach **links** drehen und halten",
+        "throttle": "**Gas** ganz durchtreten und halten",
+        "brake": "**Bremse** ganz durchtreten und halten",
+        "clutch": "**Kupplung** ganz durchtreten und halten"
+      },
+      "next": "Weiter",
+      "skip": "Überspringen",
+      "finish": "Fertig",
+      "apply": "Übernehmen",
+      "noAxes": "Noch keine Achse. Alles etwas bewegen, dann loslassen.",
+      "notMoved": "Nichts weit genug bewegt. Ganz durchdrücken und halten.",
+      "disconnected": "Das Gerät ist nicht angeschlossen: Steck es ein.",
+      "feedback": {
+        "text": "Lenkrad drückt in die **falsche Richtung**? **Umkehren**",
+        "invert": "Force Feedback umkehren"
+      },
+      "calibrateText": "Jede Achse bis zu **beiden Enden** bewegen, dann **loslassen**",
+      "seen": "Gesehen {lo} bis {hi}",
+      "notMovedYet": "Noch nicht bewegt",
+      "centre": ", Mitte {c}",
+      "setCentre": "Mitte setzen",
+      "setCentreHint": "Vorher alles loslassen",
+      "clear": "Neu beginnen"
+    }
   },
   "function": {
     "none": "Nichts",

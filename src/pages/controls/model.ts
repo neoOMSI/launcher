@@ -150,10 +150,15 @@ export function controllerChanges(before: Controller[], after: Controller[]): nu
     n += Number(o.enabled !== c.enabled);
     n += Number(o.deadzone !== c.deadzone);
     n += Number(o.forceFeedback !== c.forceFeedback);
+    n += Number(o.ffInvert !== c.ffInvert);
     c.axes.forEach((a, j) => {
       const b = o.axes[j];
       n += Number(
-        !b || b.function !== a.function || b.reversed !== a.reversed || b.shape !== a.shape,
+        !b ||
+          b.function !== a.function ||
+          b.reversed !== a.reversed ||
+          b.shape !== a.shape ||
+          JSON.stringify(b.calibration) !== JSON.stringify(a.calibration),
       );
     });
     c.buttons.forEach((b, j) => {

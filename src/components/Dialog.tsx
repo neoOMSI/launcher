@@ -63,10 +63,14 @@ export function Confirm({
 
 export function Modal({
   title,
+  wide,
+  hideTitle,
   onClose,
   children,
 }: {
   title: string;
+  wide?: boolean;
+  hideTitle?: boolean;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -85,11 +89,13 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-[28rem] rounded-[1.25rem] bg-page p-7 shadow-2xl"
+        className={`w-full ${wide ? 'max-w-[42rem]' : 'max-w-[28rem]'} rounded-[1.25rem] bg-page p-7 shadow-2xl`}
       >
-        <h2 className="font-display text-[1.45rem] leading-tight font-bold tracking-tight">
-          {title}
-        </h2>
+        {!hideTitle && (
+          <h2 className="font-display text-[1.45rem] leading-tight font-bold tracking-tight">
+            {title}
+          </h2>
+        )}
         {children}
       </div>
     </div>,
