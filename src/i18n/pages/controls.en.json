@@ -94,6 +94,24 @@
       "setCentre": "Set centre",
       "setCentreHint": "Let go of everything first",
       "clear": "Start again"
+    },
+    "buttonSearch": "Search buttons",
+    "pressToFind": "Press a button on the controller to find it here",
+    "noMatch": "No button matches “{query}”",
+    "held": "Pressed",
+    "hat": {
+      "up": "up",
+      "right": "right",
+      "down": "down",
+      "left": "left",
+      "dpad": "D-pad {dir}",
+      "hat": "Hat {n} {dir}"
+    },
+    "pad": {
+      "view": "View",
+      "menu": "Menu",
+      "leftStick": "Left stick (press)",
+      "rightStick": "Right stick (press)"
     }
   },
   "function": {

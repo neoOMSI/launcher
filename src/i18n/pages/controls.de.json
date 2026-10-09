@@ -94,6 +94,24 @@
       "setCentre": "Mitte setzen",
       "setCentreHint": "Vorher alles loslassen",
       "clear": "Neu beginnen"
+    },
+    "buttonSearch": "Tasten suchen",
+    "pressToFind": "Drück eine Taste am Controller, um sie hier zu finden",
+    "noMatch": "Keine Taste passt zu „{query}“",
+    "held": "Gedrückt",
+    "hat": {
+      "up": "oben",
+      "right": "rechts",
+      "down": "unten",
+      "left": "links",
+      "dpad": "Steuerkreuz {dir}",
+      "hat": "Coolie-Hat {n} {dir}"
+    },
+    "pad": {
+      "view": "Ansicht",
+      "menu": "Menü",
+      "leftStick": "Linker Stick (drücken)",
+      "rightStick": "Rechter Stick (drücken)"
     }
   },
   "function": {
