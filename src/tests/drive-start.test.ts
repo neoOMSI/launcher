@@ -1,17 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { gameStart } from '../lib/launching';
-import type { Instance } from '../types/launcher';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import { GameLinkState, InstanceSchema } from '../types/launcher';
 
-const game = (patch: Partial<Instance>): Instance =>
-  ({
-    id: 'g',
-    pid: 1,
-    started: 100,
-    running: true,
-    stopping: null,
-    link: null,
-    ...patch,
-  }) as Instance;
+const game = (patch: MessageInitShape<typeof InstanceSchema>) =>
+  create(InstanceSchema, { id: 'g', pid: 1, started: 100n, running: true, ...patch });
 
 describe('the start button follows the game it launched', () => {
   it('waits for the engine to list the game', () => {
@@ -21,29 +14,21 @@ describe('the start button follows the game it launched', () => {
 
   it('shows what the game reports until it runs', () => {
     expect(
-      gameStart(
-        game({ link: { state: 'starting', progress: null, message: '', window: true } }),
-        100,
-        101,
-      ),
+      gameStart(game({ link: { state: GameLinkState.STARTING, window: true } }), 100, 101),
     ).toEqual({ progress: null });
     expect(
       gameStart(
-        game({ link: { state: 'loading', progress: 0.4, message: '', window: true } }),
+        game({ link: { state: GameLinkState.LOADING, progress: 0.4, window: true } }),
         100,
         300,
       ),
     ).toEqual({ progress: 0.4 });
     expect(
-      gameStart(
-        game({ link: { state: 'running', progress: null, message: '', window: true } }),
-        100,
-        101,
-      ),
+      gameStart(game({ link: { state: GameLinkState.RUNNING, window: true } }), 100, 101),
     ).toBeNull();
     expect(
       gameStart(
-        game({ link: { state: 'failed', progress: null, message: 'x', window: true } }),
+        game({ link: { state: GameLinkState.FAILED, message: 'x', window: true } }),
         100,
         101,
       ),
@@ -52,7 +37,7 @@ describe('the start button follows the game it launched', () => {
 
   it('lets go of a game that ended, is stopping, or never reports', () => {
     expect(gameStart(game({ running: false }), 100, 101)).toBeNull();
-    expect(gameStart(game({ stopping: 101 }), 100, 101)).toBeNull();
+    expect(gameStart(game({ stopping: 101n }), 100, 101)).toBeNull();
     expect(gameStart(game({}), 100, 120)).toEqual({ progress: null });
     expect(gameStart(game({}), 100, 131)).toBeNull();
   });

@@ -16,7 +16,7 @@ export const History: React.FC<{ ended: number }> = ({ ended }) => {
   const names = useNames();
   const [who, setWho] = useState<string | null>(null);
   const [state, setState] = useState<{ sessions?: Session[]; error?: string }>({});
-  const drivers = profiles.data ?? [];
+  const drivers = profiles.data?.names ?? [];
   const chosen = who ?? config.data?.profile ?? '';
   const wanted = chosen === ALL ? drivers : chosen ? [chosen] : [];
   const key = JSON.stringify(wanted);
@@ -27,7 +27,9 @@ export const History: React.FC<{ ended: number }> = ({ ended }) => {
     Promise.all(wanted.map((name) => call('profile', { name })))
       .then((list) => {
         if (!live) return;
-        const sessions = list.flatMap((p) => p.sessions ?? []).sort((a, b) => b.time - a.time);
+        const sessions = list
+          .flatMap((p) => p.sessions)
+          .sort((a, b) => Number(b.time) - Number(a.time));
         setState({ sessions });
       })
       .catch((err) => live && setState({ error: errorText(err) }));

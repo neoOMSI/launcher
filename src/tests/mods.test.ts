@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { MockLauncher } from '../../electron/mock/launcher';
 import {
   canInstall,
@@ -11,83 +12,78 @@ import {
   stateTone,
   usedInPlace,
 } from '../pages/mods/logic';
-import type { InstallProgress, InstalledMod, SourceInfo } from '../types/launcher';
+import {
+  InstallMode,
+  InstallProgressSchema,
+  InstallState,
+  ModsStatusSchema,
+  SourceInfoSchema,
+  type InstalledMod,
+} from '../types/launcher';
 
-const job = (patch: Partial<InstallProgress>): InstallProgress => ({
-  id: 1,
-  source: 'C:\\x.zip',
-  name: 'x',
-  state: 'unpacking',
-  mode: 'auto',
-  files_done: 0,
-  files_total: 0,
-  bytes_done: 0,
-  bytes_total: 0,
-  free_bytes: 0,
-  needed_bytes: 0,
-  message: '',
-  report: [],
-  warnings: [],
-  installed: [],
-  kept_aside: [],
-  from_inbox: false,
-  started: 100,
-  finished: null,
-  ...patch,
-});
+const job = (patch: MessageInitShape<typeof InstallProgressSchema>) =>
+  create(InstallProgressSchema, {
+    id: 1n,
+    source: 'C:\\x.zip',
+    name: 'x',
+    state: InstallState.UNPACKING,
+    mode: InstallMode.AUTO,
+    started: 100n,
+    ...patch,
+  });
 
-const info = (patch: Partial<SourceInfo>): SourceInfo => ({
-  is_archive: true,
-  is_zip: true,
-  files: 10,
-  unpacked_bytes: 1,
-  archive_bytes: 1,
-  needed_bytes: 1,
-  free_bytes: 2,
-  fits: true,
-  in_place: '',
-  in_place_ok: true,
-  suggested: 'extract',
-  ...patch,
-});
+const info = (patch: MessageInitShape<typeof SourceInfoSchema>) =>
+  create(SourceInfoSchema, {
+    isArchive: true,
+    isZip: true,
+    files: 10n,
+    unpackedBytes: 1n,
+    archiveBytes: 1n,
+    neededBytes: 1n,
+    freeBytes: 2n,
+    fits: true,
+    inPlaceOk: true,
+    suggested: InstallMode.EXTRACT,
+    ...patch,
+  });
 
 describe('mods logic', () => {
   it('measures progress by bytes, then files, and not at all before planning', () => {
     expect(
-      jobProgress(job({ bytes_done: 25, bytes_total: 100, files_done: 9, files_total: 10 })),
+      jobProgress(job({ bytesDone: 25n, bytesTotal: 100n, filesDone: 9n, filesTotal: 10n })),
     ).toBe(0.25);
-    expect(jobProgress(job({ files_done: 3, files_total: 4 }))).toBe(0.75);
-    expect(jobProgress(job({ state: 'planning' }))).toBeNull();
-    expect(jobProgress(job({ state: 'done' }))).toBe(1);
-    expect(jobProgress(job({ bytes_done: 130, bytes_total: 100 }))).toBe(1);
+    expect(jobProgress(job({ filesDone: 3n, filesTotal: 4n }))).toBe(0.75);
+    expect(jobProgress(job({ state: InstallState.PLANNING }))).toBeNull();
+    expect(jobProgress(job({ state: InstallState.DONE }))).toBe(1);
+    expect(jobProgress(job({ bytesDone: 130n, bytesTotal: 100n }))).toBe(1);
   });
 
   it('puts running jobs first (oldest first) and finished ones newest first', () => {
     const { running, finished } = splitJobs([
-      job({ id: 1, state: 'done', finished: 10 }),
-      job({ id: 2, started: 300 }),
-      job({ id: 3, state: 'failed', finished: 50 }),
-      job({ id: 4, started: 200 }),
+      job({ id: 1n, state: InstallState.DONE, finished: 10n }),
+      job({ id: 2n, started: 300n }),
+      job({ id: 3n, state: InstallState.FAILED, finished: 50n }),
+      job({ id: 4n, started: 200n }),
     ]);
-    expect(running.map((j) => j.id)).toEqual([4, 2]);
-    expect(finished.map((j) => j.id)).toEqual([3, 1]);
+    expect(running.map((j) => j.id)).toEqual([4n, 2n]);
+    expect(finished.map((j) => j.id)).toEqual([3n, 1n]);
   });
 
   it('gives each state a tone', () => {
-    expect(stateTone('copying')).toBe('busy');
-    expect(stateTone('done')).toBe('ok');
-    expect(stateTone('failed')).toBe('danger');
-    expect(stateTone('cancelled')).toBe('muted');
+    expect(stateTone(InstallState.COPYING)).toBe('busy');
+    expect(stateTone(InstallState.DONE)).toBe('ok');
+    expect(stateTone(InstallState.FAILED)).toBe('danger');
+    expect(stateTone(InstallState.CANCELLED)).toBe('muted');
   });
 
   it('only allows a mode that can work', () => {
     const tooBig = info({ fits: false });
-    expect(canInstall(tooBig, 'extract')).toBe(false);
-    expect(canInstall(tooBig, 'inplace')).toBe(true);
-    expect(canInstall(tooBig, 'auto')).toBe(true);
-    const sevenZip = info({ is_zip: false, in_place_ok: false, fits: false });
-    expect(canInstall(sevenZip, 'auto')).toBe(false);
-    expect(canInstall(info({ in_place_ok: false }), 'inplace')).toBe(false);
+    expect(canInstall(tooBig, InstallMode.EXTRACT)).toBe(false);
+    expect(canInstall(tooBig, InstallMode.IN_PLACE)).toBe(true);
+    expect(canInstall(tooBig, InstallMode.AUTO)).toBe(true);
+    const sevenZip = info({ isZip: false, inPlaceOk: false, fits: false });
+    expect(canInstall(sevenZip, InstallMode.AUTO)).toBe(false);
+    expect(canInstall(info({ inPlaceOk: false }), InstallMode.IN_PLACE)).toBe(false);
   });
 
   it('searches installed mods by name and folder, newest first', () => {
@@ -112,52 +108,46 @@ describe('mods logic', () => {
 });
 
 describe('reading what the engine sends', () => {
-  it('fills in every list the engine leaves out', () => {
-    const mods = readMods({
-      content_dir: 'C:/content',
-      jobs: [{ id: 7, source: 'C:/x/Bus.zip' } as InstallProgress],
-    });
-    expect(mods.installed).toEqual([]);
-    expect(mods.folders).toEqual([]);
-    expect(mods.cleaned).toEqual([]);
-    expect(mods.jobs[0]).toMatchObject({
-      name: 'Bus.zip',
-      report: [],
-      warnings: [],
-      finished: null,
-    });
+  it('lists no installed mods while the engine does not send them', () => {
+    expect(readMods(create(ModsStatusSchema, { contentDir: 'C:/content' })).installed).toEqual([]);
   });
 
   it('does not treat an ended job without an end time as running', () => {
-    expect(isRunning(job({ state: 'failed', finished: undefined as unknown as null }))).toBe(false);
+    expect(isRunning(job({ state: InstallState.FAILED }))).toBe(false);
     expect(isRunning(job({}))).toBe(true);
   });
 });
 
 describe('mock mods engine', () => {
-  it('walks a started install through to done and lists the mod', () => {
+  it('walks a started install through to done and lists the mod', async () => {
     const engine = new MockLauncher();
-    const started = engine.handle('start_install', {
+    const started = await engine.handle('startInstall', {
       path: 'C:\\Downloads\\Citaro_K.zip',
-      mode: 'auto',
+      mode: InstallMode.AUTO,
     });
-    expect(started.state).toBe('queued');
-    const seen = new Set<string>();
+    expect(started.state).toBe(InstallState.QUEUED);
+    const seen = new Set<InstallState>();
     for (let i = 0; i < 12; i++) {
       engine.advanceJobs();
-      const j = engine.handle('mods', undefined).jobs.find((x) => x.id === started.id)!;
+      const j = (await engine.handle('mods', {})).jobs.find((x) => x.id === started.id)!;
       seen.add(j.state);
     }
     expect([...seen]).toEqual(
-      expect.arrayContaining(['planning', 'checking', 'unpacking', 'moving', 'done']),
+      expect.arrayContaining([
+        InstallState.PLANNING,
+        InstallState.CHECKING,
+        InstallState.UNPACKING,
+        InstallState.MOVING,
+        InstallState.DONE,
+      ]),
     );
-    const mods = engine.handle('mods', undefined);
+    const mods = await engine.handle('mods', {});
     expect(mods.installed?.[0].name).toBe('Citaro_K');
 
-    const { uninstalled } = engine.handle('uninstall_mod', { name: 'Citaro_K' });
+    const { uninstalled } = await engine.handle('uninstallMod', { name: 'Citaro_K' });
     expect(uninstalled).toEqual(['Vehicles/Citaro_K']);
     expect(
-      (engine.handle('mods', undefined).installed ?? []).some((m) => m.name === 'Citaro_K'),
+      ((await engine.handle('mods', {})).installed ?? []).some((m) => m.name === 'Citaro_K'),
     ).toBe(false);
   });
 });

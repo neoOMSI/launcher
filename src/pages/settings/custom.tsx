@@ -5,6 +5,7 @@ import { call, errorText, useCommand } from '../../lib/engine';
 import { bytes } from '../../lib/format';
 import { useNav, useToast } from '../../lib/nav';
 import { useSettings } from '../../lib/settings';
+import { PaxState } from '../../types/launcher';
 import type { CustomProps } from './rows';
 import { PRESET_IDS, PRESETS, presetOf, tr, type CustomId, type PresetId } from './schema';
 
@@ -78,27 +79,27 @@ const Wheel: React.FC<CustomProps> = () => {
 };
 
 const PaxPackRow: React.FC<CustomProps> = () => {
-  const pack = useCommand('pax_pack');
+  const pack = useCommand('paxPack');
   const toast = useToast();
-  const get = () => call('install_pax_pack').catch((err) => toast(errorText(err), 'caution'));
+  const get = () => call('installPaxPack').catch((err) => toast(errorText(err), 'caution'));
   const p = pack.data;
   if (!p) return null;
-  if (p.state === 'downloading' || p.state === 'installing') {
+  if (p.state === PaxState.DOWNLOADING || p.state === PaxState.INSTALLING) {
     return (
       <span className="flex items-center gap-2.5 text-[14.5px] text-muted tabular-nums">
         <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
-        {p.state === 'installing'
+        {p.state === PaxState.INSTALLING
           ? tr('paxPack.installing')
-          : p.total > 0
+          : p.total > 0n
             ? tr('paxPack.downloading', {
-                percent: Math.round((p.done / p.total) * 100),
+                percent: Math.round((Number(p.done) / Number(p.total)) * 100),
                 size: bytes(p.total),
               })
             : tr('paxPack.starting')}
       </span>
     );
   }
-  if (p.state === 'installed') {
+  if (p.state === PaxState.INSTALLED) {
     return (
       <span className="flex items-center gap-2 text-[14.5px] text-muted">
         <Icon name="check_circle" size={18} style={{ color: 'var(--color-ok)' }} />
@@ -111,15 +112,15 @@ const PaxPackRow: React.FC<CustomProps> = () => {
       <GoButton
         icon="download"
         label={
-          p.state === 'outdated'
+          p.state === PaxState.OUTDATED
             ? tr('paxPack.update')
-            : p.state === 'failed'
+            : p.state === PaxState.FAILED
               ? tr('paxPack.retry')
               : tr('paxPack.download')
         }
         onClick={get}
       />
-      {p.state === 'failed' && (
+      {p.state === PaxState.FAILED && (
         <span className="max-w-[26rem] text-right text-[13.5px] text-danger">{p.message}</span>
       )}
     </div>

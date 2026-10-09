@@ -7,12 +7,22 @@ import { EngineProvider } from '../lib/engine';
 import { SettingsProvider, useSettings } from '../lib/settings';
 import { setLanguage } from '../i18n';
 import { PassengerPromo } from '../pages/drive/Promo';
-import type { PaxPack } from '../types/launcher';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import {
+  PaxPackSchema,
+  PaxState,
+  ResponseSchema,
+  SettingsSchema,
+  settingsForEngine,
+  settingsFromEngine,
+  type PaxPack,
+  type Settings,
+} from '../types/launcher';
 import type { NeoomsiBridge } from '../types/neoomsi';
 
 interface Fake {
   calls: string[];
-  settings: Record<string, unknown> | null;
+  settings: Settings | null;
   failSave: boolean;
   releaseSettings?: () => void;
   holdSave?: Promise<void>;
@@ -32,16 +42,18 @@ function bridge(fake: Fake) {
       fake.calls.push(command);
       if (command === 'settings') {
         if (!fake.settings) await new Promise<void>((r) => (fake.releaseSettings = r));
-        return fake.settings;
+        return settingsForEngine(fake.settings!);
       }
-      if (command === 'save_settings') {
+      if (command === 'saveSettings') {
         await fake.holdSave;
         if (fake.failSave) throw new Error('disk full');
-        return { ...fake.settings, ...(args as object) };
+        const changes = create(SettingsSchema, args as MessageInitShape<typeof SettingsSchema>);
+        return settingsForEngine({ ...fake.settings, ...settingsFromEngine(changes) });
       }
-      if (command === 'update_check') return null;
-      if (command === 'pax_pack' || command === 'install_pax_pack') return fake.pax;
-      return [];
+      if (command === 'paxPack' || command === 'installPaxPack') return fake.pax;
+      return create(ResponseSchema, {
+        answer: { case: command, value: {} } as MessageInitShape<typeof ResponseSchema>['answer'],
+      }).answer.value;
     },
   } as unknown as NeoomsiBridge;
 }
@@ -90,7 +102,7 @@ describe('saving a setting', () => {
         done = true;
       });
     });
-    await waitFor(() => expect(fake.calls).toContain('save_settings'));
+    await waitFor(() => expect(fake.calls).toContain('saveSettings'));
     await new Promise((r) => setTimeout(r, 20));
     expect(done).toBe(false);
     await release();
@@ -106,7 +118,7 @@ describe('saving a setting', () => {
     act(() => {
       saving = save({ pax_models: 'realistic' });
     });
-    await waitFor(() => expect(fake.calls).toContain('save_settings'));
+    await waitFor(() => expect(fake.calls).toContain('saveSettings'));
     const reads = fake.calls.filter((c) => c === 'settings').length;
     await act(async () => {
       window.dispatchEvent(new Event('focus'));
@@ -123,7 +135,7 @@ describe('saving a setting', () => {
     const fake: Fake = { calls: [], settings: { pax_models: 'omsi' }, failSave: false };
     await mount(fake);
     await act(() => save({}));
-    expect(fake.calls).not.toContain('save_settings');
+    expect(fake.calls).not.toContain('saveSettings');
   });
 
   it('rejects when the engine could not store it', async () => {
@@ -150,10 +162,10 @@ describe('the update banner', () => {
     const fake: Fake = { calls: [], settings: null, failSave: false };
     mount(fake);
     await waitFor(() => expect(fake.calls).toContain('settings'));
-    expect(fake.calls).not.toContain('update_check');
+    expect(fake.calls).not.toContain('updateCheck');
     fake.settings = { update_check: true };
     await act(async () => fake.releaseSettings?.());
-    await waitFor(() => expect(fake.calls).toContain('update_check'));
+    await waitFor(() => expect(fake.calls).toContain('updateCheck'));
   });
 
   it('never checks when the player turned checks off', async () => {
@@ -161,7 +173,7 @@ describe('the update banner', () => {
     mount(fake);
     await waitFor(() => expect(fake.calls).toContain('settings'));
     await new Promise((r) => setTimeout(r, 50));
-    expect(fake.calls).not.toContain('update_check');
+    expect(fake.calls).not.toContain('updateCheck');
   });
 });
 
@@ -172,14 +184,7 @@ describe('the passenger card', () => {
       calls: [],
       settings: { pax_models: 'realistic' },
       failSave: false,
-      pax: {
-        state: 'outdated',
-        done: 0,
-        total: 0,
-        message: '',
-        installed: 1,
-        latest: null,
-      },
+      pax: create(PaxPackSchema, { state: PaxState.OUTDATED, installed: 1n }),
     };
     bridge(fake);
     render(
@@ -193,6 +198,6 @@ describe('the passenger card', () => {
     expect(screen.getByText(/out of date/i)).toBeDefined();
     expect(screen.queryByTitle(/hide/i)).toBeNull();
     fireEvent.click(update);
-    await waitFor(() => expect(fake.calls).toContain('install_pax_pack'));
+    await waitFor(() => expect(fake.calls).toContain('installPaxPack'));
   });
 });

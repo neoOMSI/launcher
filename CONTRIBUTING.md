@@ -4,7 +4,7 @@ Thanks for your interest in contributing. Like [neoOMSI](https://github.com/neoO
 
 ## Non-negotiable principles
 
-1. **The engine owns the data:** The launcher shows and edits what the engine reports over its [protocol](https://github.com/neoOMSI/neoOMSI/blob/main/docs/LAUNCHER_PROTOCOL.md). It does not parse OMSI content, settings files, or install folders itself. A feature that needs new data starts as a neoOMSI PR adding the command or event.
+1. **The engine owns the data:** The launcher shows and edits what the engine reports over its [protocol](https://github.com/neoOMSI/neoOMSI/blob/main/docs/LAUNCHER_PROTOCOL.md). It does not parse OMSI content, settings files, or install folders itself. A feature that needs new data starts as a neoOMSI PR adding the command or event. `proto/launcher.proto` is a copy of neoOMSI's schema: `pnpm sync:engine` copies it from a neoOMSI checkout beside this one and regenerates `src/types/launcher_pb.ts`, which is never edited by hand.
 2. **No AI slop / Strict code ownership:** AI tools may assist your workflow, but generated code receives **no lower review standard**. Every line submitted must be understood, verified, and defended by the author. Speculative abstractions, unreviewed AI dumps, and vibe-coded refactors will be closed during triage.
 3. **Focused PR scope:** Keep diffs tight and focused on one change. Never combine bug fixes with unrelated cosmetic refactoring, reformatting, or dependency updates.
 4. **No proprietary assets:** Never commit OMSI screenshots, textures, or other copyrighted material. The neoOMSI name and logos follow [TRADEMARKS.md](TRADEMARKS.md).

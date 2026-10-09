@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { getLanguage, setLanguage, type SupportedLanguage } from '../i18n';
-import type { Settings } from '../types/launcher';
+import { settingsForEngine, settingsFromEngine, type Settings } from '../types/launcher';
 import { call, errorText, useEngine } from './engine';
 
 interface SettingsValue {
@@ -61,7 +61,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const at = started.current;
     call('settings')
       .then((next) => {
-        if (at === started.current && !unsettled()) adopt(next);
+        if (at === started.current && !unsettled()) adopt(settingsFromEngine(next));
       })
       .catch((err) => setError(errorText(err)));
   }, [adopt]);
@@ -92,10 +92,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       inFlight.current--;
       if (!inFlight.current) setSaving(false);
     };
-    call('save_settings', patch)
+    call('saveSettings', settingsForEngine(patch))
       .then((saved) => {
         settle();
-        if (at === started.current && !unsettled()) adopt(saved);
+        if (at === started.current && !unsettled()) adopt(settingsFromEngine(saved));
         for (const w of waiters) w.resolve();
       })
       .catch((err) => {
@@ -106,7 +106,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         call('settings')
           .then((stored) => {
             if (at !== started.current || unsettled()) return;
-            adopt(stored);
+            adopt(settingsFromEngine(stored));
             setError(errorText(err));
           })
           .catch(() => {});

@@ -164,7 +164,7 @@ const Folder: React.FC<CustomProps> = () => {
     if (!picked || picked === root) return;
     setBusy(true);
     try {
-      await call('save_config', { root: picked });
+      await call('saveConfig', { root: picked });
       toast(tr('folder.changed'), 'tip');
     } catch (err) {
       toast(errorText(err), 'caution');
@@ -234,8 +234,8 @@ const CheckUpdates: React.FC<CustomProps> = () => {
   const run = () => {
     if (!version) return;
     setCheck({ state: 'checking' });
-    call('update_check')
-      .then((latest) => setCheck({ state: 'done', latest }))
+    call('updateCheck')
+      .then(({ release }) => setCheck({ state: 'done', latest: release ?? null }))
       .catch((err) => setCheck({ state: 'failed', error: errorText(err) }));
   };
 

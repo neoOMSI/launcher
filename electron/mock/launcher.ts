@@ -1,18 +1,52 @@
-import type {
-  Command,
-  CommandResult,
-  Config,
-  Controller,
-  Duty,
-  Instance,
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import {
+  CancelledSchema,
+  ConfigSchema,
+  ControllerListSchema,
+  EmptySchema,
+  EngineVersionSchema,
   InstallMode,
-  InstallProgress,
-  InstalledMod,
-  KeyBindings,
-  PaxPack,
-  SourceInfo,
-  ServerInfo,
-  Settings,
+  InstallProgressSchema,
+  InstallState,
+  InstanceListSchema,
+  InstanceSchema,
+  JoinCheckSchema,
+  KeyBindingsSchema,
+  LanRole,
+  LaunchedSchema,
+  LineListSchema,
+  LogLinesSchema,
+  MapListSchema,
+  OptionPresetListSchema,
+  PaxPackSchema,
+  PaxState,
+  ProfileNamesSchema,
+  ServerInfoSchema,
+  ServerListSchema,
+  SettingsSchema,
+  SituationListSchema,
+  SourceInfoSchema,
+  StoppedSchema,
+  TutorialListSchema,
+  UpdateCheckSchema,
+  VehicleListSchema,
+  WeatherListSchema,
+  settingsForEngine,
+  settingsFromEngine,
+  type Command,
+  type CommandArgs,
+  type CommandResult,
+  type Config,
+  type Controller,
+  type InstallProgress,
+  type InstalledMod,
+  type Instance,
+  type JoinCheck,
+  type KeyBindings,
+  type PaxPack,
+  type ServerInfo,
+  type Settings,
+  type SourceInfo,
 } from '../../src/types/launcher';
 import { mockBusModel } from './bus-model';
 import {
@@ -34,9 +68,10 @@ import {
 } from './content';
 
 const now = () => Math.floor(Date.now() / 1000);
+const secs = () => BigInt(now());
 
 const PAX_RELEASE = {
-  version: 2,
+  version: 2n,
   notes:
     '- 40 new people, from school children to commuters with suitcases\n- Faster loading of the passenger models',
   page: 'https://github.com/neoOMSI/neoOMSI/releases/tag/realistic-pax-v2',
@@ -47,7 +82,7 @@ const GAME_RELEASE = {
   version: '0.3.0',
   page: 'https://github.com/neoOMSI/neoOMSI/releases/tag/v0.3.0',
   prerelease: false,
-  size: 140_000_000,
+  size: 140_000_000n,
   notes: [
     '> **Early development build.** Expect bugs.',
     '',
@@ -70,62 +105,60 @@ const GAME_RELEASE = {
 };
 
 function seedInstances(): Instance[] {
-  const game = (pid: number, slot: number, patch: Partial<Instance>): Instance => ({
-    id: `game-${pid}`,
-    pid,
-    process_started: now() - 2820,
-    slot,
-    log: `C:\\Users\\jakob\\.neoomsi\\game${slot ? `-${slot}` : ''}.log`,
-    started: now() - 2820,
-    map: 'Berlin-Spandau 1989',
-    bus: 'Vehicles/MAN/MAN SD200 (SD80).bus',
-    entry: 0,
-    line: '92',
-    tour: '3',
-    profile: CONFIG.profile,
-    lan: 'off',
-    args: [],
-    running: true,
-    ended: null,
-    exit_code: null,
-    stopping: null,
-    killed: false,
-    lan_status: null,
-    last_line: '',
-    ...patch,
-  });
+  const game = (pid: number, slot: number, patch: MessageInitShape<typeof InstanceSchema>) =>
+    create(InstanceSchema, {
+      id: `game-${pid}`,
+      pid,
+      processStarted: BigInt(now() - 2820),
+      slot,
+      log: `C:\\Users\\jakob\\.neoomsi\\game${slot ? `-${slot}` : ''}.log`,
+      started: BigInt(now() - 2820),
+      map: 'Berlin-Spandau 1989',
+      bus: 'Vehicles/MAN/MAN SD200 (SD80).bus',
+      entry: 0,
+      line: '92',
+      tour: '3',
+      profile: CONFIG.profile,
+      lan: 'off',
+      running: true,
+      ...patch,
+    });
   return [
     game(17840, 0, {
       lan: 'host',
-      last_line: 'Line 92 → Rathaus Spandau, 1 min late, 23 passengers on board',
-      lan_status: {
-        role: 'host',
+      lastLine: 'Line 92 → Rathaus Spandau, 1 min late, 23 passengers on board',
+      lanStatus: {
+        role: LanRole.HOST,
+        name: CONFIG.profile,
         code: 'OMSI-7KQ2-M4XD-9PRT',
-        tunnel: true,
+        tunnel: 'https://omsi-7kq2.trycloudflare.com',
         players: [
           {
+            id: 1,
             name: CONFIG.profile,
             bus: 'Vehicles/MAN/MAN SD200 (SD80).bus',
             line: '92',
             destination: 'Rathaus Spandau',
             passengers: 23,
-            location: 'Altstädter Ring',
+            drawn: true,
           },
           {
+            id: 2,
             name: 'Lena K.',
             bus: 'Vehicles/MAN/MAN SD202 (D92).bus',
             line: '137',
             destination: 'Johannesstift',
             passengers: 11,
-            location: 'Falkenseer Platz',
+            location: '1.2 km ahead',
+            drawn: true,
           },
           {
+            id: 3,
             name: 'busfahrer_ole',
             bus: 'Vehicles/MAN/MAN SL200.bus',
-            line: '',
-            destination: '',
             passengers: 0,
-            location: 'Betriebshof Spandau',
+            location: '3.4 km behind',
+            drawn: false,
           },
         ],
         chat: [
@@ -137,41 +170,45 @@ function seedInstances(): Instance[] {
           'busfahrer_ole is missing the map "Berlin-Spandau 1989" v1.3 and sees an older version',
         ],
         connected: true,
-        host_name: CONFIG.profile,
-        rejected: '',
+        hostName: CONFIG.profile,
+        map: 'maps/Berlin-Spandau/global.cfg',
       },
     }),
     game(17112, 1, {
-      started: now() - 5400,
-      process_started: now() - 5400,
+      started: BigInt(now() - 5400),
+      processStarted: BigInt(now() - 5400),
       map: 'Grundorf',
       bus: 'Vehicles/MAN/MAN NL202.bus',
       line: '24',
       tour: '2',
       running: false,
-      ended: now() - 540,
-      exit_code: -1073741819,
-      last_line: 'ERROR access violation in Sceneryobjects/Ampel/ampel.sco script, line 212',
+      ended: BigInt(now() - 540),
+      exitCode: -1073741819,
+      lastLine: 'ERROR access violation in Sceneryobjects/Ampel/ampel.sco script, line 212',
     }),
     game(16950, 2, {
-      started: now() - 7800,
-      process_started: now() - 7800,
+      started: BigInt(now() - 7800),
+      processStarted: BigInt(now() - 7800),
       map: 'Neuhausen',
       bus: 'Vehicles/O530/O530.bus',
-      line: null,
-      tour: null,
+      line: undefined,
+      tour: undefined,
       running: false,
-      ended: now() - 1320,
+      ended: BigInt(now() - 1320),
       killed: true,
-      stopping: now() - 1328,
-      last_line: 'Saving the personnel file…',
+      stopping: BigInt(now() - 1328),
+      lastLine: 'Saving the personnel file…',
     }),
   ];
 }
 
+type Handlers = {
+  [C in Command]: (args: CommandArgs<C>) => CommandResult<C> | Promise<CommandResult<C>>;
+};
+
 export class MockLauncher {
   private settings: Settings = defaultSettings();
-  private config: Config = { ...CONFIG };
+  private config: Config = create(ConfigSchema, CONFIG);
   private profiles = [...PROFILES];
   private keys: KeyBindings = structuredClone(KEYBINDINGS);
   private controllers: Controller[] = structuredClone(CONTROLLERS);
@@ -179,233 +216,218 @@ export class MockLauncher {
   private instances: Instance[] = seedInstances();
   private jobs: InstallProgress[] = structuredClone(MODS.jobs);
   private installedMods: InstalledMod[] = structuredClone(MODS.installed ?? []);
-  private jobTicks = new Map<number, number>(
-    MODS.jobs.filter((j) => j.finished === null).map((j) => [j.id, 4]),
+  private jobTicks = new Map<bigint, number>(
+    MODS.jobs.filter((j) => j.finished === undefined).map((j) => [j.id, 4]),
   );
   private nextPid = 18200;
-  private paxPack: PaxPack = {
-    state: 'missing',
-    done: 0,
-    total: 0,
-    message: '',
-    installed: null,
+  private paxPack: PaxPack = create(PaxPackSchema, {
+    state: PaxState.MISSING,
     latest: PAX_RELEASE,
+  });
+
+  handle<C extends Command>(
+    command: C,
+    args: unknown,
+  ): CommandResult<C> | Promise<CommandResult<C>> {
+    return this.handlers[command]((args ?? {}) as CommandArgs<C>);
+  }
+
+  private readonly handlers: Handlers = {
+    config: () => this.config,
+    saveConfig: (changes) => {
+      this.config = create(ConfigSchema, {
+        root: changes.root ?? this.config.root,
+        game: changes.game ?? this.config.game,
+        profile: changes.profile ?? this.config.profile,
+      });
+      return this.config;
+    },
+    maps: () => create(MapListSchema, { maps: MAPS }),
+    vehicles: () => create(VehicleListSchema, { vehicles: VEHICLES }),
+    weather: () => create(WeatherListSchema, { weather: WEATHER }),
+    lines: ({ map, date }) => create(LineListSchema, { lines: lines(map ?? '', date ?? '') }),
+    minimap: ({ map }) => minimap(map ?? ''),
+    ibis: ({ line, hof }) => ibis(line ?? '', hof ?? ''),
+    profiles: () => create(ProfileNamesSchema, { names: this.profiles }),
+    profile: ({ name }) => profile(name ?? ''),
+    createProfile: (args) => {
+      const name = (args.name ?? '').trim();
+      if (!name) throw new Error('A driver needs a name');
+      if (this.profiles.includes(name)) throw new Error(`${name} already exists`);
+      this.profiles.push(name);
+      this.config = create(ConfigSchema, { ...this.config, profile: name });
+      return { ...profile(name), name, exists: true };
+    },
+    deleteProfile: ({ name }) => {
+      this.profiles = this.profiles.filter((p) => p !== name);
+      if (this.config.profile === name) {
+        this.config = create(ConfigSchema, { ...this.config, profile: this.profiles[0] ?? '' });
+      }
+      return create(EmptySchema);
+    },
+    mods: () => ({ ...MODS, jobs: this.jobs, installed: this.installedMods }),
+    modinfo: ({ path }) => modInfo(path ?? ''),
+    startInstall: ({ path, mode }) => this.install(path ?? '', mode ?? InstallMode.AUTO),
+    cancelInstall: ({ id }) => {
+      const job = this.jobs.find((j) => j.id === id);
+      if (!job || job.finished !== undefined) return create(CancelledSchema);
+      job.state = InstallState.CANCELLED;
+      job.message = 'cancelled - nothing was installed, the unpacked files were removed';
+      job.finished = secs();
+      return create(CancelledSchema, { cancelled: true });
+    },
+    clearInstalls: () => {
+      this.jobs = this.jobs.filter((j) => j.finished === undefined);
+      return create(EmptySchema);
+    },
+    uninstallMod: ({ name }) => {
+      const mod = this.installedMods.find((m) => m.name === name);
+      if (!mod) throw new Error(`${name} is not installed`);
+      this.installedMods = this.installedMods.filter((m) => m !== mod);
+      return { uninstalled: mod.folders };
+    },
+    instances: () => create(InstanceListSchema, { instances: this.instances }),
+    launch: (duty) => this.launch(duty),
+    stop: ({ pid }) => this.stop(pid ?? 0),
+    log: ({ pid, lines }) => create(LogLinesSchema, { lines: this.log(pid ?? 0, lines) }),
+    join: ({ text }) => this.join(text ?? ''),
+    settings: () => settingsForEngine(this.settings),
+    saveSettings: (changes) => {
+      this.settings = {
+        ...this.settings,
+        ...settingsFromEngine(create(SettingsSchema, changes)),
+      };
+      if (this.settings.pax_models === 'realistic' && this.paxPack.installed === undefined) {
+        this.paxPack = create(PaxPackSchema, {
+          ...this.paxPack,
+          state: PaxState.OUTDATED,
+          installed: 1n,
+        });
+      }
+      return settingsForEngine(this.settings);
+    },
+    paxPack: () => this.paxPack,
+    installPaxPack: () => {
+      this.paxPack = create(PaxPackSchema, {
+        ...this.paxPack,
+        state: PaxState.INSTALLED,
+        installed: PAX_RELEASE.version,
+      });
+      return this.paxPack;
+    },
+    updateCheck: () => create(UpdateCheckSchema, { release: GAME_RELEASE }),
+    optionPresets: () => create(OptionPresetListSchema),
+    keybindings: () => this.keys,
+    saveKeybindings: (keys) => {
+      this.keys = create(KeyBindingsSchema, keys);
+      return this.keys;
+    },
+    controllers: () => create(ControllerListSchema, { controllers: this.controllers }),
+    saveControllers: ({ controllers }) => {
+      this.controllers = create(ControllerListSchema, { controllers }).controllers;
+      return create(ControllerListSchema, { controllers: this.controllers });
+    },
+    preview: ({ paint }) => mockBusModel(paint ?? ''),
+    situations: ({ map }) =>
+      create(SituationListSchema, {
+        situations:
+          map === 'maps/Berlin-Spandau/global.cfg'
+            ? [{ name: 'Line 92, tour 2', file: 'laststn.osn', time: BigInt(now() - 7200) }]
+            : [],
+      }),
+    tutorials: () => create(TutorialListSchema, { tutorials: TUTORIALS }),
+    servers: () => create(ServerListSchema, { servers: this.servers }),
+    saveServers: ({ servers }) => {
+      this.servers = [
+        ...this.servers.filter((s) => s.official),
+        ...(servers ?? []).map(
+          (s) =>
+            this.servers.find((o) => o.address === s.address) ??
+            create(ServerInfoSchema, {
+              name: s.name,
+              address: s.address,
+              error: 'Not reachable',
+            }),
+        ),
+      ];
+      return create(EmptySchema);
+    },
+    version: () => create(EngineVersionSchema, { version: '0.2.0-mock', protocol: 2 }),
   };
 
-  handle<C extends Command>(command: C, args: unknown): CommandResult<C> {
-    return this.dispatch(command, (args ?? {}) as Record<string, unknown>) as CommandResult<C>;
-  }
-
-  private dispatch(command: Command, args: Record<string, unknown>): unknown {
-    switch (command) {
-      case 'config':
-        return this.config;
-      case 'maps':
-        return MAPS;
-      case 'vehicles':
-        return VEHICLES;
-      case 'weather':
-        return WEATHER;
-      case 'lines':
-        return lines(String(args.map), String(args.date));
-      case 'ibis':
-        return ibis(String(args.line), String(args.hof));
-      case 'profiles':
-        return this.profiles;
-      case 'profile':
-        return profile(String(args.name));
-      case 'mods':
-        return { ...MODS, jobs: this.jobs, installed: this.installedMods };
-      case 'install':
-        return this.install(String(args.path), (args.mode as InstallMode) ?? 'auto');
-      case 'instances':
-        return this.instances;
-      case 'stop':
-        return this.stop(Number(args.pid));
-      case 'log':
-        return this.log(Number(args.pid), args.lines ? Number(args.lines) : undefined);
-      case 'join':
-        return this.join(String(args.text));
-      case 'settings':
-        return this.settings;
-      case 'save_settings':
-        this.settings = { ...this.settings, ...(args as Settings) };
-        if (this.settings.pax_models === 'realistic' && this.paxPack.installed === null) {
-          this.paxPack = { ...this.paxPack, state: 'outdated', installed: 1 };
-        }
-        return this.settings;
-      case 'pax_pack':
-        return this.paxPack;
-      case 'install_pax_pack':
-        this.paxPack = { ...this.paxPack, state: 'installed', installed: PAX_RELEASE.version };
-        return this.paxPack;
-      case 'update_check':
-        return GAME_RELEASE;
-      case 'keybindings':
-        return this.keys;
-      case 'save_keybindings':
-        this.keys = structuredClone(args as unknown as KeyBindings);
-        return this.keys;
-      case 'launch':
-        return this.launch(args as unknown as Duty);
-      case 'minimap':
-        return minimap(String(args.map));
-      case 'preview':
-        return mockBusModel(String(args.paint ?? ''));
-      case 'tutorials':
-        return TUTORIALS;
-      case 'servers':
-        return this.servers;
-      case 'save_servers': {
-        const list = (args.servers ?? []) as { name: string; address: string }[];
-        this.servers = [
-          ...this.servers.filter((s) => s.official),
-          ...list.map(
-            (s) =>
-              this.servers.find((o) => o.address === s.address) ?? {
-                ...s,
-                official: false,
-                motd: '',
-                map: '',
-                time: '',
-                weather: '',
-                players: 0,
-                max_players: 0,
-                error: 'Not reachable',
-              },
-          ),
-        ];
-        return {};
-      }
-      case 'version':
-        return { version: '0.2.0-mock', protocol: 1 };
-      case 'save_config':
-        this.config = { ...this.config, ...(args as Partial<Config>) };
-        return this.config;
-      case 'create_profile': {
-        const name = String(args.name).trim();
-        if (!name) throw new Error('A driver needs a name');
-        if (this.profiles.includes(name)) throw new Error(`${name} already exists`);
-        this.profiles.push(name);
-        this.config = { ...this.config, profile: name };
-        return { ...profile(name), name, exists: true };
-      }
-      case 'delete_profile':
-        this.profiles = this.profiles.filter((p) => p !== args.name);
-        if (this.config.profile === args.name) {
-          this.config = { ...this.config, profile: this.profiles[0] ?? '' };
-        }
-        return { deleted: true };
-      case 'modinfo':
-        return modInfo(String(args.path));
-      case 'start_install':
-        return this.install(String(args.path), (args.mode as InstallMode) ?? 'auto');
-      case 'cancel_install': {
-        const job = this.jobs.find((j) => j.id === Number(args.id));
-        if (!job || job.finished) return { cancelled: false };
-        job.state = 'cancelled';
-        job.message = 'cancelled - nothing was installed, the unpacked files were removed';
-        job.finished = now();
-        return { cancelled: true };
-      }
-      case 'clear_installs':
-        this.jobs = this.jobs.filter((j) => j.finished === null);
-        return {};
-      case 'uninstall_mod': {
-        const mod = this.installedMods.find((m) => m.name === args.name);
-        if (!mod) throw new Error(`${String(args.name)} is not installed`);
-        this.installedMods = this.installedMods.filter((m) => m !== mod);
-        return { uninstalled: mod.folders };
-      }
-      case 'option_presets':
-        return [];
-      case 'controllers':
-        return this.controllers;
-      case 'save_controllers':
-        this.controllers = structuredClone((args.controllers ?? []) as Controller[]);
-        return this.controllers;
-      case 'situations':
-        return args.map === 'maps/Berlin-Spandau/global.cfg'
-          ? [{ name: 'Line 92, tour 2', file: 'laststn.osn', time: now() - 7200 }]
-          : [];
-    }
-  }
-
-  private launch(duty: Duty) {
-    if (!duty.tutorial && (!duty.map || !duty.bus)) {
+  private launch(duty: CommandArgs<'launch'>) {
+    const map = duty.map ?? '';
+    const bus = duty.bus ?? '';
+    if (!duty.tutorial && (!map || !bus)) {
       throw new Error('Choose a bus and a map first.');
     }
     const pid = this.nextPid++;
     const lan = duty.lan ?? 'off';
-    this.instances.push({
+    const game = create(InstanceSchema, {
       id: `game-${pid}`,
       pid,
-      process_started: now(),
+      processStarted: secs(),
       slot: this.instances.length,
       log: `C:\\Users\\jakob\\.neoomsi\\game${this.instances.length ? `-${this.instances.length}` : ''}.log`,
-      started: now(),
-      map: MAPS.find((m) => m.file === duty.map)?.friendly ?? duty.map,
-      bus: VEHICLES.find((v) => v.file === duty.bus)?.name ?? duty.bus,
-      entry: duty.entry ?? null,
-      line: duty.line ?? null,
-      tour: duty.tour ?? null,
+      started: secs(),
+      map: MAPS.find((m) => m.file === map)?.friendly ?? map,
+      bus: VEHICLES.find((v) => v.file === bus)?.name ?? bus,
+      entry: duty.entry,
+      line: duty.line,
+      tour: duty.tour,
       profile: duty.profile ?? CONFIG.profile,
       lan,
-      args: ['--map', duty.map, '--bus', duty.bus, '--time', duty.time],
+      args: ['--map', map, '--bus', bus, '--time', duty.time ?? ''],
       running: true,
-      ended: null,
-      exit_code: null,
-      stopping: null,
-      killed: false,
-      lan_status:
+      lanStatus:
         lan === 'host'
           ? {
-              role: 'host',
+              role: LanRole.HOST,
+              name: CONFIG.profile,
               code: 'OMSI-7KQ2-M4XD-9PRT',
-              tunnel: true,
               players: [
                 {
+                  id: 1,
                   name: CONFIG.profile,
-                  bus: duty.bus,
+                  bus,
                   line: duty.line ?? '',
-                  destination: '',
                   passengers: 0,
-                  location: 'Depot',
+                  drawn: true,
                 },
               ],
-              chat: [],
-              warnings: [],
               connected: true,
-              host_name: CONFIG.profile,
-              rejected: '',
+              hostName: CONFIG.profile,
+              map,
             }
-          : null,
-      last_line: 'Loading map tiles 12 / 94',
+          : undefined,
+      lastLine: 'Loading map tiles 12 / 94',
     });
-    return {
+    this.instances.push(game);
+    return create(LaunchedSchema, {
       pid,
-      log: this.instances[this.instances.length - 1].log,
+      log: game.log,
       command: 'neoomsi.exe',
       others: this.instances.filter((i) => i.running).length - 1,
-    };
+    });
   }
 
   private stop(pid: number) {
     const instance = this.instances.find((i) => i.pid === pid);
     if (!instance) throw new Error(`No game with process ${pid}`);
     instance.running = false;
-    instance.ended = now();
-    instance.exit_code = 0;
-    instance.lan_status = null;
-    instance.last_line = 'Session saved, goodbye.';
-    return { stopped: true, ended_by_itself: true };
+    instance.ended = secs();
+    instance.exitCode = 0;
+    instance.lanStatus = undefined;
+    instance.lastLine = 'Session saved, goodbye.';
+    return create(StoppedSchema, { endedByItself: true });
   }
 
   private log(pid: number, lines = 200) {
     const instance = this.instances.find((i) => i.pid === pid);
     if (!instance) return [];
-    const until = instance.ended ?? now();
-    const ticks = Math.min(400, Math.floor((until - instance.started) / 3));
+    const started = Number(instance.started);
+    const until = Number(instance.ended ?? secs());
+    const ticks = Math.min(400, Math.floor((until - started) / 3));
     const events = [
       'INFO  stop "Rathaus Spandau": 14 in, 9 out',
       'INFO  ticket sold: single fare 2.70',
@@ -422,22 +444,21 @@ export class MockLauncher {
       'WARN  texture "Sceneryobjects/Bushaltestelle/hst.dds" missing, using a placeholder',
       'INFO  timetable: 3 lines, 9 tours',
       ...Array.from({ length: ticks }, (_, k) => {
-        const at = new Date((instance.started + k * 3) * 1000).toTimeString().slice(0, 8);
+        const at = new Date((started + k * 3) * 1000).toTimeString().slice(0, 8);
         return `${at} ${events[(k * 7 + pid) % events.length]}`;
       }),
-      ...(instance.exit_code && instance.exit_code !== 0
+      ...(instance.exitCode
         ? ['ERROR access violation in Sceneryobjects/Ampel/ampel.sco script, line 212']
         : []),
-      instance.last_line,
+      instance.lastLine,
     ].slice(-lines);
   }
 
-  private join(text: string) {
+  private join(text: string): JoinCheck {
     const value = text.trim();
     if (/^OMSI(-[A-Z0-9]{4}){2,}$/.test(value.toUpperCase())) {
       return {
-        ok: true,
-        text: 'The host drives on Berlin-Spandau 1989',
+        ...create(JoinCheckSchema, { ok: true, text: 'The host drives on Berlin-Spandau 1989' }),
         map: 'maps/Berlin-Spandau/global.cfg',
       };
     }
@@ -445,40 +466,35 @@ export class MockLauncher {
       /^(\d{1,3}(?:\.\d{1,3}){3}|[a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::(\d+))?$/i,
     );
     if (address) {
-      return { ok: true, text: `Joins ${address[1]} on port ${address[2] ?? '7777'}` };
+      return create(JoinCheckSchema, {
+        ok: true,
+        text: `Joins ${address[1]} on port ${address[2] ?? '7777'}`,
+      });
     }
-    return { ok: false, text: 'This is neither a session code nor an address' };
+    return create(JoinCheckSchema, {
+      ok: false,
+      text: 'This is neither a session code nor an address',
+    });
   }
 
   private install(path: string, mode: InstallMode): InstallProgress {
-    const job: InstallProgress = {
-      id: Math.max(0, ...this.jobs.map((j) => j.id)) + 1,
+    const job = create(InstallProgressSchema, {
+      id: this.jobs.reduce((max, j) => (j.id > max ? j.id : max), 0n) + 1n,
       source: path,
       name: (path.split(/[\\/]/).pop() ?? path).replace(/\.(zip|7z|rar)$/i, ''),
-      state: 'queued',
-      mode,
-      files_done: 0,
-      files_total: 0,
-      bytes_done: 0,
-      bytes_total: 0,
-      free_bytes: MODS.free_bytes,
-      needed_bytes: 0,
+      state: InstallState.QUEUED,
+      mode: mode === InstallMode.UNSPECIFIED ? InstallMode.AUTO : mode,
+      freeBytes: MODS.freeBytes,
       message: 'waiting for the install before it',
-      report: [],
-      warnings: [],
-      installed: [],
-      kept_aside: [],
-      from_inbox: false,
-      started: now(),
-      finished: null,
-    };
+      started: secs(),
+    });
     this.jobs.unshift(job);
     this.jobTicks.set(job.id, 0);
     return job;
   }
 
   get installing() {
-    return this.jobs.some((j) => j.finished === null);
+    return this.jobs.some((j) => j.finished === undefined);
   }
 
   get installs() {
@@ -493,55 +509,55 @@ export class MockLauncher {
   advanceJobs() {
     let finished = false;
     for (const job of this.jobs) {
-      if (job.finished !== null) continue;
+      if (job.finished !== undefined) continue;
       const tick = (this.jobTicks.get(job.id) ?? 0) + 1;
       this.jobTicks.set(job.id, tick);
       this.stepJob(job, tick);
-      finished ||= job.finished !== null;
+      finished ||= job.finished !== undefined;
     }
     return finished;
   }
 
   private stepJob(job: InstallProgress, tick: number) {
     const unpackSteps = 6;
-    const bytes = job.bytes_total || mockSize(job.name);
-    const files = job.files_total || Math.max(12, Math.round(bytes / 2_600_000));
-    const inPlace = job.mode === 'inplace';
+    const bytes = Number(job.bytesTotal) || mockSize(job.name);
+    const files = Number(job.filesTotal) || Math.max(12, Math.round(bytes / 2_600_000));
+    const inPlace = job.mode === InstallMode.IN_PLACE;
     const archive = /\.(zip|7z|rar)$/i.test(job.source);
     const dest = inPlace ? `Archives/${job.source.split(/[\\/]/).pop()}` : mockDest(job.name);
     if (tick === 1) {
-      job.state = 'planning';
+      job.state = InstallState.PLANNING;
       job.message = archive ? "reading the archive's table of contents" : 'listing the folder';
       job.report = [`${job.name} -> ${dest}/ (${files} files, ${mockGb(bytes)})`];
     } else if (tick === 2) {
-      job.state = 'checking';
+      job.state = InstallState.CHECKING;
       job.message = 'checking the free disk space';
-      job.files_total = files;
-      job.bytes_total = bytes;
-      job.needed_bytes = bytes + 512 * 1024 * 1024;
+      job.filesTotal = BigInt(files);
+      job.bytesTotal = BigInt(bytes);
+      job.neededBytes = BigInt(bytes + 512 * 1024 * 1024);
     } else if (tick < 3 + unpackSteps) {
       const done = (tick - 2) / unpackSteps;
-      job.state = archive && !inPlace ? 'unpacking' : 'copying';
+      job.state = archive && !inPlace ? InstallState.UNPACKING : InstallState.COPYING;
       job.message = inPlace
         ? `copying the archive (${mockGb(bytes)})`
         : `${files} files, ${mockGb(bytes)}`;
-      job.files_total = files;
-      job.bytes_total = bytes;
-      job.files_done = Math.round(files * done);
-      job.bytes_done = Math.round(bytes * done);
+      job.filesTotal = BigInt(files);
+      job.bytesTotal = BigInt(bytes);
+      job.filesDone = BigInt(Math.round(files * done));
+      job.bytesDone = BigInt(Math.round(bytes * done));
     } else if (tick === 3 + unpackSteps) {
-      job.state = 'moving';
+      job.state = InstallState.MOVING;
       job.message = inPlace
         ? 'putting the archive into place'
         : 'moving the files into the content folder';
-      job.files_done = files;
-      job.bytes_done = bytes;
+      job.filesDone = BigInt(files);
+      job.bytesDone = BigInt(bytes);
     } else {
-      job.state = 'done';
+      job.state = InstallState.DONE;
       job.message = `installed ${dest} - it is in the lists now`;
       job.report = [...job.report, job.message];
       job.installed = [dest];
-      job.finished = now();
+      job.finished = secs();
       this.installedMods = [
         { name: job.name, installed: now(), folders: [dest], size: bytes },
         ...this.installedMods.filter((m) => m.name !== job.name),
@@ -568,36 +584,29 @@ function mockDest(name: string) {
 function modInfo(path: string): SourceInfo {
   const ext = path.match(/\.(zip|7z|rar)$/i)?.[1].toLowerCase();
   if (!ext) {
-    return {
-      is_archive: false,
-      is_zip: false,
-      files: 0,
-      unpacked_bytes: 0,
-      archive_bytes: 0,
-      needed_bytes: 0,
-      free_bytes: MODS.free_bytes,
+    return create(SourceInfoSchema, {
+      freeBytes: MODS.freeBytes,
       fits: true,
-      in_place: 'only a .zip archive can be used in place',
-      in_place_ok: false,
-      suggested: 'extract',
-    };
+      inPlace: 'only a .zip archive can be used in place',
+      suggested: InstallMode.EXTRACT,
+    });
   }
   const name = (path.split(/[\\/]/).pop() ?? path).replace(/\.(zip|7z|rar)$/i, '');
   const unpacked = /komplett|complete|xxl/i.test(name) ? 260_000_000_000 : mockSize(name);
   const needed = unpacked + 512 * 1024 * 1024;
-  const fits = needed <= MODS.free_bytes;
+  const fits = BigInt(needed) <= MODS.freeBytes;
   const zip = ext === 'zip';
-  return {
-    is_archive: true,
-    is_zip: zip,
-    files: Math.max(12, Math.round(unpacked / 2_600_000)),
-    unpacked_bytes: unpacked,
-    archive_bytes: Math.round(unpacked * 0.58),
-    needed_bytes: needed,
-    free_bytes: MODS.free_bytes,
+  return create(SourceInfoSchema, {
+    isArchive: true,
+    isZip: zip,
+    files: BigInt(Math.max(12, Math.round(unpacked / 2_600_000))),
+    unpackedBytes: BigInt(unpacked),
+    archiveBytes: BigInt(Math.round(unpacked * 0.58)),
+    neededBytes: BigInt(needed),
+    freeBytes: MODS.freeBytes,
     fits,
-    in_place: zip ? '' : '7z and RAR archives must be unpacked',
-    in_place_ok: zip,
-    suggested: !fits && zip ? 'inplace' : 'extract',
-  };
+    inPlace: zip ? '' : '7z and RAR archives must be unpacked',
+    inPlaceOk: zip,
+    suggested: !fits && zip ? InstallMode.IN_PLACE : InstallMode.EXTRACT,
+  });
 }

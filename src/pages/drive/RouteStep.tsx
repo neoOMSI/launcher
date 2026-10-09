@@ -45,7 +45,7 @@ export const RouteStep: React.FC<{ data: DriveData }> = ({ data }) => {
                 'entry:-1',
                 choice.free ? t('drive.route.autoFirst') : t('drive.route.autoNearest'),
               ] as const,
-              ...(map?.entry_points ?? []).map((e) => [`entry:${e.index}`, e.name] as const),
+              ...(map?.entryPoints ?? []).map((e) => [`entry:${e.index}`, e.name] as const),
               ...(choice.stop
                 ? [
                     [
@@ -84,7 +84,7 @@ function Lines({ lines }: { lines: LineInfo[] }) {
   const q = query.trim().toLowerCase();
   const shown = lines.filter(
     (l) =>
-      l.user_allowed &&
+      l.userAllowed &&
       (!q ||
         l.name.toLowerCase().includes(q) ||
         l.termini.some((s) => s.toLowerCase().includes(q))),
@@ -133,7 +133,7 @@ function Tours({ line }: { line: LineInfo }) {
   );
   const pick = (tour: TourInfo) => {
     const patch: Partial<typeof choice> = { tour: tour.number, trip: '' };
-    if (!tour.runs && tour.next_run) patch.date = tour.next_run;
+    if (!tour.runs && tour.nextRun) patch.date = tour.nextRun;
     update(patch);
   };
   return (

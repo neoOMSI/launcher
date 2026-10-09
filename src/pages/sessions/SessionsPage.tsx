@@ -5,7 +5,6 @@ import { Notice, Segmented } from '../../components/ui';
 import { t } from '../../i18n';
 import { useEngine } from '../../lib/engine';
 import { useNav } from '../../lib/nav';
-import { readLan } from './clock';
 import { Game } from './Game';
 import { History } from './History';
 import { Lan } from './Lan';
@@ -26,7 +25,9 @@ export const SessionsPage: React.FC = () => {
   const { route, go } = useNav();
   const now = useNow();
   const running = instances.filter((i) => i.running);
-  const ended = instances.filter((i) => !i.running).sort((a, b) => (b.ended ?? 0) - (a.ended ?? 0));
+  const ended = instances
+    .filter((i) => !i.running)
+    .sort((a, b) => Number(b.ended ?? 0n) - Number(a.ended ?? 0n));
 
   const view: View = route.section === 'history' ? 'history' : 'running';
 
@@ -69,10 +70,7 @@ export const SessionsPage: React.FC = () => {
                 running.map((i) => <Game key={i.id} instance={i} now={now} />)
               )}
             </ListGroup>
-            {running.map((i) => {
-              const lan = readLan(i.lan_status);
-              return lan && <Lan key={i.id} lan={lan} />;
-            })}
+            {running.map((i) => i.lanStatus && <Lan key={i.id} lan={i.lanStatus} />)}
             {ended.length > 0 && (
               <ListGroup title={t('sessions.ended')}>
                 {ended.map((i) => (

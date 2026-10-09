@@ -42,7 +42,7 @@ export const BusStep: React.FC<{ data: DriveData }> = ({ data }) => {
       (v) =>
         (!onlyFavourites || favourites.includes(v.file)) &&
         (!q ||
-          [v.manufacturer, v.type_name, v.name, v.file].some((s) => s.toLowerCase().includes(q))),
+          [v.manufacturer, v.typeName, v.name, v.file].some((s) => s.toLowerCase().includes(q))),
     );
     const byMaker = new Map<string, VehicleInfo[]>();
     for (const v of shown) {
@@ -57,7 +57,7 @@ export const BusStep: React.FC<{ data: DriveData }> = ({ data }) => {
   }, [data.vehicles, query, onlyFavourites, favourites]);
 
   const pick = (v: VehicleInfo) =>
-    update({ bus: v.file, paint: v.default_paint, number: '', plate: '', hof: '' });
+    update({ bus: v.file, paint: v.defaultPaint, number: '', plate: '', hof: '' });
 
   return (
     <div className="space-y-8">
@@ -156,9 +156,9 @@ function BusOption({
     <div className="relative">
       <button type="button" className="option pr-12" aria-pressed={chosen} onClick={onPick}>
         <Icon name="directions_bus" size={18} />
-        <span className="min-w-0 flex-1 truncate">{bus.type_name}</span>
+        <span className="min-w-0 flex-1 truncate">{bus.typeName}</span>
         {mod && <Badge color="#4c8dff">{t('drive.bus.mod')}</Badge>}
-        {bus.missing_packs.length > 0 && (
+        {bus.missingPacks.length > 0 && (
           <Badge color="var(--color-warn)">{t('drive.bus.missingBadge')}</Badge>
         )}
       </button>
@@ -185,7 +185,7 @@ function ChosenBus({ bus }: { bus: VehicleInfo }) {
     <section className="space-y-4">
       <Field label={t('drive.bus.livery')}>
         <Select
-          value={choice.paint || bus.default_paint}
+          value={choice.paint || bus.defaultPaint}
           options={bus.paints.map((p) => [p, p] as const)}
           onChange={(paint) => update({ paint })}
         />
@@ -213,7 +213,7 @@ function ChosenBus({ bus }: { bus: VehicleInfo }) {
               value={choice.number}
               options={[
                 ['', auto] as const,
-                ...bus.numbers.map(([n, plate]) => [n, `${n} · ${plate}`] as const),
+                ...bus.numbers.map(({ number: n, plate }) => [n, `${n} · ${plate}`] as const),
               ]}
               onChange={(number) => update({ number })}
               disabled={bus.numbers.length === 0}

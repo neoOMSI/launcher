@@ -77,7 +77,7 @@ function Ibis({ line }: { line: string }) {
         <span />
         {ibis.data.routes.map((r) => (
           <React.Fragment key={r.route}>
-            <code className="justify-self-start">{ibis.data!.line_code}</code>
+            <code className="justify-self-start">{ibis.data!.lineCode}</code>
             <code className="justify-self-start">{r.code}</code>
             <span className="truncate text-muted">{r.name}</span>
           </React.Fragment>

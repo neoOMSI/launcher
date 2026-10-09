@@ -3,26 +3,26 @@ import { Icon } from '../../components/Icon';
 import { t } from '../../i18n';
 import { errorText } from '../../lib/engine';
 import { useToast } from '../../lib/nav';
-import type { Instance, LanStatus } from '../../types/launcher';
+import { LanRole, type Instance, type LanStatus } from '../../types/launcher';
 
-export type LanSession = Instance & { lan_status: LanStatus };
+export type LanSession = Instance & { lanStatus: LanStatus };
 
 export const lanSessions = (instances: Instance[] | undefined) =>
-  (instances ?? []).filter((i): i is LanSession => i.running && !!i.lan_status);
+  (instances ?? []).filter((i): i is LanSession => i.running && !!i.lanStatus);
 
 export function SessionRow({ instance }: { instance: LanSession }) {
-  const lan = instance.lan_status;
-  const host = lan.role === 'host';
+  const lan = instance.lanStatus;
+  const host = lan.role === LanRole.HOST;
   const count = lan.players?.length ?? 0;
   const status = lan.rejected
     ? t('multiplayer.sessions.rejected', { reason: lan.rejected })
     : !lan.connected
-      ? t('multiplayer.sessions.connecting', { host: lan.host_name || lan.code })
+      ? t('multiplayer.sessions.connecting', { host: lan.hostName || lan.code })
       : host
         ? lan.tunnel
           ? t('multiplayer.sessions.ready')
           : t('multiplayer.sessions.preparing')
-        : t('multiplayer.sessions.with', { host: lan.host_name });
+        : t('multiplayer.sessions.with', { host: lan.hostName });
   return (
     <div className="list-row gap-5">
       <span className="grid size-9 shrink-0 place-items-center text-muted">

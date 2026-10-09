@@ -23,24 +23,25 @@ export const longDate = (date: string) =>
     year: 'numeric',
   });
 
-export const dateTime = (unixSeconds: number) =>
-  new Date(unixSeconds * 1000).toLocaleString(locale(), {
+export const dateTime = (unixSeconds: number | bigint) =>
+  new Date(Number(unixSeconds) * 1000).toLocaleString(locale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
   });
 
-export function ago(unixSeconds: number): string {
-  const s = Math.max(0, Date.now() / 1000 - unixSeconds);
+export function ago(unixSeconds: number | bigint): string {
+  const s = Math.max(0, Date.now() / 1000 - Number(unixSeconds));
   if (s < 90) return t('format.justNow');
   if (s < 3600) return t('format.minutesAgo', { n: Math.round(s / 60) });
   if (s < 86400 * 2) return t('format.hoursAgo', { n: Math.round(s / 3600) });
   return t('format.daysAgo', { n: Math.round(s / 86400) });
 }
 
-export function bytes(n: number): string {
+export function bytes(size: number | bigint): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let n = Number(size);
   let i = 0;
   while (n >= 1000 && i < units.length - 1) {
     n /= 1000;
@@ -49,8 +50,11 @@ export function bytes(n: number): string {
   return `${n.toLocaleString(locale(), { maximumFractionDigits: n < 10 && i ? 1 : 0 })} ${units[i]}`;
 }
 
-export const number = (n: number, digits = 0) =>
-  n.toLocaleString(locale(), { maximumFractionDigits: digits, minimumFractionDigits: digits });
+export const number = (n: number | bigint, digits = 0) =>
+  Number(n).toLocaleString(locale(), {
+    maximumFractionDigits: digits,
+    minimumFractionDigits: digits,
+  });
 
 export const lineLabel = (name: string) => (/^\d/.test(name) ? t('format.line', { name }) : name);
 

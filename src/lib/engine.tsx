@@ -6,18 +6,17 @@ import { gameStart, type GameStart } from './launching';
 const stale = new EventTarget();
 
 const AFFECTS: Partial<Record<Command, Command[]>> = {
-  save_config: ['config', 'profile', 'profiles', 'maps', 'vehicles', 'weather', 'mods'],
-  create_profile: ['config', 'profile', 'profiles'],
-  delete_profile: ['config', 'profile', 'profiles'],
-  save_settings: ['settings', 'pax_pack'],
-  install_pax_pack: ['pax_pack'],
-  save_keybindings: ['keybindings'],
-  save_servers: ['servers'],
-  install: ['mods', 'maps', 'vehicles', 'weather'],
-  start_install: ['mods'],
-  cancel_install: ['mods'],
-  clear_installs: ['mods'],
-  uninstall_mod: ['mods', 'maps', 'vehicles', 'weather'],
+  saveConfig: ['config', 'profile', 'profiles', 'maps', 'vehicles', 'weather', 'mods'],
+  createProfile: ['config', 'profile', 'profiles'],
+  deleteProfile: ['config', 'profile', 'profiles'],
+  saveSettings: ['settings', 'paxPack'],
+  installPaxPack: ['paxPack'],
+  saveKeybindings: ['keybindings'],
+  saveServers: ['servers'],
+  startInstall: ['mods'],
+  cancelInstall: ['mods'],
+  clearInstalls: ['mods'],
+  uninstallMod: ['mods', 'maps', 'vehicles', 'weather'],
   launch: ['instances'],
   stop: ['instances'],
 };
@@ -92,10 +91,10 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     const unsubStatus = window.neoomsi.onEngineStatus(setStatus);
     const unsubLogs = window.neoomsi.onDiagnosticLog(log);
     const unsubEvents = window.neoomsi.onEngineEvent((event: EngineEvent) => {
-      if (event.type === 'instances_changed') setInstances(event.payload);
-      else if (event.type === 'installs_changed') invalidate('mods');
-      else if (event.type === 'content_changed') invalidate(...CONTENT);
-      else if (event.type === 'pax_pack_changed') invalidate('pax_pack');
+      if (event.case === 'instancesChanged') setInstances(event.value.instances);
+      else if (event.case === 'installsChanged') invalidate('mods');
+      else if (event.case === 'contentChanged') invalidate(...CONTENT);
+      else if (event.case === 'paxPackChanged') invalidate('paxPack');
     });
     window.neoomsi
       .getEngineStatus()
@@ -115,7 +114,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
 
   const refreshInstances = useCallback(() => {
     call('instances')
-      .then(setInstances)
+      .then((r) => setInstances(r.instances))
       .catch(() => {});
   }, []);
 

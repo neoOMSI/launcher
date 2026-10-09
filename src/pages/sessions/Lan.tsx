@@ -3,16 +3,16 @@ import { Icon } from '../../components/Icon';
 import { LineBadge } from '../../components/LineBadge';
 import { ListGroup } from '../../components/List';
 import { t } from '../../i18n';
-import type { LanStatus } from '../../types/launcher';
+import { LanRole, type LanStatus } from '../../types/launcher';
 import { useNames } from '../profile/names';
 import { chatLine } from './clock';
 
 export const Lan: React.FC<{ lan: LanStatus }> = ({ lan }) => (
   <>
     <ListGroup
-      title={lan.role === 'host' ? t('sessions.lan.hosted') : t('sessions.lan.joinedGame')}
+      title={lan.role === LanRole.HOST ? t('sessions.lan.hosted') : t('sessions.lan.joinedGame')}
     >
-      {lan.role === 'host' ? <Code lan={lan} /> : <Joined lan={lan} />}
+      {lan.role === LanRole.HOST ? <Code lan={lan} /> : <Joined lan={lan} />}
       {lan.warnings.map((w, k) => (
         <div key={k} className="list-row min-h-12 gap-3 py-2.5 text-[14.5px] text-muted">
           <span className="shrink-0 text-warn">
@@ -49,7 +49,7 @@ function Code({ lan }: { lan: LanStatus }) {
   const [copied, setCopied] = useState(false);
   const copy = () =>
     navigator.clipboard
-      .writeText(lan.code)
+      .writeText(lan.code ?? '')
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
@@ -83,7 +83,7 @@ function Joined({ lan }: { lan: LanStatus }) {
   const [dot, text] = lan.rejected
     ? ['bg-danger', t('sessions.lan.rejected', { reason: lan.rejected })]
     : lan.connected
-      ? ['bg-ok', t('sessions.lan.connected', { host: lan.host_name })]
+      ? ['bg-ok', t('sessions.lan.connected', { host: lan.hostName })]
       : ['bg-warn', t('sessions.lan.connecting')];
   return (
     <div className="list-row gap-3">
@@ -105,7 +105,7 @@ function Players({ lan }: { lan: LanStatus }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-ink">
               {p.name}
-              {p.name === lan.host_name && (
+              {p.name === lan.hostName && (
                 <span className="ml-2 text-[14px] text-muted">{t('sessions.lan.host')}</span>
               )}
             </p>

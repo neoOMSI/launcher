@@ -1,7 +1,20 @@
 import { EventEmitter } from 'node:events';
+import { create } from '@bufbuild/protobuf';
 import type { EngineClient } from './client';
-import { PROTOCOL_VERSION, SessionState, type EngineStatus } from '../src/types/scaffold';
-import { COMMANDS, type Command, type EngineEvent, type Launched } from '../src/types/launcher';
+import { PROTOCOL_VERSION, type EngineStatus } from '../src/types/scaffold';
+import {
+  COMMANDS,
+  ContentChangedSchema,
+  GameLinkSchema,
+  GameLinkState,
+  InstallListSchema,
+  InstanceListSchema,
+  SessionEventSchema,
+  SessionState,
+  type Command,
+  type EngineEvent,
+  type Launched,
+} from '../src/types/launcher';
 import { MockLauncher } from './mock/launcher';
 
 const INSTALL_TICK_MS = 700;
@@ -54,7 +67,7 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
     if (!(COMMANDS as readonly string[]).includes(type)) {
       throw new Error(`Unsupported mock request type: ${type}`);
     }
-    const result = this.launcher.handle(type as Command, payload);
+    const result = await this.launcher.handle(type as Command, payload);
     this.after(type as Command, payload, result);
     return result as T;
   }
@@ -74,8 +87,29 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
 
   private session(id: string, pid: number, state: SessionState, message = '', progress?: number) {
     this.send({
-      type: 'session_event',
-      payload: { sessionId: id, pid, state, message, progress },
+      case: 'sessionEvent',
+      value: create(SessionEventSchema, { sessionId: id, pid, state, message, progress }),
+    });
+  }
+
+  private games() {
+    this.send({
+      case: 'instancesChanged',
+      value: create(InstanceListSchema, { instances: this.launcher.games }),
+    });
+  }
+
+  private installs() {
+    this.send({
+      case: 'installsChanged',
+      value: create(InstallListSchema, { jobs: this.launcher.installs }),
+    });
+  }
+
+  private content() {
+    this.send({
+      case: 'contentChanged',
+      value: create(ContentChangedSchema, { stamp: String(Date.now()) }),
     });
   }
 
@@ -85,30 +119,22 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
         const { pid } = result as Launched;
         const game = this.launcher.games.find((i) => i.pid === pid);
         if (!game) return;
-        this.send({ type: 'instances_changed', payload: this.launcher.games });
-        this.session(game.id, pid, SessionState.SESSION_STARTING);
+        this.games();
+        this.session(game.id, pid, SessionState.STARTING);
         LOAD_STEPS_MS.forEach((ms, k) => {
           const last = k === LOAD_STEPS_MS.length - 1;
           this.later(ms, () => {
             if (!game.running) return;
-            game.link = last
-              ? { state: 'running', progress: null, message: '', window: true }
-              : {
-                  state: 'loading',
-                  progress: (k + 1) / LOAD_STEPS_MS.length,
-                  message: game.map,
-                  window: true,
-                };
-            this.send({ type: 'instances_changed', payload: this.launcher.games });
-            if (last) this.session(game.id, pid, SessionState.SESSION_RUNNING);
-            else
-              this.session(
-                game.id,
-                pid,
-                SessionState.SESSION_LOADING,
-                game.map,
-                game.link.progress!,
-              );
+            const progress = last ? undefined : (k + 1) / LOAD_STEPS_MS.length;
+            game.link = create(GameLinkSchema, {
+              state: last ? GameLinkState.RUNNING : GameLinkState.LOADING,
+              progress,
+              message: last ? '' : game.map,
+              window: true,
+            });
+            this.games();
+            if (last) this.session(game.id, pid, SessionState.RUNNING);
+            else this.session(game.id, pid, SessionState.LOADING, game.map, progress);
           });
         });
         return;
@@ -116,21 +142,20 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
       case 'stop': {
         const pid = Number((payload as { pid?: number })?.pid);
         const game = this.launcher.games.find((i) => i.pid === pid);
-        if (game) game.link = null;
-        this.send({ type: 'instances_changed', payload: this.launcher.games });
-        if (game) this.session(game.id, pid, SessionState.SESSION_EXITED, game.last_line);
+        if (game) game.link = undefined;
+        this.games();
+        if (game) this.session(game.id, pid, SessionState.EXITED, game.lastLine);
         return;
       }
-      case 'install':
-      case 'start_install':
-      case 'cancel_install':
-      case 'clear_installs':
-        this.send({ type: 'installs_changed', payload: this.launcher.installs });
+      case 'startInstall':
+      case 'cancelInstall':
+      case 'clearInstalls':
+        this.installs();
         this.watchInstalls();
         return;
-      case 'uninstall_mod':
-      case 'save_config':
-        this.send({ type: 'content_changed', payload: { stamp: String(Date.now()) } });
+      case 'uninstallMod':
+      case 'saveConfig':
+        this.content();
         return;
     }
   }
@@ -139,8 +164,8 @@ export class MockEngineClient extends EventEmitter implements EngineClient {
     if (this.ticker || !this.launcher.installing) return;
     this.ticker = setInterval(() => {
       const finished = this.launcher.advanceJobs();
-      this.send({ type: 'installs_changed', payload: this.launcher.installs });
-      if (finished) this.send({ type: 'content_changed', payload: { stamp: String(Date.now()) } });
+      this.installs();
+      if (finished) this.content();
       if (!this.launcher.installing && this.ticker) {
         clearInterval(this.ticker);
         this.ticker = null;

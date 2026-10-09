@@ -25,7 +25,7 @@ export function weatherLabel(choice: Choice, presets: WeatherInfo[]): string {
 }
 
 const presetIcon = (w: WeatherInfo) =>
-  w.snow ? 'weather_snowy' : w.precip === 'rain' ? 'rainy' : w.fog_m < 1000 ? 'foggy' : 'wb_sunny';
+  w.snow ? 'weather_snowy' : w.precip === 'rain' ? 'rainy' : w.fogM < 1000 ? 'foggy' : 'wb_sunny';
 
 export function weatherIcon(choice: Choice, presets: WeatherInfo[]): string {
   if (choice.weather === '') return 'partly_cloudy_day';
@@ -70,7 +70,7 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
           w.file,
           presetIcon(w),
           w.name,
-          `${Math.round(w.temp)} °C · ${w.fog_m >= 10000 ? `${w.fog_m / 1000} km` : `${w.fog_m} m`}`,
+          `${Math.round(w.temp)} °C · ${w.fogM >= 10000 ? `${w.fogM / 1000} km` : `${w.fogM} m`}`,
         ] as [string, string, string, string],
     ),
   ];

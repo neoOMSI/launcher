@@ -29,7 +29,7 @@
 The launcher is an Electron and React app. It contains no simulation code: it starts the game as `neoomsi --control-protocol` and talks to it over standard input and output. The engine answers the launcher's requests (maps, buses, timetables, settings, mod installs, starting games) and pushes what changes: the running games and their loading progress, install progress, new content, and new passenger packs.
 
 - **Engine-owned data:** Everything the launcher shows comes from the engine, so the launcher and the game's built-in launcher always agree.
-- **Protocol:** Length-prefixed JSON frames, specified in [LAUNCHER_PROTOCOL.md](https://github.com/neoOMSI/neoOMSI/blob/main/docs/LAUNCHER_PROTOCOL.md) in the neoOMSI repository. Launcher and engine check each other's protocol version at the handshake.
+- **Protocol:** Length-prefixed protobuf frames, specified in [LAUNCHER_PROTOCOL.md](https://github.com/neoOMSI/neoOMSI/blob/main/docs/LAUNCHER_PROTOCOL.md) in the neoOMSI repository. Its schema, `proto/launcher.proto`, is neoOMSI's; the TypeScript in `src/types/launcher_pb.ts` is generated from it. Launcher and engine check each other's protocol version at the handshake.
 - **Shipping:** neoOMSI's release CI builds the launcher commit pinned in neoOMSI's [`scripts/launcher-ref`](https://github.com/neoOMSI/neoOMSI/blob/main/scripts/launcher-ref) into every release (`launcher/` beside the game; inside `neoOMSI.app` on macOS). A launcher change reaches players once that pin is moved to it.
 
 ## Documentation

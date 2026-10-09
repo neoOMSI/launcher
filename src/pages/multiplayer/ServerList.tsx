@@ -29,16 +29,16 @@ export const ServerList: React.FC = () => {
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<ServerInfo | null>(null);
   const toast = useToast();
-  const all = servers.data ?? [];
-  const installed = maps.data ?? [];
+  const all = servers.data?.servers ?? [];
+  const installed = maps.data?.maps ?? [];
   const shown = sortServers(filterServers(all, query, installed));
-  const online = all.filter((s) => s.error === null);
+  const online = all.filter((s) => s.error === undefined);
   const players = online.reduce((sum, s) => sum + s.players, 0);
 
   const remove = async (server: ServerInfo) => {
     setRemoving(null);
     try {
-      await call('save_servers', { servers: removeServer(all, server.address) });
+      await call('saveServers', { servers: removeServer(all, server.address) });
       toast(t('multiplayer.servers.removed', { name: serverTitle(server) }), 'tip');
     } catch (err) {
       toast(errorText(err), 'caution');
@@ -145,7 +145,7 @@ function ServerRow({
   const { server: joined, setServer } = useDuty();
   const join = useJoin();
   const title = serverTitle(server);
-  const reachable = server.error === null;
+  const reachable = server.error === undefined;
   const missing = reachable && maps.length > 0 && !!server.map && !resolveMap(server.map, maps);
   const isJoined = joined?.address === server.address;
   const conditions = [server.time, server.weather || t('multiplayer.servers.mapWeather')]
@@ -259,7 +259,7 @@ function Players({ server, reachable }: { server: ServerInfo; reachable: boolean
       className="w-[4.5rem] shrink-0"
       title={
         reachable
-          ? t('multiplayer.servers.players', { players: server.players, max: server.max_players })
+          ? t('multiplayer.servers.players', { players: server.players, max: server.maxPlayers })
           : undefined
       }
     >
@@ -269,7 +269,7 @@ function Players({ server, reachable }: { server: ServerInfo; reachable: boolean
             <span className={`font-semibold ${full ? 'text-warn' : 'text-heading'}`}>
               {server.players}
             </span>
-            <span className="text-muted"> / {server.max_players}</span>
+            <span className="text-muted"> / {server.maxPlayers}</span>
           </>
         ) : (
           <span className="text-muted">–</span>
@@ -301,7 +301,7 @@ function AddServer({ servers, onClose }: { servers: ServerInfo[]; onClose: () =>
     }
     setBusy(true);
     try {
-      await call('save_servers', { servers: result.list });
+      await call('saveServers', { servers: result.list });
       toast(t('multiplayer.servers.added', { name: name.trim() || address.trim() }), 'tip');
       onClose();
     } catch (err) {

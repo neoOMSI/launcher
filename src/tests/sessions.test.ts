@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { chatLine, clock, exitCodeText, exitState, readLan } from '../pages/sessions/clock';
+import { chatLine, clock, exitCodeText, exitState } from '../pages/sessions/clock';
 
-const game = { running: false, stopping: null, killed: false, exit_code: null };
+const game = { running: false, killed: false };
 
 describe('sessions', () => {
   it('formats an uptime as a clock', () => {
@@ -15,10 +15,10 @@ describe('sessions', () => {
 
   it('tells how a game ended', () => {
     expect(exitState({ ...game, running: true })).toBe('running');
-    expect(exitState({ ...game, running: true, stopping: 1 })).toBe('stopping');
-    expect(exitState({ ...game, exit_code: 0 })).toBe('clean');
-    expect(exitState({ ...game, killed: true, stopping: 1 })).toBe('killed');
-    expect(exitState({ ...game, exit_code: 3 })).toBe('crashed');
+    expect(exitState({ ...game, running: true, stopping: 1n })).toBe('stopping');
+    expect(exitState({ ...game, exitCode: 0 })).toBe('clean');
+    expect(exitState({ ...game, killed: true, stopping: 1n })).toBe('killed');
+    expect(exitState({ ...game, exitCode: 3 })).toBe('crashed');
     expect(exitState(game)).toBe('ended');
   });
 
@@ -26,17 +26,6 @@ describe('sessions', () => {
     expect(exitCodeText(1)).toBe('1');
     expect(exitCodeText(-1073741819)).toBe('0xC0000005');
     expect(exitCodeText(3221225477)).toBe('0xC0000005');
-  });
-
-  it('fills in a partial LAN status', () => {
-    expect(readLan(null)).toBeNull();
-    expect(readLan({ role: 'host', code: 'OMSI-1' })).toMatchObject({
-      role: 'host',
-      code: 'OMSI-1',
-      players: [],
-      chat: [],
-      warnings: [],
-    });
   });
 
   it('splits chat lines into author and text', () => {

@@ -1,5 +1,6 @@
 import type { Choice } from '../../lib/duty';
-import type { MapInfo, ServerInfo } from '../../types/launcher';
+import { create } from '@bufbuild/protobuf';
+import { ServerInfoSchema, type MapInfo, type ServerInfo } from '../../types/launcher';
 
 export interface ServerEntry {
   name: string;
@@ -48,11 +49,11 @@ export function filterServers(servers: ServerInfo[], query: string, maps: MapInf
   );
 }
 
-export const fill = (server: Pick<ServerInfo, 'players' | 'max_players'>) =>
-  server.max_players > 0 ? Math.min(1, server.players / server.max_players) : 0;
+export const fill = (server: Pick<ServerInfo, 'players' | 'maxPlayers'>) =>
+  server.maxPlayers > 0 ? Math.min(1, server.players / server.maxPlayers) : 0;
 
-export const isFull = (server: Pick<ServerInfo, 'players' | 'max_players'>) =>
-  server.max_players > 0 && server.players >= server.max_players;
+export const isFull = (server: Pick<ServerInfo, 'players' | 'maxPlayers'>) =>
+  server.maxPlayers > 0 && server.players >= server.maxPlayers;
 
 export const ownServers = (servers: ServerInfo[]): ServerEntry[] =>
   servers.filter((s) => !s.official).map(({ name, address }) => ({ name, address }));
@@ -75,20 +76,8 @@ export function addServer(
 export const removeServer = (servers: ServerInfo[], address: string): ServerEntry[] =>
   ownServers(servers).filter((s) => s.address !== address);
 
-export function joinTarget(text: string, answer: string): ServerInfo {
-  return {
-    address: text.trim(),
-    name: text.trim(),
-    official: false,
-    motd: answer,
-    map: '',
-    time: '',
-    weather: '',
-    players: 0,
-    max_players: 0,
-    error: null,
-  };
-}
+export const joinTarget = (text: string, answer: string): ServerInfo =>
+  create(ServerInfoSchema, { address: text.trim(), name: text.trim(), motd: answer });
 
 type WithLan = Choice & { lan?: 'host' | 'off' };
 
@@ -100,6 +89,6 @@ export function hostingPatch(on: boolean): Partial<Choice> {
 }
 
 export function sortServers(servers: ServerInfo[]): ServerInfo[] {
-  const rank = (s: ServerInfo) => (s.error !== null ? 2 : s.official ? 0 : 1);
+  const rank = (s: ServerInfo) => (s.error !== undefined ? 2 : s.official ? 0 : 1);
   return [...servers].sort((a, b) => rank(a) - rank(b) || b.players - a.players);
 }

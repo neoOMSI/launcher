@@ -12,7 +12,7 @@ export function useJoin() {
   const toast = useToast();
 
   return (target: ServerInfo, mapValue = target.map) => {
-    const installed = maps.data ?? [];
+    const installed = maps.data?.maps ?? [];
     const patch: Partial<Choice> = hostingPatch(false);
     if (mapValue && installed.length) {
       const map = resolveMap(mapValue, installed);

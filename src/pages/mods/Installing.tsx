@@ -5,8 +5,8 @@ import { t } from '../../i18n';
 import { call, errorText } from '../../lib/engine';
 import { ago, bytes, number, percent } from '../../lib/format';
 import { useToast } from '../../lib/nav';
-import type { InstallProgress } from '../../types/launcher';
-import { jobProgress, splitJobs, stateTone, type StateTone } from './logic';
+import { InstallState, type InstallProgress } from '../../types/launcher';
+import { jobProgress, modeKey, splitJobs, stateKey, stateTone, type StateTone } from './logic';
 import { Title } from './Title';
 
 const TONE: Record<Exclude<StateTone, 'busy'>, [string, string]> = {
@@ -19,7 +19,7 @@ export const Installing: React.FC<{ jobs: InstallProgress[] }> = ({ jobs }) => {
   const toast = useToast();
   const { running, finished } = splitJobs(jobs);
 
-  const clear = () => call('clear_installs').catch((err) => toast(errorText(err), 'caution'));
+  const clear = () => call('clearInstalls').catch((err) => toast(errorText(err), 'caution'));
 
   return (
     <>
@@ -62,7 +62,7 @@ function RunningRow({ job }: { job: InstallProgress }) {
   const cancel = async () => {
     setCancelling(true);
     try {
-      await call('cancel_install', { id: job.id });
+      await call('cancelInstall', { id: job.id });
     } catch (err) {
       toast(errorText(err), 'caution');
     } finally {
@@ -77,7 +77,9 @@ function RunningRow({ job }: { job: InstallProgress }) {
           <span className="min-w-0 truncate text-ink" title={job.source}>
             {job.name}
           </span>
-          <span className="shrink-0 text-[14.5px] text-accent">{t(`mods.state.${job.state}`)}</span>
+          <span className="shrink-0 text-[14.5px] text-accent">
+            {t(`mods.state.${stateKey(job.state)}`)}
+          </span>
         </p>
         <div className="mt-2 h-1 overflow-hidden rounded-full bg-line-strong">
           {progress === null ? (
@@ -91,8 +93,8 @@ function RunningRow({ job }: { job: InstallProgress }) {
         </div>
         <p className="mt-1.5 flex justify-between gap-4 text-[14px] text-muted tabular-nums">
           <span className="truncate">
-            {job.files_total > 0
-              ? `${t('mods.jobs.files', { done: number(job.files_done), total: number(job.files_total) })} · ${bytes(job.bytes_done)} / ${bytes(job.bytes_total)}`
+            {job.filesTotal > 0
+              ? `${t('mods.jobs.files', { done: number(job.filesDone), total: number(job.filesTotal) })} · ${bytes(job.bytesDone)} / ${bytes(job.bytesTotal)}`
               : job.message || t('mods.jobs.preparing')}
           </span>
           {progress !== null && <span className="shrink-0">{percent(progress)}</span>}
@@ -115,9 +117,9 @@ function FinishedRow({ job }: { job: InstallProgress }) {
   const tone = stateTone(job.state);
   const [icon, color] = TONE[tone === 'busy' ? 'muted' : tone];
   const meta = [
-    t(`mods.state.${job.state}`),
-    t(`mods.modeName.${job.mode}`),
-    job.from_inbox ? t('mods.jobs.fromInbox') : null,
+    t(`mods.state.${stateKey(job.state)}`),
+    t(`mods.modeName.${modeKey(job.mode)}`),
+    job.fromInbox ? t('mods.jobs.fromInbox') : null,
     ago(job.finished ?? job.started),
   ].filter(Boolean);
 
@@ -155,7 +157,7 @@ function FinishedRow({ job }: { job: InstallProgress }) {
 }
 
 function Details({ job }: { job: InstallProgress }) {
-  const failed = job.state === 'failed';
+  const failed = job.state === InstallState.FAILED;
   const lines: { icon: string; text: string; tone?: string }[] = [
     ...(job.message
       ? [
@@ -171,7 +173,7 @@ function Details({ job }: { job: InstallProgress }) {
       icon: 'check',
       text: t('mods.jobs.installed', { folder }),
     })),
-    ...job.kept_aside.map((name) => ({
+    ...job.keptAside.map((name) => ({
       icon: 'hourglass_top',
       text: t('mods.jobs.keptAside', { name }),
     })),

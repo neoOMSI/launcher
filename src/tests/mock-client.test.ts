@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { MockEngineClient } from '../../electron/mock-client';
-import { SessionState } from '../types/scaffold';
-import type { EngineEvent, Instance, LineInfo, MapInfo, Settings } from '../types/launcher';
+import {
+  SessionState,
+  settingsForEngine,
+  settingsFromEngine,
+  type CommandResult,
+  type EngineEvent,
+  type InstanceList,
+  type LineList,
+  type MapList,
+  type Settings,
+} from '../types/launcher';
 
 function collect(client: MockEngineClient) {
   const events: EngineEvent[] = [];
@@ -45,18 +54,16 @@ describe('MockEngineClient', () => {
       bus: 'Vehicles/MAN/MAN SL200.bus',
       time: '09:00',
     });
-    const listed = events.find((e) => e.type === 'instances_changed');
-    expect(listed?.type === 'instances_changed' && listed.payload.some((i) => i.pid === pid)).toBe(
-      true,
-    );
-    const started = events.find((e) => e.type === 'session_event');
-    expect(started?.type === 'session_event' && started.payload.state).toBe(
-      SessionState.SESSION_STARTING,
-    );
+    const listed = events.find((e) => e.case === 'instancesChanged');
+    expect(
+      listed?.case === 'instancesChanged' && listed.value.instances.some((i) => i.pid === pid),
+    ).toBe(true);
+    const started = events.find((e) => e.case === 'sessionEvent');
+    expect(started?.case === 'sessionEvent' && started.value.state).toBe(SessionState.STARTING);
 
     await client.sendRequest('stop', { pid });
     const last = events.at(-1);
-    expect(last?.type === 'session_event' && last.payload.state).toBe(SessionState.SESSION_EXITED);
+    expect(last?.case === 'sessionEvent' && last.value.state).toBe(SessionState.EXITED);
     await client.stop();
   });
 
@@ -64,8 +71,8 @@ describe('MockEngineClient', () => {
     const client = new MockEngineClient();
     await client.start();
     const events = collect(client);
-    await client.sendRequest('start_install', { path: 'C:/Downloads/Bus.zip' });
-    expect(events.some((e) => e.type === 'installs_changed')).toBe(true);
+    await client.sendRequest('startInstall', { path: 'C:/Downloads/Bus.zip' });
+    expect(events.some((e) => e.case === 'installsChanged')).toBe(true);
     await client.stop();
   });
 
@@ -82,10 +89,10 @@ describe('MockEngineClient', () => {
     const client = new MockEngineClient();
     await client.start();
 
-    const maps = await client.sendRequest<MapInfo[]>('maps', {});
+    const { maps } = await client.sendRequest<MapList>('maps', {});
     expect(maps.map((m) => m.name)).toContain('Grundorf');
 
-    const lines = await client.sendRequest<LineInfo[]>('lines', {
+    const { lines } = await client.sendRequest<LineList>('lines', {
       map: 'maps/Grundorf/global.cfg',
       date: '1989-05-30',
     });
@@ -93,7 +100,11 @@ describe('MockEngineClient', () => {
     expect(line24.tours[0].runs).toBe(true);
     expect(line24.tours[0].trips[0].departure).toBeLessThan(line24.tours[0].trips[0].arrival);
 
-    const settings = await client.sendRequest<Settings>('save_settings', { vsync: false });
+    const saved = await client.sendRequest<CommandResult<'saveSettings'>>(
+      'saveSettings',
+      settingsForEngine({ vsync: false }),
+    );
+    const settings: Settings = settingsFromEngine(saved);
     expect(settings.vsync).toBe(false);
     expect(settings.msaa).toBe(4);
 
@@ -103,9 +114,9 @@ describe('MockEngineClient', () => {
       time: '09:00',
     });
     await client.sendRequest('stop', { pid });
-    const instances = await client.sendRequest<Instance[]>('instances', {});
+    const { instances } = await client.sendRequest<InstanceList>('instances', {});
     const instance = instances.find((i) => i.pid === pid)!;
     expect(instance.running).toBe(false);
-    expect(instance.exit_code).toBe(0);
+    expect(instance.exitCode).toBe(0);
   });
 });

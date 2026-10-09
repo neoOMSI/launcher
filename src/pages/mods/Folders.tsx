@@ -10,8 +10,8 @@ export const Folders: React.FC<{ mods: Mods; onOpen: (path: string) => void }> =
   mods,
   onOpen,
 }) => {
-  const filled = mods.folders.filter(([, n]) => n > 0);
-  const empty = mods.folders.filter(([, n]) => n === 0).map(([f]) => f);
+  const filled = mods.folders.filter((f) => f.entries > 0n);
+  const empty = mods.folders.filter((f) => f.entries === 0n).map((f) => f.folder);
 
   return (
     <>
@@ -32,7 +32,7 @@ export const Folders: React.FC<{ mods: Mods; onOpen: (path: string) => void }> =
             {t('mods.open')}
           </button>
         </ListRow>
-        {mods.inbox_items.map((item) => (
+        {mods.inboxItems.map((item) => (
           <ItemRow key={item} icon="hourglass_top" label={item} hint={t('mods.inbox.settling')} />
         ))}
       </ListGroup>
@@ -47,14 +47,14 @@ export const Folders: React.FC<{ mods: Mods; onOpen: (path: string) => void }> =
 
       {mods.archives.length > 0 && (
         <ListGroup title={t('mods.archives')}>
-          {mods.archives.map(([name, size]) => (
+          {mods.archives.map(({ name, bytes: size }) => (
             <ItemRow key={name} icon="folder_zip" label={name} value={bytes(size)} />
           ))}
         </ListGroup>
       )}
 
-      <ListGroup title={t('mods.content.title')} hint={mods.content_dir}>
-        {filled.map(([folder, n]) => (
+      <ListGroup title={t('mods.content.title')} hint={mods.contentDir}>
+        {filled.map(({ folder, entries: n }) => (
           <div key={folder} className="list-row min-h-12 py-2">
             <span className="min-w-0 flex-1 truncate text-ink">{folder}</span>
             <span className="text-[15px] text-muted tabular-nums">{number(n)}</span>

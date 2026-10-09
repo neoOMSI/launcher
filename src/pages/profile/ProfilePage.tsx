@@ -21,10 +21,10 @@ export const ProfilePage: React.FC = () => {
   const profile = useCommand('profile', name ? { name } : null);
   const [creating, setCreating] = useState(false);
   const toast = useToast();
-  const names = profiles.data ?? [];
+  const names = profiles.data?.names ?? [];
 
   const choose = (next: string) =>
-    call('save_config', { profile: next }).catch((err) => toast(errorText(err), 'caution'));
+    call('saveConfig', { profile: next }).catch((err) => toast(errorText(err), 'caution'));
 
   let body: React.ReactNode;
   if (config.error || profiles.error || profile.error) {
@@ -101,9 +101,11 @@ function Hero({ profile: p }: { profile: Profile }) {
           {p.name}
         </h1>
         <p className="mt-0.5 text-muted">
-          <span className="font-medium text-accent">{t('profile.level', { level: p.level })}</span>
+          <span className="font-medium text-accent">
+            {t('profile.level', { level: Number(p.level) })}
+          </span>
           {' · '}
-          {t('profile.toNext', { xp: number(toNext), level: p.level + 1 })}
+          {t('profile.toNext', { xp: number(toNext), level: Number(p.level) + 1 })}
         </p>
       </div>
     </section>
@@ -119,9 +121,9 @@ function Numbers({ profile: p }: { profile: Profile }) {
     [t('profile.stats.onTime'), onTime === null ? '–' : percent(onTime)],
   ];
   const ratings: [string, number][] = [
-    ['driving', p.rating_driving],
-    ['comfort', p.rating_comfort],
-    ['tickets', p.rating_tickets],
+    ['driving', p.ratingDriving],
+    ['comfort', p.ratingComfort],
+    ['tickets', p.ratingTickets],
   ];
   return (
     <>
@@ -231,9 +233,9 @@ function Drivers({
   const remove = async (name: string) => {
     setConfirm(null);
     try {
-      await call('delete_profile', { name });
+      await call('deleteProfile', { name });
       const next = names.find((n) => n !== name);
-      if (name === current && next) await call('save_config', { profile: next });
+      if (name === current && next) await call('saveConfig', { profile: next });
       toast(t('profile.drivers.deleted', { name }), 'tip');
     } catch (err) {
       toast(errorText(err), 'caution');
@@ -312,7 +314,7 @@ function NewDriver({ taken, onClose }: { taken: readonly string[]; onClose: () =
     setBusy(true);
     setError(null);
     try {
-      await call('create_profile', { name: clean });
+      await call('createProfile', { name: clean });
       toast(t('profile.create.done', { name: clean }), 'tip');
       onClose();
     } catch (err) {

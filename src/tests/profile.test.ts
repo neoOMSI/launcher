@@ -1,29 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { levelProgress, punctuality, rating, totals } from '../pages/profile/stats';
-import type { Session } from '../types/launcher';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import { SessionSchema } from '../types/launcher';
 
-const session = (patch: Partial<Session>): Session => ({
-  time: 0,
-  driver: 'Jakob',
-  map: 'Grundorf',
-  bus: 'Vehicles/MAN/MAN SL200.bus',
-  line: '24',
-  tour: '2',
-  seconds: 0,
-  metres: 0,
-  stops: 0,
-  early: 0,
-  late: 0,
-  tickets: 0,
-  cash: 0,
-  crashes: 0,
-  hurt: 0,
-  jolts: 0,
-  driving: 100,
-  comfort: 100,
-  ticketing: 100,
-  ...patch,
-});
+const session = (patch: MessageInitShape<typeof SessionSchema>) =>
+  create(SessionSchema, {
+    driver: 'Jakob',
+    map: 'Grundorf',
+    bus: 'Vehicles/MAN/MAN SL200.bus',
+    line: '24',
+    tour: '2',
+    driving: 100,
+    comfort: 100,
+    ticketing: 100,
+    ...patch,
+  });
 
 describe('profile stats', () => {
   it('counts the stops neither early nor late as on time', () => {
@@ -37,12 +28,12 @@ describe('profile stats', () => {
   });
 
   it('measures the XP from the start of the current level', () => {
-    expect(levelProgress({ xp: 5810, level: 5, next_level_xp: 6250 })).toEqual({
+    expect(levelProgress({ xp: 5810n, level: 5n, nextLevelXp: 6250n })).toEqual({
       fraction: (5810 - 4000) / (6250 - 4000),
       toNext: 440,
     });
-    expect(levelProgress({ xp: 0, level: 1, next_level_xp: 250 }).fraction).toBe(0);
-    expect(levelProgress({ xp: 300, level: 1, next_level_xp: 250 })).toEqual({
+    expect(levelProgress({ xp: 0n, level: 1n, nextLevelXp: 250n }).fraction).toBe(0);
+    expect(levelProgress({ xp: 300n, level: 1n, nextLevelXp: 250n })).toEqual({
       fraction: 1,
       toNext: 0,
     });

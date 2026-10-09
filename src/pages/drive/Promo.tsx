@@ -6,7 +6,7 @@ import { call, errorText, useCommand } from '../../lib/engine';
 import { bytes } from '../../lib/format';
 import { useToast } from '../../lib/nav';
 import { useSettings } from '../../lib/settings';
-import type { PaxPack } from '../../types/launcher';
+import { PaxState, type PaxPack } from '../../types/launcher';
 
 const DISMISSED = 'neoomsi.promo.realisticPax';
 const SEEN_RELEASE = 'neoomsi.pax.dismissedRelease';
@@ -35,9 +35,9 @@ export function paxNotice(
 ): PaxNotice {
   if (!realistic) return promoDismissed ? null : 'promo';
   if (!pack) return null;
-  if (pack.state === 'downloading' || pack.state === 'installing') return 'busy';
-  if (pack.state === 'missing' || pack.state === 'failed') return 'missing';
-  if (pack.state !== 'outdated') return null;
+  if (pack.state === PaxState.DOWNLOADING || pack.state === PaxState.INSTALLING) return 'busy';
+  if (pack.state === PaxState.MISSING || pack.state === PaxState.FAILED) return 'missing';
+  if (pack.state !== PaxState.OUTDATED) return null;
   if (!pack.latest) return 'update';
   return String(pack.latest.version) !== dismissedRelease ? 'update' : null;
 }
@@ -85,7 +85,7 @@ const Text = ({ children }: { children: React.ReactNode }) => (
 export const PassengerPromo: React.FC = () => {
   const { settings, save } = useSettings();
   const realistic = settings?.pax_models === 'realistic';
-  const pack = useCommand('pax_pack', realistic ? undefined : null);
+  const pack = useCommand('paxPack', realistic ? undefined : null);
   const toast = useToast();
   const [promoDismissed, setPromoDismissed] = useState(() => read(DISMISSED) === '1');
   const [dismissedRelease, setDismissedRelease] = useState(() => read(SEEN_RELEASE));
@@ -94,7 +94,7 @@ export const PassengerPromo: React.FC = () => {
   if (!settings) return null;
   const p = pack.data;
   const notice = paxNotice(realistic, p, promoDismissed, dismissedRelease);
-  const get = () => call('install_pax_pack').catch((err) => toast(errorText(err), 'caution'));
+  const get = () => call('installPaxPack').catch((err) => toast(errorText(err), 'caution'));
 
   if (notice === 'promo') {
     return (
@@ -127,13 +127,13 @@ export const PassengerPromo: React.FC = () => {
   if (!p) return null;
 
   if (notice === 'busy') {
-    const share = p.total > 0 ? p.done / p.total : null;
-    const known = share !== null && p.state !== 'installing';
+    const share = p.total > 0n ? Number(p.done) / Number(p.total) : null;
+    const known = share !== null && p.state !== PaxState.INSTALLING;
     return (
       <Card badge={t('drive.pax.badge')}>
         <Title>{t('drive.promo.title')}</Title>
         <Text>
-          {p.state === 'installing'
+          {p.state === PaxState.INSTALLING
             ? t('drive.pax.installing')
             : share === null
               ? t('drive.pax.starting')
@@ -166,7 +166,7 @@ export const PassengerPromo: React.FC = () => {
       <Card badge={t('drive.pax.badge')}>
         <Title>{t('drive.pax.missingTitle')}</Title>
         <Text>{t('drive.pax.missingText')}</Text>
-        {p.state === 'failed' && (
+        {p.state === PaxState.FAILED && (
           <p className="mt-2 text-[13.5px] leading-snug text-danger">{p.message}</p>
         )}
         <div className="mt-3.5">
@@ -176,7 +176,7 @@ export const PassengerPromo: React.FC = () => {
             onClick={get}
           >
             <Icon name="download" size={18} />
-            {p.state === 'failed' ? t('drive.pax.retry') : t('drive.pax.download')}
+            {p.state === PaxState.FAILED ? t('drive.pax.retry') : t('drive.pax.download')}
           </button>
         </div>
       </Card>
@@ -199,7 +199,7 @@ export const PassengerPromo: React.FC = () => {
       >
         <Title>
           {latest
-            ? t('drive.pax.updateTitle', { version: latest.version })
+            ? t('drive.pax.updateTitle', { version: Number(latest.version) })
             : t('drive.pax.outdatedTitle')}
         </Title>
         {changes && latest?.notes.trim() ? (
