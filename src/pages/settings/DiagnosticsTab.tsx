@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icon';
 import { SearchField } from '../../components/Screen';
 import { Notice } from '../../components/ui';
 import { t } from '../../i18n';
-import { useEngine } from '../../lib/engine';
+import { useEngine, useLogs } from '../../lib/engine';
 import { useToast } from '../../lib/nav';
 import { filterBy, LONG_LIST } from '../../lib/search';
 import type { EngineConnectionState } from '../../types/scaffold';
@@ -29,7 +29,8 @@ const Mono: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 export const DiagnosticsTab: React.FC = () => {
-  const { status, logs, clearLogs, connect, disconnect } = useEngine();
+  const { status, connect, disconnect } = useEngine();
+  const { logs, clearLogs } = useLogs();
   const toast = useToast();
   const body = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');

@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Command, CommandArgs, CommandResult, EngineEvent, Instance } from '../types/launcher';
 import type { EngineStatus } from '../types/scaffold';
 import { gameStart, type GameStart } from './launching';
@@ -42,12 +50,12 @@ export const errorText = (err: unknown) =>
     '',
   );
 
+const MAX_LOGS = 2000;
+
 interface EngineValue {
   status: EngineStatus;
   ready: boolean;
-  logs: string[];
   log: (line: string) => void;
-  clearLogs: () => void;
   connect: () => void;
   disconnect: () => void;
   instances: Instance[];
@@ -59,9 +67,7 @@ interface EngineValue {
 const EngineContext = createContext<EngineValue>({
   status: { connectionState: 'disconnected', capabilities: [] },
   ready: false,
-  logs: [],
   log() {},
-  clearLogs() {},
   connect() {},
   disconnect() {},
   instances: [],
@@ -71,6 +77,13 @@ const EngineContext = createContext<EngineValue>({
 });
 
 export const useEngine = () => useContext(EngineContext);
+
+const LogsContext = createContext<{ logs: string[]; clearLogs: () => void }>({
+  logs: [],
+  clearLogs() {},
+});
+
+export const useLogs = () => useContext(LogsContext);
 
 const CONTENT: Command[] = ['maps', 'vehicles', 'weather', 'lines', 'situations', 'mods'];
 
@@ -84,7 +97,15 @@ export function EngineProvider({ children }: { children: ReactNode }) {
   const [launch, setLaunch] = useState<{ pid: number; at: number } | null>(null);
   const [now, setNow] = useState(() => Date.now() / 1000);
   const ready = status.connectionState === 'connected';
-  const log = useCallback((line: string) => setLogs((prev) => [...prev, line]), []);
+  const log = useCallback(
+    (line: string) =>
+      setLogs((prev) =>
+        prev.length >= MAX_LOGS
+          ? [...prev.slice(prev.length - MAX_LOGS + 1), line]
+          : [...prev, line],
+      ),
+    [],
+  );
 
   useEffect(() => {
     if (!window.neoomsi) return;
@@ -122,13 +143,17 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     if (ready) refreshInstances();
   }, [ready, refreshInstances]);
 
-  const launching = launch
-    ? gameStart(
-        instances.find((i) => i.pid === launch.pid),
-        launch.at,
-        now,
-      )
-    : null;
+  const launching = useMemo(
+    () =>
+      launch
+        ? gameStart(
+            instances.find((i) => i.pid === launch.pid),
+            launch.at,
+            now,
+          )
+        : null,
+    [launch, instances, now],
+  );
 
   useEffect(() => {
     if (!launch) return;
@@ -146,28 +171,33 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     setLaunch({ pid, at });
   }, []);
 
-  const connect = () =>
-    window.neoomsi?.startEngine().catch((err) => log(`[Launcher] ${errorText(err)}`));
-  const disconnect = () =>
-    window.neoomsi?.stopEngine().catch((err) => log(`[Launcher] ${errorText(err)}`));
+  const connect = useCallback(
+    () => window.neoomsi?.startEngine().catch((err) => log(`[Launcher] ${errorText(err)}`)),
+    [log],
+  );
+  const disconnect = useCallback(
+    () => window.neoomsi?.stopEngine().catch((err) => log(`[Launcher] ${errorText(err)}`)),
+    [log],
+  );
+  const value = useMemo(
+    () => ({
+      status,
+      ready,
+      log,
+      connect,
+      disconnect,
+      instances,
+      refreshInstances,
+      launching,
+      noteLaunch,
+    }),
+    [status, ready, log, connect, disconnect, instances, refreshInstances, launching, noteLaunch],
+  );
+  const logValue = useMemo(() => ({ logs, clearLogs: () => setLogs([]) }), [logs]);
 
   return (
-    <EngineContext
-      value={{
-        status,
-        ready,
-        logs,
-        log,
-        clearLogs: () => setLogs([]),
-        connect,
-        disconnect,
-        instances,
-        refreshInstances,
-        launching,
-        noteLaunch,
-      }}
-    >
-      {children}
+    <EngineContext value={value}>
+      <LogsContext value={logValue}>{children}</LogsContext>
     </EngineContext>
   );
 }

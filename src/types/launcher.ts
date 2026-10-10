@@ -5,7 +5,6 @@ import {
   type AutoNumber,
   type Event,
   type JoinCheck as EngineJoinCheck,
-  type Minimap as EngineMinimap,
   type ModsStatus as EngineModsStatus,
   type Request,
   type Response,
@@ -76,11 +75,6 @@ export type ModsStatus = EngineModsStatus & { installed?: InstalledMod[] };
 
 export type JoinCheck = EngineJoinCheck & { map?: string };
 
-export type Minimap = EngineMinimap & {
-  lanes?: [number, number][][];
-  trips?: Record<string, number[]>;
-};
-
 interface LauncherOnly {
   uninstallMod: { args: { name: string }; result: { uninstalled: string[] } };
 }
@@ -88,7 +82,6 @@ interface LauncherOnly {
 interface Extended {
   mods: ModsStatus;
   join: JoinCheck;
-  minimap: Minimap;
 }
 
 type EngineCommand = Exclude<Request['command']['case'], undefined | 'handshake' | 'shutdown'>;

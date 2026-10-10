@@ -124,6 +124,9 @@ export const BusViewer: React.FC<{
     controls.enablePan = false;
     controls.maxPolarAngle = Math.PI / 2 - 0.05;
 
+    let dirty = true;
+    controls.addEventListener('change', () => (dirty = true));
+
     let current: Object3D | null = null;
     const place = (object: Object3D) => {
       if (current) {
@@ -153,6 +156,7 @@ export const BusViewer: React.FC<{
       controls.minDistance = radius * 1.2;
       controls.maxDistance = radius * 4;
       controls.update();
+      dirty = true;
     };
     view.current = { scene, place };
 
@@ -162,6 +166,7 @@ export const BusViewer: React.FC<{
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      dirty = true;
     };
     const observer = new ResizeObserver(resize);
     observer.observe(el);
@@ -177,18 +182,30 @@ export const BusViewer: React.FC<{
       const w = width / ratio;
       const h = height / ratio;
       const { centreX: x, centreY: y, fit: f } = frame.current;
-      shiftX += ((x === undefined ? 0 : w / 2 - x) - shiftX) * 0.12;
-      shiftY += ((y === undefined ? 0 : h / 2 - y) - shiftY) * 0.12;
+      const toX = x === undefined ? 0 : w / 2 - x;
+      const toY = y === undefined ? 0 : h / 2 - y;
+      if (Math.abs(toX - shiftX) > 0.5 || Math.abs(toY - shiftY) > 0.5) {
+        shiftX += (toX - shiftX) * 0.12;
+        shiftY += (toY - shiftY) * 0.12;
+        dirty = true;
+      } else if (shiftX !== toX || shiftY !== toY) {
+        shiftX = toX;
+        shiftY = toY;
+        dirty = true;
+      }
       const z = Math.min(f, (w / h) * 0.44);
       if (zoom !== z) {
         zoom = z;
         camera.zoom = z;
         camera.updateProjectionMatrix();
+        dirty = true;
       }
+      controls.update();
+      if (!dirty) return;
+      dirty = false;
       if (Math.abs(shiftX) > 0.5 || Math.abs(shiftY) > 0.5) {
         camera.setViewOffset(w, h, shiftX, shiftY, w, h);
       } else camera.clearViewOffset();
-      controls.update();
       renderer.render(scene, camera);
     });
 
