@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS_FIXTURE, PAGE_SETTINGS } from '../fixtures/settings';
 import de from '../i18n/pages/settings.de.json';
 import en from '../i18n/pages/settings.en.json';
 import { TABS, settingKeys } from '../pages/settings/schema';
+import { shown } from '../pages/settings/rows';
 
 describe('Settings Fixture Regression', () => {
   it('matches engine default settings', () => {
@@ -20,6 +21,7 @@ describe('Settings Fixture Regression', () => {
     expect(DEFAULT_SETTINGS_FIXTURE.gameplay.collision_pedestrians).toBe(true);
 
     expect(DEFAULT_SETTINGS_FIXTURE.passengers.density).toBe(1.0);
+    expect(DEFAULT_SETTINGS_FIXTURE.camera.head_pitch).toBe(0.0);
 
     expect(DEFAULT_SETTINGS_FIXTURE.ui.language).toBe('ENG');
 
@@ -45,6 +47,26 @@ describe('Settings Fixture Regression', () => {
     const page = new Set(PAGE_SETTINGS.map(([key]) => key));
     const rows = TABS.filter((tab) => tab.id !== 'launcher').flatMap(settingKeys);
     expect(rows.filter((key) => !page.has(key))).toEqual([]);
+  });
+
+  it('offers head pitch from -45 to 45 degrees in one degree steps', () => {
+    const row = TABS.find((tab) => tab.id === 'camera')?.groups
+      .flatMap((group) => group.rows)
+      .find((candidate) => candidate.key === 'head_pitch');
+    expect(row?.control).toMatchObject({ kind: 'slider', min: -45, max: 45, step: 1 });
+  });
+
+  it('uses a unique key for the head pitch reset and hides it without settings', () => {
+    const rows = TABS.find((tab) => tab.id === 'camera')?.groups
+      .find((group) => group.id === 'seat')?.rows;
+    expect(new Set(rows?.map((row) => row.key)).size).toBe(rows?.length);
+    const reset = rows?.find((row) => row.key === 'head_pitch_reset');
+    expect(reset?.control).toMatchObject({
+      kind: 'custom',
+      id: 'headPitch',
+      writes: ['head_pitch'],
+    });
+    expect(reset && shown(reset, null)).toBe(false);
   });
 
   it('labels every settings row in English and German', () => {

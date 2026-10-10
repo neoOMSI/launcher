@@ -28,14 +28,21 @@ const Preset: React.FC<CustomProps> = ({ ctx }) => {
   );
 };
 
-const GoButton: React.FC<{ icon: string; label: string; onClick: () => void }> = ({
+const GoButton: React.FC<{
+  icon: string;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}> = ({
   icon,
   label,
   onClick,
+  disabled,
 }) => (
   <button
     type="button"
     className="btn-quiet h-10 gap-2 self-start rounded-full pr-5 pl-4"
+    disabled={disabled}
     onClick={onClick}
   >
     <Icon name={icon} size={18} />
@@ -143,6 +150,19 @@ const Seat: React.FC<CustomProps> = ({ ctx }) => {
   );
 };
 
+const HeadPitch: React.FC<CustomProps> = ({ ctx }) => {
+  const { update } = useSettings();
+  const reset = !ctx || !Number(ctx.s.head_pitch);
+  return (
+    <GoButton
+      icon="restart_alt"
+      label={tr('actions.resetHeadPitch')}
+      disabled={reset}
+      onClick={() => update({ head_pitch: 0 })}
+    />
+  );
+};
+
 const CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const;
 
 const Corner: React.FC<CustomProps> = ({ ctx }) => {
@@ -219,7 +239,15 @@ const MetarStation: React.FC<CustomProps> = ({ ctx }) => {
 
 export const CUSTOM: Pick<
   Record<CustomId, React.FC<CustomProps>>,
-  'preset' | 'keys' | 'vrKeys' | 'wheel' | 'seat' | 'corner' | 'paxPack' | 'metarStation'
+  | 'preset'
+  | 'keys'
+  | 'vrKeys'
+  | 'wheel'
+  | 'seat'
+  | 'headPitch'
+  | 'corner'
+  | 'paxPack'
+  | 'metarStation'
 > = {
   paxPack: PaxPackRow,
   preset: Preset,
@@ -227,6 +255,7 @@ export const CUSTOM: Pick<
   vrKeys: VrKeys,
   wheel: Wheel,
   seat: Seat,
+  headPitch: HeadPitch,
   corner: Corner,
   metarStation: MetarStation,
 };

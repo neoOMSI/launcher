@@ -31,6 +31,7 @@ const NEEDS_SETTINGS: ReadonlySet<CustomId> = new Set([
   'preset',
   'wheel',
   'seat',
+  'headPitch',
   'corner',
   'metarStation',
 ] satisfies CustomId[]);

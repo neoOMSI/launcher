@@ -19,6 +19,7 @@ describe('Typed settings', () => {
         timeSpeed: 2,
         uiOpacity: 0.8,
         language: 'de',
+        headPitch: -12,
       }),
     );
     expect(s).toEqual({
@@ -29,6 +30,7 @@ describe('Typed settings', () => {
       time_speed: 2,
       ui_opacity: 0.8,
       language: 'de',
+      head_pitch: -12,
     });
   });
 
@@ -37,12 +39,14 @@ describe('Typed settings', () => {
       graphics_api: 'dx12',
       render_scale: '0.75',
       max_obj_dist: 'auto',
+      head_pitch: 12,
       units: 'parsecs',
       msaa: 'many',
     });
     expect(e.graphicsApi).toBeDefined();
     expect(e.renderScale).toMatchObject({ automatic: false, value: 0.75 });
     expect(e.maxObjDist).toMatchObject({ automatic: true });
+    expect(e.headPitch).toBe(12);
     expect(e.units).toBeUndefined();
     expect(e.msaa).toBeUndefined();
     expect(e.vsync).toBeUndefined();
@@ -50,6 +54,7 @@ describe('Typed settings', () => {
       graphics_api: 'dx12',
       render_scale: '0.75',
       max_obj_dist: 'auto',
+      head_pitch: 12,
     });
   });
 });

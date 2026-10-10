@@ -24,6 +24,7 @@ export type CustomId =
   | 'keys'
   | 'wheel'
   | 'seat'
+  | 'headPitch'
   | 'vrKeys'
   | 'corner'
   | 'metarStation'
@@ -63,6 +64,7 @@ export type LauncherRowKey =
   | 'preset'
   | 'restore_on_exit'
   | 'seat'
+  | 'head_pitch_reset'
   | 'theme'
   | 'vr_keys'
   | 'wheel';
@@ -476,7 +478,9 @@ export const TABS: readonly Tab[] = [
           slider('seat_y', -0.6, 0.6, 0.01, cm),
           slider('seat_z', -0.6, 0.6, 0.01, cm),
           slider('seat_x', -0.6, 0.6, 0.01, cm),
+          slider('head_pitch', -45, 45, 1, deg, { hint: true }),
           custom('seat', 'seat', { hint: true }),
+          custom('head_pitch_reset', 'headPitch', { writes: ['head_pitch'] }),
         ],
       },
       {
