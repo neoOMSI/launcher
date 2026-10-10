@@ -70,6 +70,34 @@
   --tip: #1f1f23;
 }
 
+.overflow-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.overflow-label-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .overflow-label-scroll {
+    animation: overflow-label-scroll ease-in-out 1.2s infinite alternate;
+  }
+
+  @keyframes overflow-label-scroll {
+    0%,
+    14% {
+      transform: translateX(0);
+    }
+    86%,
+    100% {
+      transform: translateX(calc(-1 * var(--overflow-label-distance)));
+    }
+  }
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;

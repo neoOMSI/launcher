@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { OverflowLabel } from '../../components/OverflowLabel';
 import { Badge, EmptyState, Field, Select, Switch } from '../../components/ui';
 import { t } from '../../i18n';
 import { useDuty } from '../../lib/duty';
@@ -156,7 +157,9 @@ function BusOption({
     <div className="relative">
       <button type="button" className="option pr-12" aria-pressed={chosen} onClick={onPick}>
         <Icon name="directions_bus" size={18} />
-        <span className="min-w-0 flex-1 truncate">{bus.typeName}</span>
+        <OverflowLabel className="min-w-0 flex-1" enabled={chosen}>
+          {bus.typeName}
+        </OverflowLabel>
         {mod && <Badge color="#4c8dff">{t('drive.bus.mod')}</Badge>}
         {bus.missingPacks.length > 0 && (
           <Badge color="var(--color-warn)">{t('drive.bus.missingBadge')}</Badge>

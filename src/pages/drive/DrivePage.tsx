@@ -7,6 +7,7 @@ import { seasonOf, toDuty, useDuty, type Choice } from '../../lib/duty';
 import { contentName, duration, hhmm, lineLabel, longDate } from '../../lib/format';
 import { useNav, useToast } from '../../lib/nav';
 import type { LineInfo, MapInfo, TripInfo, VehicleInfo, WeatherInfo } from '../../types/launcher';
+import { OverflowLabel } from '../../components/OverflowLabel';
 import { BusStep } from './BusStep';
 import { BusViewer } from './BusViewer';
 import { StopList } from './MapView';
@@ -402,11 +403,23 @@ function Sheet({ step, data, onView }: { step: Step; data: DriveData; onView: (v
   );
 }
 
-function Heading({ title, children }: { title: string; children?: React.ReactNode }) {
+function Heading({
+  title,
+  children,
+  scroll = false,
+}: {
+  title: string;
+  children?: React.ReactNode;
+  scroll?: boolean;
+}) {
   return (
     <>
-      <h2 className="mt-1 truncate font-display text-[2.6rem] leading-tight font-bold tracking-tight">
-        {title}
+      <h2 className="mt-1 min-w-0 font-display text-[2.6rem] leading-tight font-bold tracking-tight">
+        {scroll ? (
+          <OverflowLabel>{title}</OverflowLabel>
+        ) : (
+          <span className="block truncate">{title}</span>
+        )}
       </h2>
       {children && <div className="mt-1 text-[17px] text-muted">{children}</div>}
     </>
@@ -425,7 +438,7 @@ function BusHeader({ p, ref }: { p: Picked; ref?: React.Ref<HTMLDivElement> }) {
       ref={ref}
       className="legible pointer-events-none absolute top-0 left-0 max-w-[85%] px-10 pt-9"
     >
-      <Heading title={p.bus?.name ?? t('drive.summary.noBus')} />
+      <Heading title={p.bus?.name ?? t('drive.summary.noBus')} scroll />
       <div className="pointer-events-auto mt-1 flex w-fit items-center gap-1 text-[17px] text-muted">
         {paints.length > 1 && (
           <button
