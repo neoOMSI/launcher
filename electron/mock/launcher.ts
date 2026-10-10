@@ -5,6 +5,7 @@ import {
   ControllerListSchema,
   EmptySchema,
   EngineVersionSchema,
+  GameUpdateSchema,
   InstallMode,
   InstallProgressSchema,
   InstallState,
@@ -29,6 +30,7 @@ import {
   StoppedSchema,
   TutorialListSchema,
   UpdateCheckSchema,
+  UpdateState,
   VehicleListSchema,
   WeatherListSchema,
   settingsForEngine,
@@ -316,6 +318,11 @@ export class MockLauncher {
       return this.paxPack;
     },
     updateCheck: () => create(UpdateCheckSchema, { release: GAME_RELEASE }),
+    installUpdate: () =>
+      create(GameUpdateSchema, {
+        state: UpdateState.FAILED,
+        message: 'The mock engine does not install updates.',
+      }),
     optionPresets: () => create(OptionPresetListSchema),
     keybindings: () => this.keys,
     saveKeybindings: (keys) => {

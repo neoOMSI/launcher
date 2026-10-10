@@ -36,6 +36,17 @@ export function weatherIcon(choice: Choice, presets: WeatherInfo[]): string {
   return preset ? presetIcon(preset) : 'partly_cloudy_day';
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function now(): Pick<Choice, 'time' | 'date' | 'season'> {
+  const d = new Date();
+  return {
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    season: 'auto',
+  };
+}
+
 const fits = (w: WeatherInfo, season: Exclude<Season, 'auto'>) =>
   season === 'winter' ? w.temp < 12 : season === 'summer' ? !w.snow && w.temp > 5 : !w.snow;
 
@@ -78,7 +89,7 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
   return (
     <div className="space-y-8">
       <section>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+        <div className="relative grid grid-cols-2 gap-x-6 gap-y-5">
           <Field label={t('drive.time.time')}>
             <input
               type="time"
@@ -95,6 +106,15 @@ export const TimeStep: React.FC<{ data: DriveData }> = ({ data }) => {
               onChange={(e) => e.target.value && update({ date: e.target.value, season: 'auto' })}
             />
           </Field>
+          <button
+            type="button"
+            className="absolute top-0 right-0 flex items-center gap-1 text-[14px] font-semibold text-brand hover:underline"
+            title={t('drive.time.nowHint')}
+            onClick={() => update({ ...now(), trip: '' })}
+          >
+            <Icon name="schedule" size={16} />
+            {t('drive.time.now')}
+          </button>
         </div>
         <div className="mt-5">
           <Segmented

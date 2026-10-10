@@ -402,7 +402,11 @@
     "noVersion": "Version unknown",
     "open": "Open release page",
     "prerelease": "Pre-release",
-    "upToDate": "Up to date"
+    "upToDate": "Up to date",
+    "install": "Update now",
+    "starting": "Starting the download…",
+    "downloading": "Downloading {percent} % of {size}",
+    "restarting": "Downloaded, neoOMSI restarts to install it…"
   },
   "about": {
     "data": "Launcher data",

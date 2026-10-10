@@ -24,6 +24,7 @@ import {
   type Instance,
   type Launched,
   type MapList,
+  UpdateState,
 } from '../src/types/launcher';
 import packageJson from '../package.json' with { type: 'json' };
 
@@ -83,6 +84,9 @@ function setupEngineClient(): void {
     engine.on('event', (event: EngineEvent) => {
       mainWindow?.webContents.send('engine:event', event);
       if (event.case === 'instancesChanged') watchGames(event.value.instances);
+      // The engine's helper swaps the launcher's own folder once this process has ended.
+      if (event.case === 'updateChanged' && event.value.state === UpdateState.RESTARTING)
+        app.quit();
     });
     engine.on('diagnostic', (log: string) => {
       mainWindow?.webContents.send('engine:diagnostic-log', log);
@@ -248,7 +252,10 @@ registerIpcHandler('engine:call', async (_, command: string, args: unknown) => {
   if (!(COMMANDS as readonly string[]).includes(command)) {
     throw new Error(`Unknown launcher command '${command}'`);
   }
-  const result = await client.sendRequest(command, args ?? {});
+  const result = await client.sendRequest(
+    command,
+    command === 'installUpdate' ? { launcherPid: process.pid } : (args ?? {}),
+  );
   if (command === 'launch') awaitingWindow.add((result as Launched).pid);
   return result;
 });

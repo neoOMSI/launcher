@@ -138,6 +138,8 @@
     "time": {
       "time": "Uhrzeit",
       "date": "Datum",
+      "now": "Jetzt",
+      "nowHint": "Uhrzeit und Datum von jetzt, nur für diesen Start",
       "season": "Jahreszeit",
       "seasons": {
         "auto": "Nach Datum",
@@ -272,6 +274,12 @@
     "hide": "Änderungen ausblenden",
     "download": "Herunterladen",
     "dismiss": "Nicht jetzt",
-    "noNotes": "Diese Version nennt keine Änderungen."
+    "noNotes": "Diese Version nennt keine Änderungen.",
+    "install": "Jetzt aktualisieren",
+    "starting": "Download startet…",
+    "downloading": "Lädt {percent} % von {size}",
+    "restarting": "Heruntergeladen, neoOMSI startet zum Installieren neu…",
+    "retry": "Erneut versuchen",
+    "openPage": "Auf GitHub öffnen"
   }
 }

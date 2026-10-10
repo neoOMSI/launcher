@@ -139,6 +139,8 @@
     "time": {
       "time": "Time",
       "date": "Date",
+      "now": "Now",
+      "nowHint": "Time and date as they are now, for this start only",
       "season": "Season",
       "seasons": {
         "auto": "By date",
@@ -273,6 +275,12 @@
     "hide": "Hide changes",
     "download": "Download",
     "dismiss": "Not now",
-    "noNotes": "This release lists no changes."
+    "noNotes": "This release lists no changes.",
+    "install": "Update now",
+    "starting": "Starting the download…",
+    "downloading": "Downloading {percent} % of {size}",
+    "restarting": "Downloaded, neoOMSI restarts to install it…",
+    "retry": "Try again",
+    "openPage": "Open on GitHub"
   }
 }

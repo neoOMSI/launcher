@@ -12,7 +12,9 @@ import { call, errorText, useCommand, useEngine } from '../../lib/engine';
 import { useToast } from '../../lib/nav';
 import { useTheme } from '../../lib/theme';
 import type { AppInfo, LauncherPrefs, OnLaunch } from '../../types/neoomsi';
-import type { GameRelease } from '../../types/launcher';
+import { UpdateState, type GameRelease } from '../../types/launcher';
+import { useGameUpdate } from '../../lib/update';
+import { bytes } from '../../lib/format';
 import { Changelog } from '../../components/Changelog';
 import type { CustomProps } from './rows';
 import { tr, type CustomId } from './schema';
@@ -230,6 +232,7 @@ const CheckUpdates: React.FC<CustomProps> = () => {
   const { status } = useEngine();
   const version = status.engineVersion;
   const [check, setCheck] = useState<Check>({ state: 'idle' });
+  const { update, canInstall, install, busy } = useGameUpdate();
 
   const run = () => {
     if (!version) return;
@@ -286,14 +289,39 @@ const CheckUpdates: React.FC<CustomProps> = () => {
           {latest.notes.trim() && (
             <Changelog notes={latest.notes} className="mt-3 max-h-56 overflow-y-auto pr-2" />
           )}
-          <button
-            type="button"
-            className="btn mt-4 gap-2"
-            onClick={() => openExternal(latest.page || `${REPO}/releases`)}
-          >
-            <Icon name="open_in_new" size={18} />
-            {tr('updates.open')}
-          </button>
+          {update?.state === UpdateState.FAILED && (
+            <p className="mt-3 text-[14.5px] text-danger select-text">{update.message}</p>
+          )}
+          {busy ? (
+            <p className="mt-4 flex items-center gap-2.5 text-[14.5px] text-muted tabular-nums">
+              <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
+              {update?.state === UpdateState.RESTARTING
+                ? tr('updates.restarting')
+                : update && update.total > 0n
+                  ? tr('updates.downloading', {
+                      percent: Math.round((Number(update.done) / Number(update.total)) * 100),
+                      size: bytes(update.total),
+                    })
+                  : tr('updates.starting')}
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {canInstall && (
+                <button type="button" className="btn gap-2" onClick={install}>
+                  <Icon name="download" size={18} />
+                  {tr('updates.install')}
+                </button>
+              )}
+              <button
+                type="button"
+                className={canInstall ? 'btn-quiet gap-2' : 'btn gap-2'}
+                onClick={() => openExternal(latest.page || `${REPO}/releases`)}
+              >
+                <Icon name="open_in_new" size={18} />
+                {tr('updates.open')}
+              </button>
+            </div>
+          )}
         </Notice>
       )}
     </div>

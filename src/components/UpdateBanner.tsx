@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { t } from '../i18n';
 import { call, useEngine } from '../lib/engine';
+import { bytes } from '../lib/format';
 import { useSettings } from '../lib/settings';
-import type { GameRelease } from '../types/launcher';
+import { useGameUpdate } from '../lib/update';
+import { UpdateState, type GameRelease } from '../types/launcher';
 import { Changelog } from './Changelog';
 import { Icon } from './Icon';
 import { Badge } from './ui';
@@ -30,6 +32,8 @@ export const UpdateBanner: React.FC = () => {
   const [release, setRelease] = useState<GameRelease | null>(null);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(readDismissed);
+  const { update, canInstall, install, busy } = useGameUpdate();
+  const auto = canInstall && settings?.update_auto === true;
 
   useEffect(() => {
     if (!ready || !enabled) return;
@@ -46,7 +50,24 @@ export const UpdateBanner: React.FC = () => {
     };
   }, [ready, enabled]);
 
-  if (!enabled || !release || dismissed === release.version) return null;
+  useEffect(() => {
+    if (auto && release && !update) install();
+  }, [auto, release, update, install]);
+
+  if (!enabled || !release || (dismissed === release.version && !busy)) return null;
+
+  const failed = update?.state === UpdateState.FAILED ? update.message : null;
+  const progress =
+    update?.state === UpdateState.RESTARTING
+      ? t('update.restarting')
+      : update?.state === UpdateState.DOWNLOADING
+        ? update.total > 0n
+          ? t('update.downloading', {
+              percent: Math.round((Number(update.done) / Number(update.total)) * 100),
+              size: bytes(update.total),
+            })
+          : t('update.starting')
+        : null;
 
   const dismiss = () => {
     setDismissed(release.version);
@@ -66,6 +87,13 @@ export const UpdateBanner: React.FC = () => {
             {t('update.available', { version: release.version })}
           </span>
           {release.prerelease && <Badge color="var(--color-warn)">{t('update.prerelease')}</Badge>}
+          {progress && (
+            <span className="flex items-center gap-2 text-[14.5px] text-muted tabular-nums">
+              <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
+              {progress}
+            </span>
+          )}
+          {failed && <span className="truncate text-[14.5px] text-danger">{failed}</span>}
         </p>
         <button
           type="button"
@@ -76,23 +104,37 @@ export const UpdateBanner: React.FC = () => {
           {open ? t('update.hide') : t('update.whatsNew')}
           <Icon name={open ? 'expand_less' : 'expand_more'} size={18} />
         </button>
-        <button
-          type="button"
-          className="btn h-9 gap-1.5 rounded-full px-4 text-[14.5px]"
-          onClick={() => openRelease(release.page)}
-        >
-          <Icon name="download" size={18} />
-          {t('update.download')}
-        </button>
-        <button
-          type="button"
-          className="theme-toggle size-9 shrink-0 rounded-full"
-          title={t('update.dismiss')}
-          aria-label={t('update.dismiss')}
-          onClick={dismiss}
-        >
-          <Icon name="close" size={18} />
-        </button>
+        {failed && (
+          <button
+            type="button"
+            className="btn-quiet h-9 gap-1.5 rounded-full px-4 text-[14.5px]"
+            onClick={() => openRelease(release.page)}
+          >
+            <Icon name="open_in_new" size={18} />
+            {t('update.openPage')}
+          </button>
+        )}
+        {!busy && (
+          <button
+            type="button"
+            className="btn h-9 gap-1.5 rounded-full px-4 text-[14.5px]"
+            onClick={() => (canInstall ? install() : openRelease(release.page))}
+          >
+            <Icon name={failed ? 'refresh' : 'download'} size={18} />
+            {failed ? t('update.retry') : canInstall ? t('update.install') : t('update.download')}
+          </button>
+        )}
+        {!busy && (
+          <button
+            type="button"
+            className="theme-toggle size-9 shrink-0 rounded-full"
+            title={t('update.dismiss')}
+            aria-label={t('update.dismiss')}
+            onClick={dismiss}
+          >
+            <Icon name="close" size={18} />
+          </button>
+        )}
       </div>
       {open && (
         <div className="max-h-72 overflow-y-auto border-t border-line px-5 py-4">
