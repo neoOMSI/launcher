@@ -33,12 +33,7 @@ const GoButton: React.FC<{
   label: string;
   onClick: () => void;
   disabled?: boolean;
-}> = ({
-  icon,
-  label,
-  onClick,
-  disabled,
-}) => (
+}> = ({ icon, label, onClick, disabled }) => (
   <button
     type="button"
     className="btn-quiet h-10 gap-2 self-start rounded-full pr-5 pl-4"

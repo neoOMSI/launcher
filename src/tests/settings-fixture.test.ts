@@ -50,15 +50,16 @@ describe('Settings Fixture Regression', () => {
   });
 
   it('offers head pitch from -45 to 45 degrees in one degree steps', () => {
-    const row = TABS.find((tab) => tab.id === 'camera')?.groups
-      .flatMap((group) => group.rows)
+    const row = TABS.find((tab) => tab.id === 'camera')
+      ?.groups.flatMap((group) => group.rows)
       .find((candidate) => candidate.key === 'head_pitch');
     expect(row?.control).toMatchObject({ kind: 'slider', min: -45, max: 45, step: 1 });
   });
 
   it('uses a unique key for the head pitch reset and hides it without settings', () => {
-    const rows = TABS.find((tab) => tab.id === 'camera')?.groups
-      .find((group) => group.id === 'seat')?.rows;
+    const rows = TABS.find((tab) => tab.id === 'camera')?.groups.find(
+      (group) => group.id === 'seat',
+    )?.rows;
     expect(new Set(rows?.map((row) => row.key)).size).toBe(rows?.length);
     const reset = rows?.find((row) => row.key === 'head_pitch_reset');
     expect(reset?.control).toMatchObject({
