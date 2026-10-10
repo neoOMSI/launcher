@@ -1012,4 +1012,33 @@ describe('ProcessEngineClient', () => {
     await expect(client.sendRequest('teleport', {})).rejects.toThrow("has no command 'teleport'");
     expect(seen).toEqual([]);
   });
+
+  const liveEnginePath = process.env.NEOOMSI_PATH;
+  (liveEnginePath ? it : it.skip)(
+    'connects, handshakes, exchanges config request, and shuts down real neoomsi engine process',
+    async () => {
+      const liveClient = new ProcessEngineClient({
+        enginePath: liveEnginePath!,
+        engineArgs: ['--control-protocol'],
+      });
+
+      try {
+        const status = await liveClient.start();
+        expect(status.connectionState).toBe('connected');
+        expect(status.protocolVersion).toBe('1');
+        expect(status.engineVersion).toBeTruthy();
+        expect(status.capabilities).toContain('events.instances');
+        expect(status.commands).toContain('config');
+
+        // Send a representative real command beyond the handshake
+        const configResponse = await liveClient.sendRequest<Record<string, unknown>>('config', {});
+        expect(configResponse).toBeDefined();
+        expect(typeof configResponse.root).toBe('string');
+        expect(typeof configResponse.game).toBe('string');
+        expect(typeof configResponse.profile).toBe('string');
+      } finally {
+        await liveClient.stop();
+      }
+    },
+  );
 });
