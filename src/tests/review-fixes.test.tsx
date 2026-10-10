@@ -9,14 +9,19 @@ import { setLanguage } from '../i18n';
 import { PassengerPromo } from '../pages/drive/Promo';
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import {
+  GameUpdateSchema,
   PaxPackSchema,
   PaxState,
   ResponseSchema,
   SettingsSchema,
+  UpdateCheckSchema,
+  UpdateState,
   settingsForEngine,
   settingsFromEngine,
+  type EngineEvent,
   type PaxPack,
   type Settings,
+  type UpdateCheck,
 } from '../types/launcher';
 import type { NeoomsiBridge } from '../types/neoomsi';
 
@@ -27,16 +32,30 @@ interface Fake {
   releaseSettings?: () => void;
   holdSave?: Promise<void>;
   pax?: PaxPack;
+  commands?: string[];
+  emit?: (event: EngineEvent) => void;
+  check?: Promise<UpdateCheck>;
 }
 
 function bridge(fake: Fake) {
   const noop = () => () => {};
   window.neoomsi = {
-    getEngineStatus: async () => ({ connectionState: 'connected', capabilities: [] }),
+    getEngineStatus: async () => ({
+      connectionState: 'connected',
+      capabilities: [],
+      commands: fake.commands,
+    }),
     startEngine: async () => ({ connectionState: 'connected', capabilities: [] }),
     onEngineStatus: noop,
     onDiagnosticLog: noop,
-    onEngineEvent: noop,
+    onEngineEvent: (callback: (event: EngineEvent) => void) => {
+      const before = fake.emit;
+      fake.emit = (event) => {
+        before?.(event);
+        callback(event);
+      };
+      return () => {};
+    },
     openExternal: async () => {},
     call: async (command: string, args?: unknown) => {
       fake.calls.push(command);
@@ -51,6 +70,7 @@ function bridge(fake: Fake) {
         return settingsForEngine({ ...fake.settings, ...settingsFromEngine(changes) });
       }
       if (command === 'paxPack' || command === 'installPaxPack') return fake.pax;
+      if (command === 'updateCheck' && fake.check) return fake.check;
       return create(ResponseSchema, {
         answer: { case: command, value: {} } as MessageInitShape<typeof ResponseSchema>['answer'],
       }).answer.value;
@@ -174,6 +194,48 @@ describe('the update banner', () => {
     await waitFor(() => expect(fake.calls).toContain('settings'));
     await new Promise((r) => setTimeout(r, 50));
     expect(fake.calls).not.toContain('updateCheck');
+  });
+
+  const RELEASE = { version: '9.9.9', page: 'https://example.invalid', notes: '' };
+
+  it('installs by itself even when the engine said it is idle before the check came back', async () => {
+    let answer = (_: UpdateCheck) => {};
+    const fake: Fake = {
+      calls: [],
+      settings: { update_check: true, update_auto: true },
+      failSave: false,
+      commands: ['install_update'],
+      check: new Promise((r) => (answer = r)),
+    };
+    mount(fake);
+    await waitFor(() => expect(fake.calls).toContain('updateCheck'));
+    act(() =>
+      fake.emit?.({
+        case: 'updateChanged',
+        value: create(GameUpdateSchema, { state: UpdateState.IDLE }),
+      }),
+    );
+    await act(async () => answer(create(UpdateCheckSchema, { release: RELEASE })));
+    await waitFor(() => expect(fake.calls).toContain('installUpdate'));
+  });
+
+  it('shows why the last update failed and does not try again by itself', async () => {
+    const fake: Fake = {
+      calls: [],
+      settings: { update_check: true, update_auto: true },
+      failSave: false,
+      commands: ['install_update'],
+      check: Promise.resolve(
+        create(UpdateCheckSchema, {
+          release: RELEASE,
+          update: { state: UpdateState.FAILED, message: 'the folder cannot be written' },
+        }),
+      ),
+    };
+    mount(fake);
+    await screen.findByText('the folder cannot be written');
+    await new Promise((r) => setTimeout(r, 50));
+    expect(fake.calls).not.toContain('installUpdate');
   });
 });
 

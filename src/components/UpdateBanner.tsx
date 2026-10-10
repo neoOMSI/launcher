@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { t } from '../i18n';
 import { call, useEngine } from '../lib/engine';
 import { bytes } from '../lib/format';
@@ -32,15 +32,20 @@ export const UpdateBanner: React.FC = () => {
   const [release, setRelease] = useState<GameRelease | null>(null);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(readDismissed);
-  const { update, canInstall, install, busy } = useGameUpdate();
+  const { update, setUpdate, canInstall, install, busy } = useGameUpdate();
   const auto = canInstall && settings?.update_auto === true;
+  const autoStarted = useRef<string | null>(null);
 
   useEffect(() => {
     if (!ready || !enabled) return;
     let live = true;
     const check = () =>
       call('updateCheck')
-        .then((r) => live && setRelease(r.release ?? null))
+        .then((r) => {
+          if (!live) return;
+          setRelease(r.release ?? null);
+          if (r.update) setUpdate(r.update);
+        })
         .catch(() => {});
     check();
     const timer = setInterval(check, RECHECK_MS);
@@ -51,7 +56,11 @@ export const UpdateBanner: React.FC = () => {
   }, [ready, enabled]);
 
   useEffect(() => {
-    if (auto && release && !update) install();
+    if (!auto || !release || autoStarted.current === release.version) return;
+    // a failure stays on screen: installing again by itself could fail the same way forever
+    if (update && update.state !== UpdateState.IDLE) return;
+    autoStarted.current = release.version;
+    install();
   }, [auto, release, update, install]);
 
   if (!enabled || !release || (dismissed === release.version && !busy)) return null;

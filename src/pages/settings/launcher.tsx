@@ -232,13 +232,16 @@ const CheckUpdates: React.FC<CustomProps> = () => {
   const { status } = useEngine();
   const version = status.engineVersion;
   const [check, setCheck] = useState<Check>({ state: 'idle' });
-  const { update, canInstall, install, busy } = useGameUpdate();
+  const { update, setUpdate, canInstall, install, busy } = useGameUpdate();
 
   const run = () => {
     if (!version) return;
     setCheck({ state: 'checking' });
     call('updateCheck')
-      .then(({ release }) => setCheck({ state: 'done', latest: release ?? null }))
+      .then(({ release, update }) => {
+        setCheck({ state: 'done', latest: release ?? null });
+        if (update) setUpdate(update);
+      })
       .catch((err) => setCheck({ state: 'failed', error: errorText(err) }));
   };
 

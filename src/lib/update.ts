@@ -26,5 +26,5 @@ export function useGameUpdate() {
 
   const busy =
     update?.state === UpdateState.DOWNLOADING || update?.state === UpdateState.RESTARTING;
-  return { update, canInstall, install, busy };
+  return { update, setUpdate, canInstall, install, busy };
 }

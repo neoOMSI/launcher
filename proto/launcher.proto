@@ -875,6 +875,7 @@ message GameRelease {
 
 message UpdateCheck {
   GameRelease release = 1;
+  GameUpdate update = 2;
 }
 
 message InstallUpdateArgs {
