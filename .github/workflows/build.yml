@@ -71,9 +71,7 @@ jobs:
 
       - name: Package
         shell: bash
-        run: >
-          pnpm exec electron-builder --dir ${{ matrix.flag }} --${{ matrix.arch }}
-          -c.directories.output=release/${{ matrix.platform }}-${{ matrix.arch }}
+        run: pnpm run package:app --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --out release/${{ matrix.platform }}-${{ matrix.arch }}
 
       - name: Archive
         shell: bash

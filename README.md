@@ -28,9 +28,9 @@
 
 The launcher is an Electron and React app. It contains no simulation code: it starts the game as `neoomsi --control-protocol` and talks to it over standard input and output. The engine answers the launcher's requests (maps, buses, timetables, settings, mod installs, starting games) and pushes what changes: the running games and their loading progress, install progress, new content, and new passenger packs.
 
-- **Engine-owned data:** Everything the launcher shows comes from the engine, so the launcher and the game's built-in launcher always agree.
+- **Engine-owned data:** Everything the launcher shows comes from the engine, preserving one source of truth for game state and content discovery.
 - **Protocol:** Length-prefixed protobuf frames, specified in [LAUNCHER_PROTOCOL.md](https://github.com/neoOMSI/neoOMSI/blob/main/docs/LAUNCHER_PROTOCOL.md) in the neoOMSI repository. Its schema, `proto/launcher.proto`, is neoOMSI's; the TypeScript in `src/types/launcher_pb.ts` is generated from it. Launcher and engine check each other's protocol version at the handshake.
-- **Shipping:** neoOMSI's release CI builds the launcher commit pinned in neoOMSI's [`scripts/launcher-ref`](https://github.com/neoOMSI/neoOMSI/blob/main/scripts/launcher-ref) into every release (`launcher/` beside the game; inside `neoOMSI.app` on macOS). A launcher change reaches players once that pin is moved to it.
+- **Shipping:** Nightly releases build the latest launcher `main` commit resolved once at build start. Stable releases and release candidates use the frozen commit in neoOMSI's [`scripts/launcher-ref`](https://github.com/neoOMSI/neoOMSI/blob/main/scripts/launcher-ref). All releases record the exact engine and launcher commits in `build-manifest.json`.
 
 ## Documentation
 
@@ -60,12 +60,13 @@ pnpm dev:real
 
 Other commands:
 
-| Command             | What it does                                                         |
-| ------------------- | -------------------------------------------------------------------- |
-| `pnpm test`         | Runs the test suite (Vitest)                                         |
-| `pnpm build`        | Type-checks and builds the renderer and the Electron main process    |
-| `pnpm package`      | Packages the app for this platform into `release/` (unpacked folder) |
-| `pnpm format:check` | Checks the formatting (Prettier); `pnpm format` fixes it             |
+| Command             | What it does                                                               |
+| ------------------- | -------------------------------------------------------------------------- |
+| `pnpm test`         | Runs the test suite (Vitest)                                               |
+| `pnpm build`        | Type-checks and builds the renderer and the Electron main process          |
+| `pnpm package`      | Packages the app for this platform into `release/` (unpacked folder)       |
+| `pnpm package:app`  | Canonical packaging script (`--platform <os> --arch <arch> [--out <dir>]`) |
+| `pnpm format:check` | Checks the formatting (Prettier); `pnpm format` fixes it                   |
 
 A packaged launcher finds the game beside it. Started elsewhere, pass `--engine=/path/to/neoomsi` or set `NEOOMSI_ENGINE_PATH`.
 

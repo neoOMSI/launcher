@@ -36,7 +36,7 @@ echo "Changed files:"
 printf '%s\n' "$changed"
 
 if printf '%s\n' "$changed" | grep -Eq \
-  '^(src/|electron/|proto/|buf\.gen\.yaml$|build/|assets/|index\.html$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig[^/]*\.json$|vite[^/]*\.ts$|vitest\.config\.ts$|electron-builder\.yml$|\.prettier[^/]*$|\.github/workflows/(test|build)\.yml$|scripts/ci/)'
+  '^(src/|electron/|proto/|buf\.gen\.yaml$|build/|assets/|index\.html$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|tsconfig[^/]*\.json$|vite[^/]*\.ts$|vitest\.config\.ts$|electron-builder\.yml$|\.prettier[^/]*$|\.github/workflows/(test|build)\.yml$|scripts/)'
 then
   echo "run-tests=true" >> "$GITHUB_OUTPUT"
   echo "Test-relevant changes detected."
