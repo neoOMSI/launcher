@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ListGroup, ListRow } from '../../components/List';
+import { SearchField } from '../../components/Screen';
 import { Notice, Select, Spinner } from '../../components/ui';
 import { t } from '../../i18n';
 import { call, errorText, useCommand } from '../../lib/engine';
 import { ago, dateTime, duration, number } from '../../lib/format';
+import { filterBy, LONG_LIST } from '../../lib/search';
 import type { Session } from '../../types/launcher';
 import { useNames } from '../profile/names';
 import { duty, Mark } from './Game';
@@ -15,6 +17,7 @@ export const History: React.FC<{ ended: number }> = ({ ended }) => {
   const profiles = useCommand('profiles');
   const names = useNames();
   const [who, setWho] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
   const [state, setState] = useState<{ sessions?: Session[]; error?: string }>({});
   const drivers = profiles.data?.names ?? [];
   const chosen = who ?? config.data?.profile ?? '';
@@ -40,23 +43,41 @@ export const History: React.FC<{ ended: number }> = ({ ended }) => {
 
   const error = config.error ?? profiles.error ?? state.error;
   const sessions = state.sessions;
+  const shown = filterBy(sessions ?? [], query, (s) => [
+    names.map(s.map),
+    duty(s.line, s.tour),
+    s.driver,
+    names.bus(s.bus),
+    ago(s.time),
+    dateTime(s.time),
+  ]);
 
   return (
     <ListGroup
       title={t('sessions.history.title')}
       action={
-        drivers.length > 1 && (
-          <Select
-            className="w-52"
-            label={t('sessions.history.driver')}
-            value={chosen}
-            options={[
-              [ALL, t('sessions.history.allDrivers')] as const,
-              ...drivers.map((n) => [n, n] as const),
-            ]}
-            onChange={setWho}
-          />
-        )
+        <div className="flex items-center gap-2">
+          {(sessions?.length ?? 0) > LONG_LIST && (
+            <SearchField
+              className="w-52"
+              value={query}
+              onChange={setQuery}
+              placeholder={t('sessions.history.search')}
+            />
+          )}
+          {drivers.length > 1 && (
+            <Select
+              className="w-52"
+              label={t('sessions.history.driver')}
+              value={chosen}
+              options={[
+                [ALL, t('sessions.history.allDrivers')] as const,
+                ...drivers.map((n) => [n, n] as const),
+              ]}
+              onChange={setWho}
+            />
+          )}
+        </div>
       }
     >
       {error ? (
@@ -71,8 +92,10 @@ export const History: React.FC<{ ended: number }> = ({ ended }) => {
         </div>
       ) : sessions.length === 0 ? (
         <ListRow label={t('sessions.history.none')} hint={t('sessions.history.noneHint')} />
+      ) : shown.length === 0 ? (
+        <ListRow label={t('common.noMatch', { query: query.trim() })} />
       ) : (
-        sessions.map((s, k) => (
+        shown.map((s, k) => (
           <div key={`${s.driver}-${s.time}-${k}`} className="list-row gap-4">
             <Mark line={s.line} />
             <div className="min-w-0 flex-1">

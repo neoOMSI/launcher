@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState, type ReactNode } from 'react';
+import React, { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../../components/Icon';
 import { ListGroup, ListRow } from '../../components/List';
+import { SearchField } from '../../components/Screen';
 import { Notice, Select, Slider, Spinner, Switch } from '../../components/ui';
 import { t, type SupportedLanguage } from '../../i18n';
 import { call, errorText, useCommand } from '../../lib/engine';
+import { LONG_LIST } from '../../lib/search';
 import { useNav, useToast } from '../../lib/nav';
 import {
   AxisFunction,
@@ -13,7 +15,9 @@ import {
   type KeyBindings,
 } from '../../types/launcher';
 import { actionName } from './actions';
+import { ControllerWizard, type WizardMode } from './ControllerWizard';
 import { axisOutput, controllerChanges, curve, isBipolar } from './model';
+import { calibrated } from './wizard';
 
 const FUNCTIONS: readonly (readonly [AxisFunction, string])[] = [
   [AxisFunction.NONE, 'none'],
@@ -61,8 +65,36 @@ const percent = (v: number, lang: SupportedLanguage) => {
   return lang === 'de' ? `${text} %` : `${text}%`;
 };
 
+const HAT_BUTTONS = 128;
+const PAD_BUTTONS: Record<number, string> = { 0: 'X', 1: 'A', 2: 'B', 3: 'Y', 4: 'LB', 5: 'RB' };
+const PAD_KEYS: Record<number, string> = {
+  8: 'view',
+  9: 'menu',
+  10: 'leftStick',
+  11: 'rightStick',
+};
+const HAT_DIRS = ['up', 'right', 'down', 'left'] as const;
+
+export function buttonLabel(n: number, gamepad: boolean, windows: boolean): string {
+  if (windows && n >= HAT_BUTTONS && n < HAT_BUTTONS + 16) {
+    const hat = Math.floor((n - HAT_BUTTONS) / 4);
+    const dir = t(`controls.controllers.hat.${HAT_DIRS[(n - HAT_BUTTONS) % 4]}`);
+    return gamepad && hat === 0
+      ? t('controls.controllers.hat.dpad', { dir })
+      : t('controls.controllers.hat.hat', { n: hat + 1, dir });
+  }
+  if (windows && gamepad && PAD_BUTTONS[n]) return PAD_BUTTONS[n];
+  if (windows && gamepad && PAD_KEYS[n]) return t(`controls.controllers.pad.${PAD_KEYS[n]}`);
+  return t('controls.controllers.button', { n: n + 1 });
+}
+
+interface Live {
+  axes: Map<string, number[]>;
+  pressed: Map<string, number[]>;
+}
+
 function useLiveAxes(running: boolean) {
-  const [live, setLive] = useState<Map<string, number[]>>(() => new Map());
+  const [live, setLive] = useState<Live>(() => ({ axes: new Map(), pressed: new Map() }));
   useEffect(() => {
     if (!running) return;
     let stopped = false;
@@ -71,7 +103,10 @@ function useLiveAxes(running: boolean) {
         try {
           const { controllers } = await call('controllers');
           if (!stopped) {
-            setLive(new Map(controllers.map((c) => [c.name, c.axes.map((a) => a.value)])));
+            setLive({
+              axes: new Map(controllers.map((c) => [c.name, c.axes.map((a) => a.value)])),
+              pressed: new Map(controllers.map((c) => [c.name, c.pressed])),
+            });
           }
         } catch {}
         await new Promise((r) => setTimeout(r, 100));
@@ -186,7 +221,8 @@ export function Controllers({
           <ControllerView
             key={`${c.name}-${index}`}
             controller={c}
-            live={c.connected ? live.get(c.name) : undefined}
+            live={c.connected ? live.axes.get(c.name) : undefined}
+            pressed={c.connected ? live.pressed.get(c.name) : undefined}
             lang={lang}
             actions={actions}
             onChange={(patch) => pads.update(index, patch)}
@@ -227,12 +263,14 @@ function Heading({ children, className = 'mt-10' }: { children: ReactNode; class
 function ControllerView({
   controller: c,
   live,
+  pressed,
   lang,
   actions,
   onChange,
 }: {
   controller: Controller;
   live: number[] | undefined;
+  pressed: number[] | undefined;
   lang: SupportedLanguage;
   actions: (readonly [string, string])[];
   onChange: (patch: Partial<Controller>) => void;
@@ -243,9 +281,39 @@ function ControllerView({
     onChange({ buttons: c.buttons.map((b, j) => (j === i ? { ...b, action } : b)) });
   const axes = c.axes ?? [];
   const buttons = c.buttons ?? [];
+  const [wizard, setWizard] = useState<WizardMode>();
+  const [query, setQuery] = useState('');
+  const list = useRef<HTMLDivElement>(null);
+  const windows = window.neoomsi?.platform === 'win32';
+  const held = pressed ?? [];
+  const heldKey = held.join(',');
+  useEffect(() => {
+    if (!held.length) return;
+    list.current
+      ?.querySelector(`[data-button="${held[held.length - 1]}"]`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [heldKey]);
+  const q = query.trim().toLowerCase();
+  const shownButtons = buttons
+    .map((b, i) => ({ b, i, label: buttonLabel(i, c.gamepad, windows) }))
+    .filter(
+      ({ b, label }) =>
+        !q ||
+        label.toLowerCase().includes(q) ||
+        (!!b.action && actionName(b.action, lang).toLowerCase().includes(q)),
+    );
 
   return (
     <section className="mt-12 first:mt-0">
+      {wizard && (
+        <ControllerWizard
+          mode={wizard}
+          controller={c}
+          live={live}
+          onApply={onChange}
+          onClose={() => setWizard(undefined)}
+        />
+      )}
       <Heading className="">
         <span
           className={`size-2.5 shrink-0 rounded-full ${c.connected ? 'bg-ok' : 'bg-line-strong'}`}
@@ -293,12 +361,40 @@ function ControllerView({
                 onChange={(forceFeedback) => onChange({ forceFeedback })}
               />
             </ListRow>
+            {c.connected && (
+              <ListRow
+                label={t('controls.controllers.wizard.assist')}
+                hint={t('controls.controllers.wizard.assistHint')}
+              >
+                <button
+                  type="button"
+                  className="btn-quiet h-10 rounded-full px-5"
+                  onClick={() => setWizard('assist')}
+                >
+                  {t('controls.controllers.wizard.start')}
+                </button>
+              </ListRow>
+            )}
+            {c.connected && (
+              <ListRow
+                label={t('controls.controllers.wizard.calibrate')}
+                hint={t('controls.controllers.wizard.calibrateHint')}
+              >
+                <button
+                  type="button"
+                  className="btn-quiet h-10 rounded-full px-5"
+                  onClick={() => setWizard('calibrate')}
+                >
+                  {t('controls.controllers.wizard.start')}
+                </button>
+              </ListRow>
+            )}
             {axes.map((axis, i) => (
               <AxisRow
                 key={i}
                 axis={axis}
-                raw={live?.[i] ?? axis.value}
-                deadzone={c.deadzone}
+                raw={calibrated(axis.calibration, live?.[i] ?? axis.value)}
+                deadzone={axis.calibration?.deadzone ?? c.deadzone}
                 lang={lang}
                 onChange={(patch) => setAxis(i, patch)}
               />
@@ -309,34 +405,56 @@ function ControllerView({
       {c.enabled && (
         <>
           <Heading className="mt-6">
-            <h3 className="font-sans text-[15px] font-semibold text-muted">
+            <h3 className="min-w-0 flex-1 font-sans text-[15px] font-semibold text-muted">
               {t('controls.controllers.buttons')}
             </h3>
-          </Heading>
-          <div className="list">
-            {buttons.length ? (
-              buttons.map(({ action }, i) => (
-                <ListRow key={i} label={t('controls.controllers.button', { n: i + 1 })}>
-                  <Select
-                    className="w-64"
-                    label={t('controls.controllers.buttonAction', {
-                      button: t('controls.controllers.button', { n: i + 1 }),
-                    })}
-                    value={action}
-                    options={[
-                      ['', t('controls.function.none')] as const,
-                      ...(action && !actions.some(([a]) => a === action)
-                        ? [[action, actionName(action, lang)] as const]
-                        : []),
-                      ...actions,
-                    ]}
-                    onChange={(a) => setButton(i, a)}
-                  />
-                </ListRow>
-              ))
-            ) : (
-              <ListRow label={t('controls.controllers.noButtons')} />
+            {buttons.length > LONG_LIST && (
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder={t('controls.controllers.buttonSearch')}
+              />
             )}
+          </Heading>
+          {c.connected && buttons.length > 0 && (
+            <p className="mb-2.5 px-1 text-[14.5px] text-muted">
+              {t('controls.controllers.pressToFind')}
+            </p>
+          )}
+          <div className="list" ref={list}>
+            {!buttons.length && <ListRow label={t('controls.controllers.noButtons')} />}
+            {buttons.length > 0 && !shownButtons.length && (
+              <ListRow label={t('controls.controllers.noMatch', { query: query.trim() })} />
+            )}
+            {shownButtons.map(({ b: { action }, i, label }) => (
+              <div
+                key={i}
+                data-button={i}
+                className={`list-row transition-colors ${held.includes(i) ? 'bg-brand/15' : ''}`}
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <span className="text-ink">{label}</span>
+                  {held.includes(i) && (
+                    <span className="rounded-full bg-brand px-2 py-0.5 text-[12.5px] font-semibold text-white">
+                      {t('controls.controllers.held')}
+                    </span>
+                  )}
+                </div>
+                <Select
+                  className="w-64"
+                  label={t('controls.controllers.buttonAction', { button: label })}
+                  value={action}
+                  options={[
+                    ['', t('controls.function.none')] as const,
+                    ...(action && !actions.some(([a]) => a === action)
+                      ? [[action, actionName(action, lang)] as const]
+                      : []),
+                    ...actions,
+                  ]}
+                  onChange={(a) => setButton(i, a)}
+                />
+              </div>
+            ))}
           </div>
         </>
       )}

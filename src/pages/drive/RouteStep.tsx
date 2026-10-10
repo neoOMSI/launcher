@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { SearchField } from '../../components/Screen';
 import { EmptyState, Field, Select, Spinner, Switch } from '../../components/ui';
 import { t } from '../../i18n';
 import { useDuty } from '../../lib/duty';
 import { hhmm } from '../../lib/format';
+import { filterBy, LONG_LIST } from '../../lib/search';
 import type { LineInfo, TourInfo } from '../../types/launcher';
 import type { DriveData } from './DrivePage';
 import { MapThumb } from './MapView';
@@ -71,7 +73,7 @@ export const RouteStep: React.FC<{ data: DriveData }> = ({ data }) => {
       ) : (
         <>
           <Lines lines={data.lines} />
-          {line && <Tours line={line} />}
+          {line && <Tours key={line.name} line={line} />}
         </>
       )}
     </div>
@@ -94,11 +96,11 @@ function Lines({ lines }: { lines: LineInfo[] }) {
       <div className="mb-3 flex items-center justify-between gap-4">
         <h3 className="text-[16px] font-semibold text-heading">{t('drive.route.line')}</h3>
         {lines.length > 6 && (
-          <input
-            className="input w-48 py-1.5"
-            placeholder={t('common.filter')}
+          <SearchField
+            className="h-9 w-48 text-[15px]"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
+            placeholder={t('common.filter')}
           />
         )}
       </div>
@@ -128,9 +130,11 @@ function Lines({ lines }: { lines: LineInfo[] }) {
 
 function Tours({ line }: { line: LineInfo }) {
   const { choice, update } = useDuty();
+  const [query, setQuery] = useState('');
   const sorted = [...line.tours].sort(
     (a, b) => Number(b.runs) - Number(a.runs) || Number(a.number) - Number(b.number),
   );
+  const shown = filterBy(sorted, query, (tour) => [tour.number, hhmm(tour.first), hhmm(tour.last)]);
   const pick = (tour: TourInfo) => {
     const patch: Partial<typeof choice> = { tour: tour.number, trip: '' };
     if (!tour.runs && tour.nextRun) patch.date = tour.nextRun;
@@ -138,9 +142,24 @@ function Tours({ line }: { line: LineInfo }) {
   };
   return (
     <section>
-      <h3 className="mb-3 text-[16px] font-semibold text-heading">{t('drive.route.tour')}</h3>
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <h3 className="text-[16px] font-semibold text-heading">{t('drive.route.tour')}</h3>
+        {sorted.length > LONG_LIST && (
+          <SearchField
+            className="h-9 w-48 text-[15px]"
+            value={query}
+            onChange={setQuery}
+            placeholder={t('common.filter')}
+          />
+        )}
+      </div>
+      {shown.length === 0 && (
+        <p className="px-3 py-2 text-[15px] text-muted">
+          {t('common.noMatch', { query: query.trim() })}
+        </p>
+      )}
       <div className="flex flex-col gap-0.5">
-        {sorted.map((tour) => {
+        {shown.map((tour) => {
           return (
             <button
               key={tour.number}

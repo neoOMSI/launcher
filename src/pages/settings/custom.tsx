@@ -129,7 +129,7 @@ const PaxPackRow: React.FC<CustomProps> = () => {
 
 const Seat: React.FC<CustomProps> = ({ ctx }) => {
   const { update } = useSettings();
-  const centred = !ctx || ['seat_x', 'seat_y', 'seat_z'].every((k) => !Number(ctx.s[k]));
+  const centred = !ctx || (['seat_x', 'seat_y', 'seat_z'] as const).every((k) => !Number(ctx.s[k]));
   return (
     <button
       type="button"

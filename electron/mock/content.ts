@@ -1149,7 +1149,6 @@ export function defaultSettings(): Settings {
   return {
     ...pageDefaults(),
     graphics: 'enhanced',
-    enhanced: true,
     mouse_sens: 1.2,
     ai_unsched_factor: 75,
     vol_ai: 0.8,

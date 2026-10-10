@@ -9,6 +9,7 @@ import { useDuty } from '../../lib/duty';
 import { call, useCommand } from '../../lib/engine';
 import { duration, hhmm, lineLabel, longDate } from '../../lib/format';
 import { useNav, useToast } from '../../lib/nav';
+import { filterBy, LONG_LIST } from '../../lib/search';
 import type { LineInfo, MapInfo, TourInfo, TripInfo } from '../../types/launcher';
 import { MapThumb } from '../drive/MapView';
 import {
@@ -90,6 +91,7 @@ export const TimetablesPage: React.FC = () => {
   const [date, setDate] = useState(choice.date || todayIso());
   const [stop, setStop] = useState('');
   const [line, setLine] = useState('');
+  const [lineQuery, setLineQuery] = useState('');
   const [view, setView] = useState<View>('departures');
   const dateInput = useRef<HTMLInputElement>(null);
 
@@ -98,6 +100,7 @@ export const TimetablesPage: React.FC = () => {
   const lines = useCommand('lines', current ? { map: current.file, date } : null);
   const all = lines.data?.lines ?? [];
   const lineFilter = all.some((l) => l.name === line) ? line : '';
+  const navLines = filterBy(all, lineQuery, (l) => [l.name, ...(l.termini ?? [])]);
 
   let body: React.ReactNode;
   if (maps.error) {
@@ -187,6 +190,7 @@ export const TimetablesPage: React.FC = () => {
                 onChange={(file) => {
                   setMap(file);
                   setLine('');
+                  setLineQuery('');
                 }}
               />
             )}
@@ -246,8 +250,18 @@ export const TimetablesPage: React.FC = () => {
               placeholder={t('timetables.stopSearch')}
             />
           </div>
+          {all.length > LONG_LIST && (
+            <SearchField
+              className="mx-6 mt-4 h-10 shrink-0 bg-sunken text-[15px]"
+              value={lineQuery}
+              onChange={setLineQuery}
+              placeholder={t('timetables.lineFilter')}
+            />
+          )}
           {all.length > 0 && (
-            <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4 pb-5 [scrollbar-width:none]">
+            <nav
+              className={`${all.length > LONG_LIST ? 'mt-2' : 'mt-4'} flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4 pb-5 [scrollbar-width:none]`}
+            >
               <button
                 type="button"
                 aria-current={lineFilter === '' ? 'page' : undefined}
@@ -257,7 +271,12 @@ export const TimetablesPage: React.FC = () => {
                 <Icon name="departure_board" size={20} />
                 <span className="truncate">{t('timetables.allLines')}</span>
               </button>
-              {all.map((l) => {
+              {navLines.length === 0 && (
+                <p className="px-4 py-2 text-[15px] text-muted">
+                  {t('common.noMatch', { query: lineQuery.trim() })}
+                </p>
+              )}
+              {navLines.map((l) => {
                 const on = l.name === lineFilter;
                 return (
                   <button

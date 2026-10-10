@@ -53,6 +53,7 @@
     "title": "Verlauf",
     "driver": "Fahrer",
     "allDrivers": "Alle Fahrer",
+    "search": "Fahrten suchen",
     "loading": "Fahrten werden gelesen…",
     "failed": "Die Fahrten konnten nicht gelesen werden",
     "none": "Noch keine Fahrten",
