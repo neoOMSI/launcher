@@ -22,7 +22,8 @@
     "proto": "buf generate",
     "sync:engine": "node scripts/sync-engine-proto.mjs && pnpm proto",
     "start": "electron dist-electron/main.js",
-    "package": "electron-builder --dir"
+    "package": "electron-builder --dir",
+    "package:app": "node scripts/package-app.mjs"
   },
   "devDependencies": {
     "@bufbuild/buf": "1.73.0",
