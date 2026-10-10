@@ -203,7 +203,8 @@ export function EngineProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCommand<C extends Command>(command: C, args?: CommandArgs<C> | null) {
-  const { ready } = useEngine();
+  const { ready, status, connect } = useEngine();
+  const lost = ready ? undefined : status.lastError;
   const key = args === null ? null : JSON.stringify(args ?? {});
   const [state, setState] = useState<{
     data?: CommandResult<C>;
@@ -225,10 +226,14 @@ export function useCommand<C extends Command>(command: C, args?: CommandArgs<C> 
   }, [ready, command, key, tick]);
 
   useEffect(() => {
+    if (lost) setState((s) => (s.loading ? { ...s, error: lost, loading: false } : s));
+  }, [lost]);
+
+  useEffect(() => {
     const bump = () => setTick((t) => t + 1);
     stale.addEventListener(command, bump);
     return () => stale.removeEventListener(command, bump);
   }, [command]);
 
-  return { ...state, reload: () => setTick((t) => t + 1) };
+  return { ...state, reload: () => (lost ? connect() : setTick((t) => t + 1)) };
 }
