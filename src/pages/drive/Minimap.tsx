@@ -40,8 +40,10 @@ function pathOf(roads: MinimapData['roads'], main: boolean) {
 }
 
 function routePath(data: MinimapData, trip: string | undefined) {
-  const ids = trip ? (data.trips?.[trip] ?? []) : [];
-  const lanes = ids.map((i) => data.lanes?.[i] ?? []);
+  const ids = trip ? (data.trips[trip]?.lanes ?? []) : [];
+  const lanes = ids.map((i) =>
+    (data.lanes[i]?.points ?? []).map(({ x, y }) => [x, y] as [number, number]),
+  );
   let d = '';
   let end: [number, number] | null = null;
   for (const lane of lanes) {
